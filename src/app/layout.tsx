@@ -3,6 +3,7 @@ import { Geist } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/layout/AppShell";
 import { ErrorBoundary } from "@/components/layout/ErrorBoundary";
+import { Analytics } from "@vercel/analytics/next";
 
 const geist = Geist({
   variable: "--font-geist-sans",
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ErrorBoundary>
           <AppShell>{children}</AppShell>
         </ErrorBoundary>
+        <Analytics />
       </body>
     </html>
   );
