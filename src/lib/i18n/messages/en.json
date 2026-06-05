@@ -1,0 +1,53 @@
+{
+  "chat": {
+    "placeholder": "Ask me anything about gifts, products, or your order...",
+    "greeting": "Hi! I'm Kapri, your personal shopping assistant. How can I help you today?",
+    "error": {
+      "retry": "I'm having trouble right now — tap to retry.",
+      "mcp_unavailable": "The shopping service is temporarily unavailable. Please try again in a moment."
+    },
+    "voice": {
+      "start": "Start voice input",
+      "stop": "Stop recording",
+      "confirm": "Did you mean: \"{transcript}\"?"
+    }
+  },
+  "cart": {
+    "title": "Your Cart",
+    "empty": "Your cart is empty",
+    "add": "Add to Cart",
+    "remove": "Remove",
+    "checkout": "Proceed to Checkout",
+    "item_count": "{count, plural, =0 {No items} =1 {1 item} other {# items}}",
+    "subtotal": "Subtotal"
+  },
+  "product": {
+    "add_to_cart": "Add to Cart",
+    "in_stock": "In Stock",
+    "out_of_stock": "Out of Stock",
+    "view_details": "View Details"
+  },
+  "checkout": {
+    "title": "Checkout",
+    "recipient_name": "Recipient Name",
+    "recipient_phone": "Recipient Phone",
+    "delivery_address": "Delivery Address",
+    "delivery_city": "Delivery City",
+    "delivery_date": "Delivery Date",
+    "gift_message": "Gift Message (optional)",
+    "sender_name": "Your Name",
+    "place_order": "Place Order",
+    "payment_url": "Complete Payment",
+    "order_ref": "Order Reference",
+    "expires_in": "Payment link expires in {minutes} minutes"
+  },
+  "nav": {
+    "home": "Home",
+    "cart": "Cart"
+  },
+  "locale": {
+    "en": "English",
+    "si": "සිංහල",
+    "ta-Latn": "Tamil"
+  }
+}

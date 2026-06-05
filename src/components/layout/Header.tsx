@@ -1,0 +1,134 @@
+"use client";
+
+import Link from "next/link";
+import { Sparkles, ShoppingCart, Package, History, SquarePen } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useCartStore } from "@/features/cart/store";
+import { useOrdersStore } from "@/features/orders/store";
+import { useHistoryStore } from "@/features/history/store";
+import { useChatStore } from "@/features/chat/store";
+import { useChat } from "@/features/chat/hooks/useChat";
+
+export function Header() {
+  const toggleCart = useCartStore((s) => s.toggle);
+  const cartItemCount = useCartStore((s) => s.itemCount);
+
+  const toggleOrders = useOrdersStore((s) => s.toggle);
+  const pendingOrders = useOrdersStore((s) => s.pending);
+  const pruneExpired = useOrdersStore((s) => s.pruneExpired);
+
+  const toggleHistory = useHistoryStore((s) => s.toggle);
+  const historySessions = useHistoryStore((s) => s.sessions);
+
+  const hasMessages = useChatStore((s) => s.messages.length > 0);
+  const { newChat, isStreaming } = useChat();
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+    pruneExpired();
+  }, [pruneExpired]);
+
+  const cartCount = mounted ? cartItemCount() : 0;
+  const ordersCount = mounted ? pendingOrders.length : 0;
+  const historyCount = mounted ? historySessions.length : 0;
+
+  return (
+    <header
+      className="fixed inset-x-0 top-0 z-50 border-b border-border px-6 sm:px-10"
+      style={{ background: "var(--glass-dark)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)" }}
+    >
+      <div className="flex h-16 items-center justify-between">
+        <Link href="/" className="flex items-center gap-3">
+          <div
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+            style={{
+              background: "linear-gradient(135deg, var(--purple) 0%, var(--purple-hover) 100%)",
+              boxShadow: "0 2px 16px var(--purple-glow)",
+            }}
+          >
+            <Sparkles className="h-4 w-4 text-white" />
+          </div>
+          <div className="flex flex-col justify-center">
+            <span className="text-[15px] font-bold leading-tight tracking-tight text-foreground">
+              KI<span className="gradient-text">YO</span>
+            </span>
+            <span className="text-[11px] leading-tight text-muted-foreground">
+              Your shopping assistant
+            </span>
+          </div>
+        </Link>
+
+        <div className="flex items-center gap-2">
+          {/* New chat — only visible when a conversation is active */}
+          {mounted && hasMessages && (
+            <button
+              onClick={newChat}
+              disabled={isStreaming}
+              title="New chat"
+              aria-label="New chat"
+              className="flex items-center gap-1.5 rounded-xl px-3 h-9 text-[12px] font-medium transition-all hover:-translate-y-px active:scale-95 disabled:opacity-40"
+              style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
+            >
+              <SquarePen className="h-3.5 w-3.5" />
+              New chat
+            </button>
+          )}
+
+          {/* History button */}
+          <div className="relative">
+            <button
+              onClick={toggleHistory}
+              aria-label="Chat history"
+              title="Chat History"
+              className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:text-foreground active:scale-95"
+              style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
+            >
+              <History className="h-4 w-4" />
+            </button>
+            {historyCount > 0 && (
+              <span className="badge-count" style={{ background: "var(--purple)" }}>
+                {historyCount}
+              </span>
+            )}
+          </div>
+
+          {/* Orders button */}
+          <div className="relative">
+            <button
+              onClick={toggleOrders}
+              aria-label="My orders"
+              title="My Orders"
+              className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:text-foreground active:scale-95"
+              style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
+            >
+              <Package className="h-4 w-4" />
+            </button>
+            {ordersCount > 0 && (
+              <span className="badge-count" style={{ background: "var(--gold)" }}>
+                {ordersCount}
+              </span>
+            )}
+          </div>
+
+          {/* Cart button */}
+          <div className="relative">
+            <button
+              onClick={toggleCart}
+              aria-label="Open cart"
+              title="Cart"
+              className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:text-foreground active:scale-95"
+              style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
+            >
+              <ShoppingCart className="h-4 w-4" />
+            </button>
+            {cartCount > 0 && (
+              <span className="badge-count">{cartCount > 99 ? "99+" : cartCount}</span>
+            )}
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}

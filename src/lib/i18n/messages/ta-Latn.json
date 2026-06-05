@@ -1,0 +1,53 @@
+{
+  "chat": {
+    "placeholder": "Gift, product, illa order pathi edavadhu kelunga...",
+    "greeting": "Vanakkam! Naan Kapri, unga personal shopping assistant. Indha naal unga ku enna help panratu?",
+    "error": {
+      "retry": "Ippo oru problem iruku — retry panna tap pannga.",
+      "mcp_unavailable": "Shopping service thattum nerathil illai. Kurai nerathil mara try pannga."
+    },
+    "voice": {
+      "start": "Voice input start pannga",
+      "stop": "Recording nirthunga",
+      "confirm": "Neengal sonnadu: \"{transcript}\" aa?"
+    }
+  },
+  "cart": {
+    "title": "Unga Cart",
+    "empty": "Cart kaali iruku",
+    "add": "Cart la Podunga",
+    "remove": "Eduthu Vidunga",
+    "checkout": "Checkout ku Ponga",
+    "item_count": "{count, plural, =0 {Oru item illai} =1 {1 item} other {# items}}",
+    "subtotal": "Subtotal"
+  },
+  "product": {
+    "add_to_cart": "Cart la Podunga",
+    "in_stock": "Stock iruku",
+    "out_of_stock": "Stock illai",
+    "view_details": "Details Parunga"
+  },
+  "checkout": {
+    "title": "Checkout",
+    "recipient_name": "Vanpavar Peyar",
+    "recipient_phone": "Vanpavar Phone",
+    "delivery_address": "Delivery Address",
+    "delivery_city": "Delivery City",
+    "delivery_date": "Delivery Naal",
+    "gift_message": "Gift Message (optional)",
+    "sender_name": "Unga Peyar",
+    "place_order": "Order Podunga",
+    "payment_url": "Payment Complete Pannga",
+    "order_ref": "Order Reference",
+    "expires_in": "Payment link {minutes} minute la expire aagum"
+  },
+  "nav": {
+    "home": "Home",
+    "cart": "Cart"
+  },
+  "locale": {
+    "en": "English",
+    "si": "සිංහල",
+    "ta-Latn": "Tamil"
+  }
+}
