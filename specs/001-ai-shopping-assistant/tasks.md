@@ -76,7 +76,7 @@ src/types/             Global TypeScript interfaces
 
 - [ ] T026 Write `src/lib/ai/system-prompt.ts`: `buildSystemPrompt(locale: Locale): string` — returns the full concierge persona prompt instructing Gemini to respond in the detected locale, always return product results as structured JSON (never plain text lists), act as a friendly shopping assistant, and call MCP tools when needed
 - [ ] T027 Write `src/lib/ai/tool-definitions.ts`: export `geminiToolDeclarations` array — all 7 Gemini function declarations from `specs/001-ai-shopping-assistant/contracts/ai-tools.md`, typed as `Tool[]` from `@google/generative-ai`
-- [ ] T028 Write `src/lib/ai/orchestrator.ts`: `createChatOrchestrator(locale: Locale)` that initialises `GoogleGenerativeAI` with Gemini 2.5 Flash, registers the tool declarations, and returns a `chat` session with the locale-aware system prompt
+- [ ] T028 Write `src/lib/ai/orchestrator.ts`: `createChatOrchestrator(locale: Locale)` that initialises `GoogleGenerativeAI` with models/gemini-3.5-flash, registers the tool declarations, and returns a `chat` session with the locale-aware system prompt
 - [ ] T029 Write `src/lib/ai/streaming.ts`: `streamToResponse(stream: AsyncIterable<string>): Response` helper that converts Gemini's streaming output to a `text/event-stream` `Response` compatible with Vercel AI SDK `useChat`
 
 ### i18n Setup

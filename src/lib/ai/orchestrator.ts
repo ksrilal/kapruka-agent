@@ -16,7 +16,7 @@ import {
 } from "@/lib/mcp";
 import type { Locale } from "@/types/domain";
 
-const MODEL_NAME = "models/gemini-3.5-flash";
+const MODEL_NAME = process.env.GEMINI_MODEL ?? "models/gemini-3.5-flash";
 
 export interface OrchestratorMessage {
   role: "user" | "model";

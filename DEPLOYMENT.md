@@ -2,10 +2,10 @@
 
 ## Vercel Environment Variables
 
-| Variable | Required | Description |
-|---|---|---|
-| `GEMINI_API_KEY` | ✅ | Google Gemini API key (Gemini 2.5 Flash) |
-| `KAPRUKA_MCP_URL` | ✅ | Kapruka MCP endpoint (default: `https://mcp.kapruka.com/mcp`) |
+| Variable          | Required | Description                                                   |
+| ----------------- | -------- | ------------------------------------------------------------- |
+| `GEMINI_API_KEY`  | ✅       | Google Gemini API key (models/gemini-3.5-flash)               |
+| `KAPRUKA_MCP_URL` | ✅       | Kapruka MCP endpoint (default: `https://mcp.kapruka.com/mcp`) |
 
 ## Deploy Steps
 
@@ -18,7 +18,7 @@
 
 - Kapruka MCP: 60 requests/minute per IP; 30 `create_order` calls/hour
 - Payment URLs expire after 60 minutes
-- Gemini 2.5 Flash: see Google AI Studio quotas
+- models/gemini-3.5-flash: see Google AI Studio quotas
 
 ## Smoke Test After Deploy
 

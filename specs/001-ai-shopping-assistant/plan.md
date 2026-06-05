@@ -6,7 +6,7 @@
 
 ## Summary
 
-Build Sri Lanka's best conversational AI shopping assistant powered by Gemini 2.5 Flash and the
+Build Sri Lanka's best conversational AI shopping assistant powered by models/gemini-3.5-flash and the
 Kapruka MCP (v1.27.0). The assistant guides users — gift shoppers, busy professionals,
 last-minute buyers, Sinhala/Tanglish speakers, and mobile users — through a full shopping
 journey entirely within a chat interface: product discovery → cart management → delivery check
@@ -22,7 +22,7 @@ system deployed to Vercel.
 **Primary Dependencies**:
 
 - Next.js 15 (App Router, Server Actions, Route Handlers)
-- Gemini 2.5 Flash via `@google/generative-ai` SDK
+- models/gemini-3.5-flash via `@google/generative-ai` SDK
 - Kapruka MCP v1.27.0 via Streamable HTTP (SSE) transport — no auth required
 - shadcn/ui + Radix UI primitives
 - Tailwind CSS 3.x
@@ -233,7 +233,7 @@ domain objects and MCP contracts live in `src/types/`.
 │                 Next.js Server (Vercel)                    │
 │  ┌─────────────────────────────────────────────────┐     │
 │  │  /api/chat Route Handler                         │     │
-│  │  └── AI Orchestrator (Gemini 2.5 Flash)          │     │
+│  │  └── AI Orchestrator (models/gemini-3.5-flash)          │     │
 │  │       ├── Locale-aware system prompt             │     │
 │  │       ├── Conversation history                   │     │
 │  │       └── Function calls → MCP Client            │     │

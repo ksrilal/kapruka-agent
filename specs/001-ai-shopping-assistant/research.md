@@ -27,12 +27,12 @@ and avoids custom API mapping work.
 
 ---
 
-## 2. AI Orchestration — Gemini 2.5 Flash + Vercel AI SDK
+## 2. AI Orchestration — models/gemini-3.5-flash + Vercel AI SDK
 
-**Decision**: Use Gemini 2.5 Flash via `@google/generative-ai` wrapped with the Vercel AI SDK
+**Decision**: Use models/gemini-3.5-flash via `@google/generative-ai` wrapped with the Vercel AI SDK
 (`ai` package) for streaming. Expose MCP tools as Gemini function declarations.
 
-**Rationale**: Gemini 2.5 Flash provides fast, cost-effective inference with strong multilingual
+**Rationale**: models/gemini-3.5-flash provides fast, cost-effective inference with strong multilingual
 capability including Sinhala. The Vercel AI SDK provides a unified streaming interface (`useChat`
 hook) that integrates directly with Next.js streaming Route Handlers, reducing boilerplate.
 
