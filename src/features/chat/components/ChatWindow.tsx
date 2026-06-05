@@ -20,8 +20,8 @@ export function ChatWindow({ messages, isStreaming, onRetry }: ChatWindowProps) 
   const lastMsgId = messages[messages.length - 1]?.id;
 
   return (
-    <div style={{ flex: 1, overflowY: "auto", width: "100%" }}>
-      <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6">
+    <div className="flex flex-col items-center flex-1 overflow-y-auto w-full">
+      <div className="w-full px-4 sm:px-10 lg:px-50 py-6 sm:py-8 flex flex-col gap-6">
         {messages.map((msg) => (
           <ChatBubble
             key={msg.id}
