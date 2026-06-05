@@ -21,15 +21,7 @@ export function ChatWindow({ messages, isStreaming, onRetry }: ChatWindowProps) 
 
   return (
     <div style={{ flex: 1, overflowY: "auto", width: "100%" }}>
-      <div style={{
-        width: "100%",
-        maxWidth: "900px",
-        margin: "0 auto",
-        padding: "2rem 1.5rem",
-        display: "flex",
-        flexDirection: "column",
-        gap: "1.5rem",
-      }}>
+      <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6">
         {messages.map((msg) => (
           <ChatBubble
             key={msg.id}

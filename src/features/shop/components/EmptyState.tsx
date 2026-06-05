@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Cake, Flower2, Gift, Candy, Gem, Baby, ShoppingBag, Smartphone } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useChat } from "@/features/chat/hooks/useChat";
+import { Footer } from "@/components/layout/Footer";
 
 interface Category {
   icon: LucideIcon;
@@ -58,7 +59,7 @@ export function EmptyState() {
   const subtitle = SUBTITLES[subtitleIdx];
 
   return (
-    <div className="relative flex h-full flex-col items-center justify-center overflow-y-auto px-6 pb-10 pt-6">
+    <div className="relative flex h-full flex-col items-center overflow-y-auto px-4 sm:px-6 pt-4 sm:pt-6">
 
       {/* Orbs */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -67,8 +68,11 @@ export function EmptyState() {
         <div className="orb orb-accent"    style={{ top: "60px", right: "-80px" }} />
       </div>
 
+      {/* Main content — grows to fill space, keeping footer at bottom */}
+      <div className="relative z-10 flex flex-col items-center flex-1 justify-center w-full max-w-2xl">
+
       {/* Hero */}
-      <div className="relative z-10 text-center max-w-2xl">
+      <div className="text-center max-w-2xl">
         <p className="text-[13px] font-semibold tracking-widest uppercase pb-2 mb-5" style={{ color: "var(--purple-light)" }}>
           Kiyo · Powered by Kapruka
         </p>
@@ -107,7 +111,7 @@ export function EmptyState() {
       </div>
 
       {/* Category chips */}
-      <div className="relative z-10 mt-8 flex flex-wrap items-center justify-center gap-2.5">
+      <div className="mt-8 flex flex-wrap items-center justify-center gap-2.5">
         {CATEGORIES.map(({ icon: Icon, label, query, color }) => (
           <button
             key={label}
@@ -126,11 +130,11 @@ export function EmptyState() {
       </div>
 
       {/* Example prompts — 2-column grid */}
-      <div className="relative z-10 mt-8 w-full max-w-2xl pt-7">
+      <div className="mt-8 w-full pt-7">
         <p className="text-center text-[11px] tracking-widest uppercase font-medium mb-3 pb-3" style={{ color: "var(--ink-3)" }}>
           Try asking...
         </p>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {EXAMPLES.map(({ text, lang }) => (
           <button
             key={text}
@@ -153,6 +157,8 @@ export function EmptyState() {
         </div>
       </div>
 
+        <Footer />
+      </div>
     </div>
   );
 }

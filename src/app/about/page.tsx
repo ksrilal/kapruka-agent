@@ -1,0 +1,163 @@
+import Link from "next/link";
+import { ArrowLeft, Sparkles, MapPin, Heart, Zap, Shield } from "lucide-react";
+
+export const metadata = {
+  title: "About Kiyo — Sri Lanka's Smartest Shopping Assistant",
+  description: "Learn how Kiyo is reimagining online shopping in Sri Lanka through conversational AI powered by Kapruka.",
+};
+
+const PILLARS = [
+  {
+    icon: Sparkles,
+    color: "var(--purple-light)",
+    bg: "var(--purple-soft)",
+    title: "Conversational Commerce",
+    body: "Forget rigid search filters and endless category browsing. Just tell Kiyo what you need — in English, Sinhala, or Tanglish — and get curated results in seconds.",
+  },
+  {
+    icon: MapPin,
+    color: "#34d399",
+    bg: "rgba(52,211,153,0.12)",
+    title: "Delivery Across Sri Lanka",
+    body: "Powered by Kapruka's island-wide logistics network, Kiyo can dispatch gifts, flowers, cakes, and more to over 300 cities and towns.",
+  },
+  {
+    icon: Heart,
+    color: "#f43f5e",
+    bg: "rgba(244,63,94,0.12)",
+    title: "Built for Real Gifting",
+    body: "Whether it's a birthday cake for a cousin in Kandy or a flower arrangement for a parent in Colombo, Kiyo understands the emotional context behind every order.",
+  },
+  {
+    icon: Zap,
+    color: "var(--gold)",
+    bg: "var(--gold-soft)",
+    title: "Instant, Expressive Checkout",
+    body: "From product discovery to payment in under two minutes. Kiyo handles order creation and hands you a secure payment link — no account required.",
+  },
+  {
+    icon: Shield,
+    color: "var(--accent)",
+    bg: "var(--accent-soft)",
+    title: "Trusted & Transparent",
+    body: "Real-time inventory, honest pricing in LKR, and live order tracking — Kiyo never shows you a product that isn't available or a price that can change at checkout.",
+  },
+];
+
+export default function AboutPage() {
+  return (
+    <div className="flex h-full w-full justify-center overflow-y-auto">
+    <div className="mx-auto w-full max-w-2xl px-4 py-8 animate-fade-up">
+
+      <Link
+        href="/"
+        className="mb-8 inline-flex items-center gap-2 text-[13px] transition-colors"
+        style={{ color: "var(--ink-3)" }}
+      >
+        <ArrowLeft className="h-3.5 w-3.5" />
+        Back to Kiyo
+      </Link>
+
+      {/* Hero */}
+      <div className="mb-10">
+        <p className="text-[12px] font-bold tracking-widest uppercase mb-3" style={{ color: "var(--purple-light)" }}>
+          About
+        </p>
+        <h1 className="text-[32px] font-bold leading-tight text-foreground mb-4">
+          Shopping that feels like<br />
+          <span className="gradient-text">talking to a friend.</span>
+        </h1>
+        <p className="text-[15px] leading-relaxed" style={{ color: "var(--ink-2)" }}>
+          Kiyo is an AI shopping assistant built on top of{" "}
+          <a
+            href="https://www.kapruka.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-2 transition-colors hover:text-foreground"
+            style={{ color: "var(--purple-light)" }}
+          >
+            Kapruka
+          </a>
+          {" "}— Sri Lanka's largest online gifting and delivery platform. We believe the future of
+          e-commerce isn't a better search box; it's a smarter conversation.
+        </p>
+      </div>
+
+      {/* Pillars */}
+      <div className="mb-12 flex flex-col gap-4">
+        {PILLARS.map(({ icon: Icon, color, bg, title, body }) => (
+          <div
+            key={title}
+            className="rounded-2xl border p-5 flex gap-4"
+            style={{ background: "var(--surface)", borderColor: "var(--border)" }}
+          >
+            <span
+              className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+              style={{ background: bg }}
+            >
+              <Icon className="h-4 w-4" style={{ color }} strokeWidth={2} />
+            </span>
+            <div>
+              <p className="text-[14px] font-semibold text-foreground mb-1">{title}</p>
+              <p className="text-[13px] leading-relaxed" style={{ color: "var(--ink-2)" }}>{body}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Kapruka */}
+      <div
+        className="rounded-2xl border p-6 mb-10"
+        style={{ background: "var(--surface)", borderColor: "var(--glass-border)" }}
+      >
+        <p className="text-[12px] font-bold tracking-widest uppercase mb-2" style={{ color: "var(--ink-3)" }}>
+          Powered by
+        </p>
+        <p className="text-[18px] font-bold text-foreground mb-2">Kapruka.com</p>
+        <p className="text-[13px] leading-relaxed" style={{ color: "var(--ink-2)" }}>
+          Since 2004, Kapruka has been connecting Sri Lankans at home and abroad with reliable,
+          same-day gifting and delivery services. Kiyo is built on Kapruka's catalogue, payment
+          infrastructure, and logistics — meaning every order you place is backed by two decades
+          of local expertise.
+        </p>
+      </div>
+
+      {/* Language */}
+      <div className="mb-10">
+        <p className="text-[14px] font-semibold text-foreground mb-3">Speak your language</p>
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { lang: "English", example: "Send birthday cake to Colombo", color: "var(--ink-2)", bg: "var(--surface-2)" },
+            { lang: "සිංහල", example: "කොළඹ මගේ අම්මාට මල් යවන්න", color: "var(--purple-light)", bg: "var(--purple-soft)" },
+            { lang: "Tanglish", example: "Colombo deliver karanawada?", color: "var(--accent)", bg: "var(--accent-soft)" },
+          ].map(({ lang, example, color, bg }) => (
+            <div
+              key={lang}
+              className="rounded-xl p-3 text-center"
+              style={{ background: bg, border: `1px solid ${color}33` }}
+            >
+              <p className="text-[12px] font-bold mb-1.5" style={{ color }}>{lang}</p>
+              <p className="text-[11px] leading-snug" style={{ color: "var(--ink-3)" }}>&ldquo;{example}&rdquo;</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Contact */}
+      <div className="rounded-2xl border p-5 text-center" style={{ borderColor: "var(--border)" }}>
+        <p className="text-[13px] mb-1" style={{ color: "var(--ink-2)" }}>
+          Questions or feedback?
+        </p>
+        <a
+          href="mailto:colombo.office@kapruka.com"
+          className="text-[13px] font-medium underline underline-offset-2 transition-colors hover:text-foreground"
+          style={{ color: "var(--purple-light)" }}
+        >
+          colombo.office@kapruka.com
+        </a>
+      </div>
+
+    </div>
+    </div>
+  );
+}

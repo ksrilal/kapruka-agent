@@ -36,7 +36,7 @@ export function Header() {
 
   return (
     <header
-      className="fixed inset-x-0 top-0 z-50 border-b border-border px-6 sm:px-10"
+      className="fixed inset-x-0 top-0 z-50 border-b border-border px-4 sm:px-6 lg:px-10"
       style={{ background: "var(--glass-dark)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)" }}
     >
       <div className="flex h-16 items-center justify-between">
@@ -68,11 +68,11 @@ export function Header() {
               disabled={isStreaming}
               title="New chat"
               aria-label="New chat"
-              className="flex items-center gap-1.5 rounded-xl px-3 h-9 text-[12px] font-medium transition-all hover:-translate-y-px active:scale-95 disabled:opacity-40"
+              className="flex items-center gap-1.5 rounded-xl px-2.5 sm:px-3 h-9 text-[12px] font-medium transition-all hover:-translate-y-px active:scale-95 disabled:opacity-40"
               style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
             >
               <SquarePen className="h-3.5 w-3.5" />
-              New chat
+              <span className="hidden sm:inline">New chat</span>
             </button>
           )}
 

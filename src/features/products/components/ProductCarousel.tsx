@@ -14,14 +14,7 @@ export function ProductCarousel({ products, label }: Props) {
 
   return (
     // Full-bleed: escape the chat column's max-width using negative margins
-    <div
-      style={{
-        marginLeft: "calc(-1 * (50vw - 50%))",
-        marginRight: "calc(-1 * (50vw - 50%))",
-        paddingLeft: "max(1.5rem, calc(50vw - 480px))",
-        paddingRight: "max(1.5rem, calc(50vw - 480px))",
-      }}
-    >
+    <div className="w-full">
       {label && (
         <div className="flex items-center justify-between mb-3 px-1">
           <h2 className="t-title" style={{ color: "var(--ink)" }}>{label}</h2>
@@ -29,15 +22,8 @@ export function ProductCarousel({ products, label }: Props) {
         </div>
       )}
 
-      {/* Wrapping grid — 4 columns, wraps into rows when > 4 products */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
-          gap: "16px",
-          paddingBottom: "4px",
-        }}
-      >
+      {/* Wrapping grid — responsive columns */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 pb-1">
         {products.map((p, i) => (
           <div key={`${productId(p)}-${i}`} style={{ minWidth: 0 }}>
             <ProductCard product={p} priority={i < 4} />

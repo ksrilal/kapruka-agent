@@ -207,19 +207,24 @@ body > div:first-child,
   will-change: transform;
 }
 .orb-primary {
-  width: 600px; height: 600px;
+  width: 300px; height: 300px;
   background: radial-gradient(circle at center, #7c3aed 0%, #4c1d95 40%, transparent 70%);
   opacity: 0.45;
 }
 .orb-secondary {
-  width: 400px; height: 400px;
+  width: 220px; height: 220px;
   background: radial-gradient(circle at center, #9d174d 0%, #7c3aed 50%, transparent 70%);
   opacity: 0.3;
 }
 .orb-accent {
-  width: 300px; height: 300px;
+  width: 180px; height: 180px;
   background: radial-gradient(circle at center, #c084fc 0%, transparent 70%);
   opacity: 0.2;
+}
+@media (min-width: 640px) {
+  .orb-primary   { width: 600px; height: 600px; }
+  .orb-secondary { width: 400px; height: 400px; }
+  .orb-accent    { width: 300px; height: 300px; }
 }
 @keyframes orbFloat {
   0%,100% { transform: translateY(0) scale(1); }

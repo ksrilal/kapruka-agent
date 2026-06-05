@@ -124,11 +124,11 @@ export function CommandBar() {
   const langMeta = hasMessages ? LANG_META[locale] ?? LANG_META.en : null;
 
   return (
-    <div className="fixed bottom-0 inset-x-0 z-50 flex flex-col items-center px-4 pb-4 pointer-events-none">
+    <div className="fixed bottom-0 inset-x-0 z-50 flex flex-col items-center px-3 sm:px-4 pb-3 sm:pb-4 pointer-events-none">
       <div className="w-full max-w-3xl pointer-events-auto">
 
         <div
-          className={`command-bar rounded-2xl px-4 py-3 transition-all ${
+          className={`command-bar rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 transition-all ${
             commandOpen ? "ring-1 ring-(--purple)/40" : ""
           }`}
         >
@@ -221,7 +221,7 @@ export function CommandBar() {
 
           {/* Placeholder language hint — only on empty state */}
           {!hasMessages && !value && (
-            <div className="mt-2 flex items-center gap-1.5 pl-11">
+            <div className="mt-2 flex items-center gap-1 sm:gap-1.5 pl-9 sm:pl-11 flex-wrap">
               <span className="text-[11px]" style={{ color: "var(--ink-3)" }}>Type in</span>
               {[
                 { label: "English", color: "var(--ink-3)" },
@@ -233,7 +233,7 @@ export function CommandBar() {
                   {i < arr.length - 1 && <span className="text-[11px]" style={{ color: "var(--ink-3)" }}>, </span>}
                 </span>
               ))}
-              <span className="text-[11px]" style={{ color: "var(--ink-3)" }}>— Kiyo understands all three</span>
+              <span className="hidden sm:inline text-[11px]" style={{ color: "var(--ink-3)" }}>— Kiyo understands all three</span>
             </div>
           )}
         </div>

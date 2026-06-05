@@ -19,7 +19,7 @@ export function ChatBubble({ message, onRetry, isStreaming }: ChatBubbleProps) {
     return (
       <div className="flex justify-end animate-fade-up">
         <div
-          className="max-w-[72%] rounded-2xl rounded-br-sm px-4 py-3 text-[15px] leading-relaxed text-white"
+          className="max-w-[88%] sm:max-w-[72%] rounded-2xl rounded-br-sm px-4 py-3 text-[15px] leading-relaxed text-white"
           style={{ background: "linear-gradient(135deg, var(--purple) 0%, var(--purple-hover) 100%)", boxShadow: "0 4px 20px var(--purple-glow)" }}
         >
           {message.content}

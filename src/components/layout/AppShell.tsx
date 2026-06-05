@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { Toaster } from "@/components/ui/sonner";
 import { Header } from "./Header";
 import { CommandBar } from "@/features/chat/components/CommandBar";
@@ -8,15 +9,20 @@ import { OrdersPanel } from "@/features/orders/components/OrdersPanel";
 import { HistoryPanel } from "@/features/history/components/HistoryPanel";
 import { Bubbles } from "@/components/ui/Bubbles";
 
+const STATIC_PAGES = ["/about", "/qa", "/privacy", "/terms"];
+
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const isStatic = STATIC_PAGES.includes(pathname);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100dvh", width: "100%", overflow: "hidden" }}>
       <Bubbles />
       <Header />
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", width: "100%", paddingTop: "4rem", paddingBottom: "5.5rem", overflow: "hidden" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", width: "100%", paddingTop: "4rem", paddingBottom: isStatic ? "0" : "5.5rem", overflow: "hidden" }}>
         {children}
       </div>
-      <CommandBar />
+      {!isStatic && <CommandBar />}
       <CartPanel />
       <OrdersPanel />
       <HistoryPanel />
