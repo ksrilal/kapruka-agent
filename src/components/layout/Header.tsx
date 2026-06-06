@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { Sparkles, ShoppingCart, Package, History, SquarePen } from "lucide-react";
+import { ShoppingCart, Package, History, SquarePen } from "lucide-react";
+import { KiyoAvatar } from "@/components/ui/KiyoAvatar";
 import { useState, useEffect } from "react";
 import { useCartStore } from "@/features/cart/store";
 import { useOrdersStore } from "@/features/orders/store";
@@ -40,16 +40,12 @@ export function Header() {
       style={{ background: "var(--glass-dark)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)" }}
     >
       <div className="flex h-16 items-center justify-between">
-        <Link href="/" className="flex items-center gap-3">
-          <div
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
-            style={{
-              background: "linear-gradient(135deg, var(--purple) 0%, var(--purple-hover) 100%)",
-              boxShadow: "0 2px 16px var(--purple-glow)",
-            }}
-          >
-            <Sparkles className="h-4 w-4 text-white" />
-          </div>
+        <button
+          onClick={newChat}
+          className="flex items-center gap-3 cursor-pointer text-left w-auto"
+          aria-label="Go to home"
+        >
+          <KiyoAvatar size={36} />
           <div className="flex flex-col justify-center">
             <span className="text-[15px] font-bold leading-tight tracking-tight text-foreground">
               KI<span className="gradient-text">YO</span>
@@ -58,7 +54,7 @@ export function Header() {
               Your shopping assistant
             </span>
           </div>
-        </Link>
+        </button>
 
         <div className="flex items-center gap-2">
           {/* New chat — only visible when a conversation is active */}

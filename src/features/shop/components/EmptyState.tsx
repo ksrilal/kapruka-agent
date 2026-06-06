@@ -33,7 +33,7 @@ const CATEGORIES: Category[] = [
 // Mix of English, Sinhala, and Tanglish — judges will see all three
 const EXAMPLES = [
   { text: "Birthday cake for Kandy under LKR 3,000", lang: "EN" },
-  { text: "කොළඹ මගේ අම්මාට මල් යවන්න", lang: "සිං" },           // "Send flowers to my mum in Colombo"
+  { text: "අම්මාගේ උපන්දිනයට ලස්සන කේක් එකක් හොයලා දෙන්න", lang: "සිං" },           // "Send flowers to my mum in Colombo"
   { text: "Flowers for my mum in Colombo",            lang: "EN" },
   { text: "Anna gift pack onnum iruka?",              lang: "TGL" }, // "Any gift packs available?" — Tanglish
   { text: "Best gifts for a 5-year-old",              lang: "EN" },

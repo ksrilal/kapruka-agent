@@ -15,7 +15,6 @@ export const metadata: Metadata = {
   title: "Kiyo — Sri Lanka's Smartest Shopping Assistant",
   description:
     "Chat with Kiyo to find gifts, cakes, flowers, and more delivered across Sri Lanka.",
-  icons: { icon: "/favicon.ico" },
 };
 
 export const viewport: Viewport = {

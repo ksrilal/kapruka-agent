@@ -46,9 +46,16 @@ export interface ChatTextEvent {
   text: string;
 }
 
+export interface ChatToolCallEvent {
+  type: "tool_call";
+  tool: string;
+  status: "running" | "done";
+}
+
 export type ChatSSEEvent =
   | ChatTextEvent
   | ChatErrorEvent
   | ChatProductsEvent
   | ChatOrderEvent
-  | ChatOrderStatusEvent;
+  | ChatOrderStatusEvent
+  | ChatToolCallEvent;

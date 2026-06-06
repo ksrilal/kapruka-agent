@@ -1,8 +1,9 @@
 "use client";
 
-import { Sparkles } from "lucide-react";
+import { KiyoAvatar } from "@/components/ui/KiyoAvatar";
 import { ProductCarousel } from "@/features/products/components/ProductCarousel";
 import { OrderCard, OrderStatusCard } from "./OrderCard";
+import { ThinkingIndicator } from "./ThinkingIndicator";
 import { renderMarkdown } from "@/lib/utils/markdown";
 import type { ConversationMessage } from "@/types/domain";
 
@@ -31,16 +32,7 @@ export function ChatBubble({ message, onRetry, isStreaming }: ChatBubbleProps) {
   // Assistant message — full width column
   return (
     <div className="flex gap-3 w-full animate-fade-up">
-      {/* Kapri avatar */}
-      <div
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl mt-1"
-        style={{
-          background: "linear-gradient(135deg, var(--purple) 0%, var(--purple-hover) 100%)",
-          boxShadow: "0 2px 12px var(--purple-glow)",
-        }}
-      >
-        <Sparkles className="h-3.5 w-3.5 text-white" />
-      </div>
+      <KiyoAvatar size={32} className="mt-1" />
 
       <div className="flex flex-col gap-4 flex-1 min-w-0">
         {/* Error */}
@@ -58,11 +50,7 @@ export function ChatBubble({ message, onRetry, isStreaming }: ChatBubbleProps) {
             )}
           </p>
         ) : isStreaming && !message.content ? (
-          <div className="flex flex-col gap-2.5 pt-2">
-            <div className="h-3.5 w-3/4 rounded-full shimmer" />
-            <div className="h-3.5 w-1/2 rounded-full shimmer" />
-            <div className="h-3.5 w-2/3 rounded-full shimmer" />
-          </div>
+          <ThinkingIndicator toolSteps={message.toolSteps} isStreaming={isStreaming} />
         ) : message.content ? (
           <div
             className="rounded-2xl rounded-tl-sm px-4 py-3 text-[15px] leading-relaxed"

@@ -132,6 +132,11 @@ export interface ToolResult {
   content: unknown;
 }
 
+export interface ToolStep {
+  tool: string;
+  status: "running" | "done";
+}
+
 export interface ConversationMessage {
   id: string;
   role: MessageRole;
@@ -144,6 +149,7 @@ export interface ConversationMessage {
   retryable?: boolean;
   tool_calls?: ToolCall[];
   tool_results?: ToolResult[];
+  toolSteps?: ToolStep[];
   timestamp: number;
 }
 

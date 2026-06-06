@@ -111,7 +111,25 @@ export function useChat() {
             if (!json) continue;
             const event = JSON.parse(json) as ChatSSEEvent;
 
-            if (event.type === "text") {
+            if (event.type === "tool_call") {
+              useChatStore.setState((s) => ({
+                messages: s.messages.map((m) => {
+                  if (m.id !== assistantId) return m;
+                  const existing = m.toolSteps ?? [];
+                  if (event.status === "running") {
+                    return { ...m, toolSteps: [...existing, { tool: event.tool, status: "running" as const }] };
+                  }
+                  return {
+                    ...m,
+                    toolSteps: existing.map((step) =>
+                      step.tool === event.tool && step.status === "running"
+                        ? { ...step, status: "done" as const }
+                        : step
+                    ),
+                  };
+                }),
+              }));
+            } else if (event.type === "text") {
               appendAssistantText(assistantId, event.text);
               accText += event.text;
               setLastAiText(accText);

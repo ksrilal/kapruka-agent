@@ -54,16 +54,43 @@ async function* chatGenerator(
   const locale: Locale =
     body.locale ?? detectLocale(userText);
 
+  // Channel to forward tool_call events from the orchestrator into the generator
+  type ToolEvent = { tool: string; status: "running" | "done" };
+  const toolQueue: ToolEvent[] = [];
+  let orchestratorDone = false;
+  let orchestratorResolve: () => void;
+  const orchestratorPromise = new Promise<void>((r) => { orchestratorResolve = r; });
+
   let result;
-  try {
-    result = await runOrchestrator(body.messages, locale);
-  } catch (err) {
+  const orchestratorRun = runOrchestrator(body.messages, locale, (tool, status) => {
+    toolQueue.push({ tool, status });
+    orchestratorResolve?.();
+    orchestratorPromise; // keep reference
+  }).then((r) => {
+    result = r;
+    orchestratorDone = true;
+    orchestratorResolve?.();
+  }).catch((err) => {
     console.error({ event: "chat_error", message: (err as Error).message });
-    yield {
-      type: "error",
-      message: "AI service temporarily unavailable.",
-      retryable: true,
-    };
+    orchestratorDone = true;
+    orchestratorResolve?.();
+  });
+
+  // Drain tool events while orchestrator runs
+  while (!orchestratorDone || toolQueue.length > 0) {
+    if (toolQueue.length === 0 && !orchestratorDone) {
+      await new Promise<void>((r) => { orchestratorResolve = r; });
+      continue;
+    }
+    const ev = toolQueue.shift();
+    if (ev) {
+      yield { type: "tool_call" as const, tool: ev.tool, status: ev.status };
+    }
+  }
+  await orchestratorRun;
+
+  if (!result) {
+    yield { type: "error" as const, message: "AI service temporarily unavailable.", retryable: true };
     return;
   }
 

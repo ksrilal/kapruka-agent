@@ -54,7 +54,8 @@ async function executeTool(
 
 export async function runOrchestrator(
   messages: OrchestratorMessage[],
-  locale: Locale
+  locale: Locale,
+  onToolCall?: (tool: string, status: "running" | "done") => void
 ): Promise<OrchestratorResult> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("GEMINI_API_KEY not set");
@@ -85,10 +86,12 @@ export async function runOrchestrator(
 
     const toolResults = await Promise.all(
       functionCalls.map(async (fc) => {
+        onToolCall?.(fc.name, "running");
         const toolResult = await executeTool(
           fc.name,
           fc.args as Record<string, unknown>
         );
+        onToolCall?.(fc.name, "done");
         embedded.push(toolResult);
         return {
           functionResponse: {

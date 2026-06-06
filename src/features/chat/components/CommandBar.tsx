@@ -4,7 +4,8 @@ import {
   useState, useRef, useEffect,
   type KeyboardEvent,
 } from "react";
-import { ArrowUp, Square, Sparkles, Mic, MicOff } from "lucide-react";
+import { ArrowUp, Square, Mic, MicOff } from "lucide-react";
+import { KiyoAvatar } from "@/components/ui/KiyoAvatar";
 import { useShopStore } from "@/features/shop/store";
 import { useChat } from "@/features/chat/hooks/useChat";
 import { useChatStore } from "@/features/chat/store";
@@ -12,7 +13,7 @@ import { useChatStore } from "@/features/chat/store";
 // Rotating placeholders — mix of English, Sinhala, and Tanglish
 const PROMPTS = [
   { text: "Birthday cake for Kandy under LKR 3,000",   lang: "EN" },
-  { text: "කොළඹ මගේ අම්මාට මල් යවන්න",               lang: "සිං" },
+  { text: "අම්මාගේ උපන්දිනයට ලස්සන කේක් එකක් හොයලා දෙන්න",               lang: "සිං" },
   { text: "Send flowers to my mum in Colombo",          lang: "EN" },
   { text: "Anna gift pack onnum iruka?",                lang: "TGL" },
   { text: "Jewellery under LKR 5,000",                  lang: "EN" },
@@ -134,12 +135,7 @@ export function CommandBar() {
         >
           <div className="flex items-end gap-3">
             {/* Kiyo avatar */}
-            <div
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl mb-0.5"
-              style={{ background: "linear-gradient(135deg, var(--purple) 0%, var(--purple-hover) 100%)", boxShadow: "0 2px 12px var(--purple-glow)" }}
-            >
-              <Sparkles className="h-4 w-4 text-white" />
-            </div>
+            <KiyoAvatar size={32} className="mb-0.5" />
 
             {/* Textarea + language pill */}
             <div className="flex-1 min-w-0">
@@ -159,7 +155,7 @@ export function CommandBar() {
                     onChange={(e) => { setValue(e.target.value); autoResize(); }}
                     onKeyDown={handleKey}
                     onFocus={openCommand}
-                    placeholder={currentPrompt.text}
+                    placeholder=""
                     disabled={isStreaming}
                     className="flex-1 min-w-0 resize-none bg-transparent text-[15px] leading-relaxed text-foreground outline-none placeholder:text-muted-foreground disabled:opacity-0"
                     style={{ maxHeight: 120 }}

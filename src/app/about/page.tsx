@@ -128,7 +128,7 @@ export default function AboutPage() {
         <div className="grid grid-cols-3 gap-3">
           {[
             { lang: "English", example: "Send birthday cake to Colombo", color: "var(--ink-2)", bg: "var(--surface-2)" },
-            { lang: "සිංහල", example: "කොළඹ මගේ අම්මාට මල් යවන්න", color: "var(--purple-light)", bg: "var(--purple-soft)" },
+            { lang: "සිංහල", example: "අම්මාගේ උපන්දිනයට ලස්සන කේක් එකක් හොයලා දෙන්න", color: "var(--purple-light)", bg: "var(--purple-soft)" },
             { lang: "Tanglish", example: "Colombo deliver karanawada?", color: "var(--accent)", bg: "var(--accent-soft)" },
           ].map(({ lang, example, color, bg }) => (
             <div
