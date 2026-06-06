@@ -298,7 +298,7 @@ function TrackingRow({ saved, onRemove }: { saved: SavedTracking; onRemove: () =
       {status.progress.length > 0 && (
         <div className="flex flex-col gap-1.5 pt-2" style={{ borderTop: "1px solid var(--border)" }}>
           {status.progress.slice(-3).map((step, i, arr) => (
-            <div key={step.timestamp || step.step} className="flex items-start gap-2 text-[11px]" style={{ color: "var(--ink-2)" }}>
+            <div key={step.timestamp ?? step.step} className="flex items-start gap-2 text-[11px]" style={{ color: "var(--ink-2)" }}>
               <span
                 className="shrink-0 rounded-full"
                 style={{

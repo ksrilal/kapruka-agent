@@ -2,7 +2,7 @@ import { callMcpTool } from "../client";
 import type { SearchProductsInput } from "@/types/mcp";
 
 function hasResults(markdown: string): boolean {
-  return /LKR\s[\d,]+/.test(markdown);
+  return /(?:LKR|USD|GBP|AUD|CAD|EUR)\s[\d,]+/.test(markdown);
 }
 
 function fallbackQueries(input: SearchProductsInput): string[] {

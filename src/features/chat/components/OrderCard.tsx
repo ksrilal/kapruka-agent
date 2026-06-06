@@ -24,7 +24,7 @@ export function OrderCard({ order }: { order: Order }) {
 
       <div className="flex items-center gap-1.5 text-[12px]" style={{ color: "var(--ink-2)" }}>
         <Clock className="h-3 w-3" />
-        <span>Expires {new Date(order.expires_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+        <span>Expires {new Date(order.expires_at).toLocaleTimeString("en-LK", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Colombo" })}</span>
       </div>
 
       <div className="flex items-center justify-between pt-1">
@@ -96,7 +96,7 @@ export function OrderStatusCard({ status }: { status: OrderStatus }) {
       {status.progress.length > 0 && (
         <div className="flex flex-col gap-1 pt-1 border-t" style={{ borderColor: "var(--border)" }}>
           {status.progress.slice(-3).map((step, i, arr) => (
-            <div key={step.timestamp || step.step} className="flex items-start gap-2 text-[11px]" style={{ color: "var(--ink-2)" }}>
+            <div key={step.timestamp ?? step.step} className="flex items-start gap-2 text-[11px]" style={{ color: "var(--ink-2)" }}>
               <span
                 className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full"
                 style={{ background: i === arr.length - 1 ? statusColor : "var(--border-2)", marginTop: "4px" }}

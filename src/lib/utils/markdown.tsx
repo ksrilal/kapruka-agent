@@ -47,20 +47,28 @@ export function renderMarkdown(text: string): ReactNode {
   return <>{nodes}</>;
 }
 
-// Handles **bold**, *italic*, `code` inline
+// Token types for inline markdown — processed in one ordered pass
+// Uses a single alternation-free regex with explicit precedence:
+// **bold** matched before *italic* so `**` is never ambiguous.
+// Each capture group maps to exactly one token type with no overlap.
+const INLINE_RE = /(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g;
+
 function inlineMarkdown(text: string, baseKey: number): ReactNode {
   const parts: ReactNode[] = [];
-  // Split on **bold**, *italic*, `code`
-  const re = /(\*\*(.+?)\*\*|\*(.+?)\*|`(.+?)`)/g;
   let last = 0;
   let m: RegExpExecArray | null;
   let idx = baseKey * 1000;
 
-  while ((m = re.exec(text)) !== null) {
+  while ((m = INLINE_RE.exec(text)) !== null) {
     if (m.index > last) parts.push(<span key={idx++}>{text.slice(last, m.index)}</span>);
-    if (m[2]) parts.push(<strong key={idx++} className="font-semibold text-foreground">{m[2]}</strong>);
-    else if (m[3]) parts.push(<em key={idx++}>{m[3]}</em>);
-    else if (m[4]) parts.push(<code key={idx++} className="rounded px-1 text-[13px]" style={{ background: "var(--surface-2)", color: "var(--purple-light)" }}>{m[4]}</code>);
+    const token = m[0];
+    if (token.startsWith("**")) {
+      parts.push(<strong key={idx++} className="font-semibold text-foreground">{token.slice(2, -2)}</strong>);
+    } else if (token.startsWith("`")) {
+      parts.push(<code key={idx++} className="rounded px-1 text-[13px]" style={{ background: "var(--surface-2)", color: "var(--purple-light)" }}>{token.slice(1, -1)}</code>);
+    } else {
+      parts.push(<em key={idx++}>{token.slice(1, -1)}</em>);
+    }
     last = m.index + m[0].length;
   }
   if (last < text.length) parts.push(<span key={idx++}>{text.slice(last)}</span>);

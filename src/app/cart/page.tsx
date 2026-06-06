@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Minus, Plus, Trash2, ArrowLeft, ShoppingBag } from "lucide-react";
-import { formatLKR } from "@/lib/utils/currency";
+import { formatPrice } from "@/lib/utils/currency";
 import { useCartStore } from "@/features/cart/store";
 import { productId, productPrice, productThumbnail } from "@/types/domain";
 
@@ -74,7 +74,7 @@ export default function CartPage() {
               {/* Info */}
               <div className="flex-1 min-w-0">
                 <p className="truncate text-[13px] font-medium text-(--text-primary)">{product.name}</p>
-                <p className="text-[14px] font-bold text-primary">{formatLKR(price)}</p>
+                <p className="text-[14px] font-bold text-primary">{formatPrice(price, product.price?.currency)}</p>
               </div>
 
               {/* Qty controls */}
@@ -113,7 +113,7 @@ export default function CartPage() {
       <div className="rounded-2xl border border-border bg-(--surface) p-4 shadow-(--shadow-sm)">
         <div className="flex items-center justify-between mb-3">
           <span className="text-[14px] text-muted-foreground">Subtotal</span>
-          <span className="text-[17px] font-bold text-(--text-primary)">{formatLKR(subtotal())}</span>
+          <span className="text-[17px] font-bold text-(--text-primary)">{formatPrice(subtotal(), items[0]?.product.price?.currency)}</span>
         </div>
         <Link
           href="/"

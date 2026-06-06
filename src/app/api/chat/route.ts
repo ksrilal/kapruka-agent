@@ -38,7 +38,7 @@ function checkRateLimit(ip: string): boolean {
   const now = Date.now();
 
   // Evict expired entries periodically to prevent unbounded growth
-  if (RATE_LIMIT_MAP.size > 1000) {
+  if (RATE_LIMIT_MAP.size >= 1000) {
     for (const [key, val] of RATE_LIMIT_MAP) {
       if (now > val.resetAt) RATE_LIMIT_MAP.delete(key);
     }
@@ -140,23 +140,45 @@ async function* chatGenerator(
     ranges.push([m.index, m.index + m[0].length]);
   }
 
-  // Bare {"__type":...} objects — brace-count from each occurrence
+  // Bare {"__type":...} objects — scan forward trying progressively longer slices
+  // until JSON.parse succeeds. This correctly handles } inside string values,
+  // unlike a naive brace counter.
   let pos = 0;
   while (true) {
     const idx = result.text.indexOf('{"__type":', pos);
     if (idx === -1) break;
     // Skip if already inside a fenced range
     if (ranges.some(([s, e]) => idx >= s && idx < e)) { pos = idx + 1; continue; }
-    let depth = 0, end = -1;
+    // Find candidate end positions at each top-level `}` and try parsing
+    let depth = 0, found = false;
     for (let i = idx; i < result.text.length; i++) {
-      if (result.text[i] === "{") depth++;
-      else if (result.text[i] === "}") { depth--; if (depth === 0) { end = i; break; } }
+      const ch = result.text[i];
+      // Skip string contents so } inside strings don't affect depth
+      if (ch === '"') {
+        i++;
+        while (i < result.text.length && result.text[i] !== '"') {
+          if (result.text[i] === "\\") i++; // skip escaped char
+          i++;
+        }
+        continue;
+      }
+      if (ch === "{") depth++;
+      else if (ch === "}") {
+        depth--;
+        if (depth === 0) {
+          const candidate = result.text.slice(idx, i + 1);
+          try {
+            JSON.parse(candidate); // validate before accepting
+            structuredBlocks.push(candidate);
+            ranges.push([idx, i + 1]);
+            pos = i + 1;
+            found = true;
+          } catch { /* malformed — skip */ }
+          break;
+        }
+      }
     }
-    if (end > idx) {
-      structuredBlocks.push(result.text.slice(idx, end + 1));
-      ranges.push([idx, end + 1]);
-    }
-    pos = end > idx ? end + 1 : idx + 1;
+    if (!found) pos = idx + 1;
   }
 
   // Step 2: emit structured events

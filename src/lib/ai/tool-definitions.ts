@@ -16,12 +16,13 @@ export const aiTools = {
     z.object({
       q: z.string().optional().describe("Search keyword, e.g. 'birthday cake'."),
       category: z.string().optional().describe("Category name filter, e.g. 'Birthday', 'Flowers', 'Cakes'."),
-      min_price: z.number().optional().describe("Minimum price in LKR."),
-      max_price: z.number().optional().describe("Maximum price in LKR."),
+      min_price: z.number().optional().describe("Minimum price in the requested currency."),
+      max_price: z.number().optional().describe("Maximum price in the requested currency."),
       in_stock_only: z.boolean().optional().describe("Set true to exclude out-of-stock items."),
       sort: z.string().optional().describe("Sort order: relevance, price_asc, price_desc, newest, bestseller."),
       limit: z.number().optional().describe("Results per page, max 50. Default 10."),
       cursor: z.string().optional().describe("Pagination cursor from previous search response."),
+      currency: z.enum(["LKR", "USD", "GBP", "AUD", "CAD", "EUR"]).optional().describe("Currency for returned prices. Default LKR. Use when user requests prices in a specific currency."),
     })
   ),
 
@@ -29,6 +30,7 @@ export const aiTools = {
     "Get full details for a specific Kapruka product by its ID: description, variants, images, stock level, and shipping info.",
     z.object({
       product_id: z.string().describe("Kapruka product ID, e.g. 'cake00ka002034'."),
+      currency: z.enum(["LKR", "USD", "GBP", "AUD", "CAD", "EUR"]).optional().describe("Currency for returned prices. Match the currency used in the current session."),
     })
   ),
 
@@ -80,6 +82,7 @@ export const aiTools = {
         anonymous: z.boolean().optional(),
       }),
       gift_message: z.string().optional().describe("Optional gift card message, max 300 chars."),
+      currency: z.enum(["LKR", "USD", "GBP", "AUD", "CAD", "EUR"]).optional().describe("Currency for the order total. Match the currency used throughout the session."),
     })
   ),
 

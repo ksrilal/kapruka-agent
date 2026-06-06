@@ -25,7 +25,7 @@ export function ProductCarousel({ products, label }: Props) {
       {/* Wrapping grid — responsive columns */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 pb-1">
         {products.map((p, i) => (
-          <div key={`${productId(p)}-${i}`} style={{ minWidth: 0 }}>
+          <div key={productId(p)} style={{ minWidth: 0 }}>
             <ProductCard product={p} priority={i < 4} />
           </div>
         ))}

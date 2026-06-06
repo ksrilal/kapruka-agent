@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { ExternalLink, ShoppingCart, Check } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
-import { formatLKR } from "@/lib/utils/currency";
+import { formatPrice } from "@/lib/utils/currency";
 import { productPrice, productOriginalPrice, productId } from "@/types/domain";
 import { useCartStore } from "@/features/cart/store";
 import { useProductImage } from "@/lib/hooks/useProductImage";
@@ -198,10 +198,10 @@ export function ProductCard({ product, priority }: Props) {
         <div className="flex items-center justify-between gap-2 mt-auto">
           <div>
             <p className="text-[15px] font-bold tracking-tight" style={{ color: "var(--purple-light)" }}>
-              {formatLKR(price)}
+              {formatPrice(price, product.price?.currency)}
             </p>
             {originalPrice && (
-              <p className="t-micro text-muted-foreground line-through">{formatLKR(originalPrice)}</p>
+              <p className="t-micro text-muted-foreground line-through">{formatPrice(originalPrice, product.compare_at_price?.currency)}</p>
             )}
           </div>
           {/* Tap hint */}

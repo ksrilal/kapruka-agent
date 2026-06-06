@@ -5,7 +5,7 @@ import { X, Minus, Plus, Trash2, ShoppingBag, Sparkles, ShoppingCart } from "luc
 import { useCartStore } from "@/features/cart/store";
 import { useShopStore } from "@/features/shop/store";
 import { productId, productPrice } from "@/types/domain";
-import { formatLKR } from "@/lib/utils/currency";
+import { formatPrice } from "@/lib/utils/currency";
 import { useProductImage } from "@/lib/hooks/useProductImage";
 import type { CartLineItem } from "@/features/cart/store";
 
@@ -64,7 +64,7 @@ function CartItemRow({
             {product.name}
           </p>
           <p className="mt-1 text-[15px] font-bold" style={{ color: "var(--purple-light)" }}>
-            {formatLKR(price * quantity)}
+            {formatPrice(price * quantity, product.price?.currency)}
           </p>
         </div>
 
@@ -150,16 +150,17 @@ export function CartPanel() {
 
   const count = itemCount();
   const total = subtotal();
+  const cartCurrency = items[0]?.product.price?.currency ?? "LKR";
 
   function handleCheckout() {
     if (!sendMessage) return;
     const itemList = items
-      .map((i) => `${i.quantity}x ${i.product.name} (LKR ${productPrice(i.product).toLocaleString()})`)
+      .map((i) => `${i.quantity}x ${i.product.name} (${cartCurrency} ${productPrice(i.product).toLocaleString()})`)
       .join(", ");
     close();
     clear();
     sendMessage(
-      `I want to checkout. My cart has: ${itemList}. Total: LKR ${total.toLocaleString()}. Please help me place the order.`
+      `I want to checkout. My cart has: ${itemList}. Total: ${cartCurrency} ${total.toLocaleString()}. Please help me place the order.`
     );
   }
 
@@ -168,10 +169,11 @@ export function CartPanel() {
     const line = items.find((i) => productId(i.product) === pid);
     if (!line) return;
     const price = productPrice(line.product);
+    const cur = line.product.price?.currency ?? "LKR";
     close();
     clear();
     sendMessage(
-      `I want to order ${line.quantity}x ${line.product.name} (LKR ${(price * line.quantity).toLocaleString()}). Please help me place the order.`
+      `I want to order ${line.quantity}x ${line.product.name} (${cur} ${(price * line.quantity).toLocaleString()}). Please help me place the order.`
     );
   }
 
@@ -259,7 +261,7 @@ export function CartPanel() {
             <div className="flex items-baseline justify-between">
               <span className="t-small" style={{ color: "var(--ink-2)" }}>Subtotal</span>
               <span className="text-[20px] font-bold tracking-tight" style={{ color: "var(--ink)" }}>
-                {formatLKR(total)}
+                {formatPrice(total, cartCurrency)}
               </span>
             </div>
 
