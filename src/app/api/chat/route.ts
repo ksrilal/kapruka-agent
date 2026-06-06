@@ -61,7 +61,7 @@ async function* chatGenerator(
   let orchestratorResolve: () => void;
   const orchestratorPromise = new Promise<void>((r) => { orchestratorResolve = r; });
 
-  let result;
+  let result: import("@/lib/ai/orchestrator").OrchestratorResult | undefined;
   const orchestratorRun = runOrchestrator(body.messages, locale, (tool, status) => {
     toolQueue.push({ tool, status });
     orchestratorResolve?.();
