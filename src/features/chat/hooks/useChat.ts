@@ -62,7 +62,7 @@ export function useChat() {
       addMessage(assistantMsg);
       setStreaming(true);
 
-      // Build history for Gemini: text content only — products/order data are UI state,
+      // Build history: text content only — products/order data are UI state,
       // not conversational context, and bloat the token count significantly.
       const history = useChatStore
         .getState()
@@ -74,10 +74,10 @@ export function useChat() {
           !m.isError
         )
         .map((m) => ({
-          role: m.role === "user" ? "user" : ("model" as "user" | "model"),
-          parts: [{ text: m.content }],
+          role: m.role as "user" | "assistant",
+          content: m.content,
         }));
-      history.push({ role: "user", parts: [{ text }] });
+      history.push({ role: "user", content: text });
 
       abortRef.current = new AbortController();
       try {

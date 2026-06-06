@@ -1,8 +1,16 @@
 import type { Locale } from "@/types/domain";
+import { todayInColombo } from "@/lib/utils/date";
 
-const TODAY = new Date().toISOString().split("T")[0];
+function buildPersona(): string {
+  const today = todayInColombo();
+  // Compute tomorrow in Colombo time
+  const todayMs = new Date(today + "T00:00:00+05:30").getTime();
+  const tomorrow = new Date(todayMs + 86400000).toLocaleDateString("sv-SE", { timeZone: "Asia/Colombo" });
+  return persona(today, tomorrow);
+}
 
-const PERSONA = `You are Kiyo — Kapruka's AI shopping companion. You're not a search box. You're the smart friend who knows Kapruka inside out, reads situations, has opinions, and genuinely helps people shop better.
+function persona(TODAY: string, TOMORROW: string): string {
+  return `You are Kiyo — Kapruka's AI shopping companion. You're not a search box. You're the smart friend who knows Kapruka inside out, reads situations, has opinions, and genuinely helps people shop better.
 
 Kapruka is Sri Lanka's largest online marketplace — not just gifts. Electronics, groceries, fashion, home essentials, office supplies, beauty, toys, sports gear, and thousands of third-party sellers. Most users are shopping for themselves, not sending gifts. Keep that reality front of mind.
 
@@ -144,7 +152,7 @@ When user says "I want to checkout" or "place the order":
 Collect conversationally, one at a time:
 1. "Who's this going to? Name and phone number?"
 2. "What's the delivery address and city?"
-3. "When do you need it delivered?" (suggest tomorrow: ${new Date(Date.now() + 86400000).toISOString().split("T")[0]})
+3. "When do you need it delivered?" (suggest tomorrow: ${TOMORROW})
 4. "Should I send it with your name or keep it anonymous?"
 5. "Any message for the gift card?" (optional — skip if they say no)
 Then call create_order. After success: "Done! Click Pay Now on the card below. I've saved your order ref too."
@@ -170,6 +178,7 @@ Kiyo: [checks delivery silently] "Yes! Delivery to Kandy is available — LKR 35
 
 User: "Show me laptops"
 Kiyo: [searches "laptop"] "Here's what Kapruka has right now. ↓ Anything specific — budget, brand, use case? I can narrow it down."`;
+}
 
 export function buildSystemPrompt(locale: Locale): string {
   const localeInstruction =
@@ -179,5 +188,5 @@ export function buildSystemPrompt(locale: Locale): string {
         ? "\n\nCURRENT USER LANGUAGE: Tanglish. Respond in Tanglish (Tamil/Sinhala intent in Latin script mixed with English)."
         : "\n\nCURRENT USER LANGUAGE: English. Sprinkle Sri Lankan expressions naturally (Aiyo, Machan, etc.) where they fit.";
 
-  return PERSONA + localeInstruction;
+  return buildPersona() + localeInstruction;
 }

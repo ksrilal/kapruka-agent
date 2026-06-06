@@ -1,11 +1,16 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
-import { X, Package, ExternalLink, Clock, Trash2, RefreshCw } from "lucide-react";
-import { useOrdersStore } from "@/features/orders/store";
-import { useShopStore } from "@/features/shop/store";
+import {
+  X, Package, ExternalLink, Clock, Trash2, RefreshCw, CheckCircle2, XCircle, Loader2,
+} from "lucide-react";
+import { useOrdersStore, isTerminal } from "@/features/orders/store";
+import { useOrderPolling } from "@/features/orders/hooks/useOrderPolling";
 import type { SavedOrder, SavedTracking } from "@/features/orders/store";
+import type { OrderStatus } from "@/types/domain";
+
+// ─── helpers ──────────────────────────────────────────────────────────────────
 
 function timeLeft(expiresAt: string): string {
   const ms = new Date(expiresAt).getTime() - Date.now();
@@ -18,12 +23,66 @@ function timeLeft(expiresAt: string): string {
 function statusColor(status: string): string {
   if (status === "delivered") return "var(--green)";
   if (status === "cancelled") return "var(--destructive)";
+  if (status === "shipped") return "#3b82f6";
   return "var(--purple-light)";
 }
+
+function StatusBadge({ status, display }: { status: string; display: string }) {
+  const color = statusColor(status);
+  const terminal = isTerminal(status);
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
+      style={{
+        background: `${color}18`,
+        color,
+        border: `1px solid ${color}40`,
+      }}
+    >
+      {terminal && status === "delivered" && <CheckCircle2 className="h-3 w-3" />}
+      {terminal && status === "cancelled" && <XCircle className="h-3 w-3" />}
+      {display}
+    </span>
+  );
+}
+
+// ─── PendingOrderRow ──────────────────────────────────────────────────────────
 
 function PendingOrderRow({ saved, onRemove }: { saved: SavedOrder; onRemove: () => void }) {
   const { order, itemNames } = saved;
   const expired = new Date(order.expires_at).getTime() <= Date.now();
+
+  const [showPaidInput, setShowPaidInput] = useState(false);
+  const [orderNum, setOrderNum] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const promotePendingToTracked = useOrdersStore((s) => s.promotePendingToTracked);
+
+  async function handleConfirmPayment() {
+    const num = orderNum.trim();
+    if (!num) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/orders/track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order_number: num }),
+      });
+      if (!res.ok) {
+        const data = await res.json() as { error?: string };
+        setError(data.error ?? "Order not found. Check the number from your confirmation email.");
+        return;
+      }
+      const data = await res.json() as { status: OrderStatus };
+      promotePendingToTracked(order.order_ref, data.status);
+    } catch {
+      setError("Network error — please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <div
@@ -34,12 +93,10 @@ function PendingOrderRow({ saved, onRemove }: { saved: SavedOrder; onRemove: () 
         opacity: expired ? 0.6 : 1,
       }}
     >
+      {/* Top row: image + name + delete */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-3">
-          <div
-            className="h-12 w-12 shrink-0 rounded-xl overflow-hidden"
-            style={{ background: "var(--surface-2)" }}
-          >
+          <div className="h-12 w-12 shrink-0 rounded-xl overflow-hidden" style={{ background: "var(--surface-2)" }}>
             {saved.imageUrl ? (
               <Image
                 src={saved.imageUrl}
@@ -75,6 +132,7 @@ function PendingOrderRow({ saved, onRemove }: { saved: SavedOrder; onRemove: () 
         </button>
       </div>
 
+      {/* Amount + Pay Now / expiry */}
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-0.5">
           <p className="text-[16px] font-bold" style={{ color: "var(--gold)" }}>
@@ -85,7 +143,6 @@ function PendingOrderRow({ saved, onRemove }: { saved: SavedOrder; onRemove: () 
             <span>{timeLeft(order.expires_at)}</span>
           </div>
         </div>
-
         {!expired && (
           <a
             href={order.checkout_url}
@@ -101,19 +158,97 @@ function PendingOrderRow({ saved, onRemove }: { saved: SavedOrder; onRemove: () 
           </a>
         )}
       </div>
+
+      {/* "I've paid" section */}
+      {!showPaidInput ? (
+        <button
+          onClick={() => setShowPaidInput(true)}
+          className="text-[11px] font-medium underline-offset-2 hover:underline transition-colors text-left"
+          style={{ color: "var(--purple-light)" }}
+        >
+          Already paid? Enter your order number →
+        </button>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <p className="text-[11px]" style={{ color: "var(--ink-2)" }}>
+            Enter the order number from your confirmation email (e.g. VIMP34456CB2):
+          </p>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={orderNum}
+              onChange={(e) => setOrderNum(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") void handleConfirmPayment(); }}
+              placeholder="e.g. VIMP34456CB2"
+              className="flex-1 min-w-0 rounded-xl px-3 py-2 text-[12px] outline-none"
+              style={{
+                background: "var(--surface-2)",
+                border: "1px solid var(--border-2)",
+                color: "var(--ink)",
+              }}
+              autoFocus
+              disabled={loading}
+            />
+            <button
+              onClick={() => void handleConfirmPayment()}
+              disabled={loading || !orderNum.trim()}
+              className="flex items-center gap-1 rounded-xl px-3 py-2 text-[12px] font-semibold text-white disabled:opacity-40"
+              style={{ background: "var(--purple)" }}
+            >
+              {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Track"}
+            </button>
+          </div>
+          {error && <p className="text-[11px]" style={{ color: "var(--destructive)" }}>{error}</p>}
+          <button
+            onClick={() => { setShowPaidInput(false); setError(null); setOrderNum(""); }}
+            className="text-[11px] text-left"
+            style={{ color: "var(--ink-3)" }}
+          >
+            Cancel
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
-function TrackingRow({ saved, onRemove, onRetrack }: { saved: SavedTracking; onRemove: () => void; onRetrack: () => void }) {
+// ─── TrackingRow ──────────────────────────────────────────────────────────────
+
+function TrackingRow({ saved, onRemove }: { saved: SavedTracking; onRemove: () => void }) {
   const { status } = saved;
   const color = statusColor(status.status);
+  const terminal = isTerminal(status.status);
+  const updateTracking = useOrdersStore((s) => s.updateTracking);
+
+  const [refreshing, setRefreshing] = useState(false);
+
+  async function handleManualRefresh() {
+    if (refreshing || terminal) return;
+    setRefreshing(true);
+    try {
+      const res = await fetch("/api/orders/track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order_number: status.order_number }),
+      });
+      if (res.ok) {
+        const data = await res.json() as { status: OrderStatus };
+        updateTracking(status.order_number, data.status);
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   return (
     <div
       className="group rounded-2xl p-4 flex flex-col gap-3"
-      style={{ background: "var(--surface)", border: "1px solid var(--border-2)" }}
+      style={{
+        background: "var(--surface)",
+        border: `1px solid ${terminal ? `${color}30` : "var(--border-2)"}`,
+      }}
     >
+      {/* Header */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
           <div
@@ -126,21 +261,28 @@ function TrackingRow({ saved, onRemove, onRetrack }: { saved: SavedTracking; onR
             <p className="text-[12px] font-semibold" style={{ color: "var(--ink)" }}>
               #{status.order_number}
             </p>
-            <p className="text-[11px] font-medium" style={{ color }}>
-              {status.status_display}
-            </p>
+            <StatusBadge status={status.status} display={status.status_display} />
           </div>
         </div>
+
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onClick={onRetrack} style={{ color: "var(--ink-3)" }} aria-label="Refresh tracking">
-            <RefreshCw className="h-3.5 w-3.5" />
-          </button>
+          {!terminal && (
+            <button
+              onClick={() => void handleManualRefresh()}
+              disabled={refreshing}
+              style={{ color: "var(--ink-3)" }}
+              aria-label="Refresh tracking"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+            </button>
+          )}
           <button onClick={onRemove} style={{ color: "var(--ink-3)" }} aria-label="Remove">
             <Trash2 className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>
 
+      {/* Details grid */}
       <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
         <span style={{ color: "var(--ink-3)" }}>Recipient</span>
         <span style={{ color: "var(--ink)" }}>{status.recipient.name}</span>
@@ -152,11 +294,9 @@ function TrackingRow({ saved, onRemove, onRetrack }: { saved: SavedTracking; onR
         <span style={{ color: "var(--gold)" }}>LKR {status.amount}</span>
       </div>
 
+      {/* Progress timeline */}
       {status.progress.length > 0 && (
-        <div
-          className="flex flex-col gap-1.5 pt-2"
-          style={{ borderTop: "1px solid var(--border)" }}
-        >
+        <div className="flex flex-col gap-1.5 pt-2" style={{ borderTop: "1px solid var(--border)" }}>
           {status.progress.slice(-3).map((step, i, arr) => (
             <div key={i} className="flex items-start gap-2 text-[11px]" style={{ color: "var(--ink-2)" }}>
               <span
@@ -171,42 +311,45 @@ function TrackingRow({ saved, onRemove, onRetrack }: { saved: SavedTracking; onR
           ))}
         </div>
       )}
+
+      {/* Live poll indicator — only for non-terminal */}
+      {!terminal && (
+        <p className="text-[10px]" style={{ color: "var(--ink-3)" }}>
+          Auto-updates every minute · Last updated{" "}
+          {saved.lastPolledAt
+            ? new Date(saved.lastPolledAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+            : "never"}
+        </p>
+      )}
     </div>
   );
 }
 
-export function OrdersPanel() {
-  const isOpen = useOrdersStore((s) => s.isOpen);
-  const close = useOrdersStore((s) => s.close);
+// ─── OrdersPanel ──────────────────────────────────────────────────────────────
+
+// Inner component — only mounted when the panel is open, so hooks (polling,
+// pruning) only run while the user has the panel visible.
+function OrdersPanelContent({ onClose }: { onClose: () => void }) {
   const pending = useOrdersStore((s) => s.pending);
   const tracked = useOrdersStore((s) => s.tracked);
   const removePending = useOrdersStore((s) => s.removePending);
   const removeTracking = useOrdersStore((s) => s.removeTracking);
   const pruneExpired = useOrdersStore((s) => s.pruneExpired);
-  const sendMessage = useShopStore((s) => s.sendMessage);
 
-  // Prune expired orders whenever panel opens — must be in useEffect, not render body
+  // Polling only runs while this component is mounted (panel open)
+  useOrderPolling();
+
   useEffect(() => {
-    if (isOpen) pruneExpired();
-  }, [isOpen, pruneExpired]);
-
-  if (!isOpen) return null;
+    pruneExpired();
+  }, [pruneExpired]);
 
   const totalCount = pending.length + tracked.length;
 
-  function handleRetrack(orderNumber: string) {
-    close();
-    sendMessage?.(`Track my order ${orderNumber}`);
-  }
-
   return (
     <>
-      <div className="backdrop" onClick={close} style={{ zIndex: 70 }} />
+      <div className="backdrop" onClick={onClose} style={{ zIndex: 70 }} />
 
-      <aside
-        className="cart-panel glass-dark anim-slide-left flex flex-col"
-        style={{ zIndex: 80 }}
-      >
+      <aside className="cart-panel glass-dark anim-slide-left flex flex-col" style={{ zIndex: 80 }}>
         {/* Header */}
         <div
           className="flex items-center justify-between px-6 py-5"
@@ -219,7 +362,7 @@ export function OrdersPanel() {
             </p>
           </div>
           <button
-            onClick={close}
+            onClick={onClose}
             className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors active:scale-95"
             style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
           >
@@ -267,7 +410,6 @@ export function OrdersPanel() {
                   key={saved.status.order_number}
                   saved={saved}
                   onRemove={() => removeTracking(saved.status.order_number)}
-                  onRetrack={() => handleRetrack(saved.status.order_number)}
                 />
               ))}
             </div>
@@ -276,4 +418,11 @@ export function OrdersPanel() {
       </aside>
     </>
   );
+}
+
+export function OrdersPanel() {
+  const isOpen = useOrdersStore((s) => s.isOpen);
+  const close = useOrdersStore((s) => s.close);
+  if (!isOpen) return null;
+  return <OrdersPanelContent onClose={close} />;
 }

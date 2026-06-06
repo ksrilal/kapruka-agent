@@ -1,5 +1,5 @@
 const MCP_URL = process.env.KAPRUKA_MCP_URL ?? "https://mcp.kapruka.com/mcp";
-const MAX_RETRIES = 0;
+const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 300;
 const FETCH_TIMEOUT_MS = 25_000;
 

@@ -99,8 +99,7 @@ export default function TermsPage() {
 
         <Section title="7. AI-Generated Content">
           <p>
-            Kiyo uses a large language model (Google Gemini) to generate responses. While we
-            strive for accuracy:
+            Kiyo uses a large language model (such as Google Gemini, Anthropic Claude, or OpenAI GPT-4) to generate responses. While we strive for accuracy:
           </p>
           <ul className="flex flex-col gap-2 list-none mt-2">
             <Li>AI responses may occasionally contain errors, inaccuracies, or outdated information.</Li>
@@ -182,14 +181,14 @@ export default function TermsPage() {
           <p>
             For legal enquiries, contact Kapruka Holdings (Pvt) Ltd:<br />
             <a
-              href="mailto:legal@kapruka.com"
+              href="mailto:colombo.office@kapruka.com"
               className="underline underline-offset-2 transition-colors hover:text-foreground"
               style={{ color: "var(--purple-light)" }}
             >
-              legal@kapruka.com
+              colombo.office@kapruka.com
             </a>
             <br />
-            No. 1, Aloe Avenue, Colombo 03, Sri Lanka.
+            147 Old Kottawa Road, Nugegoda 10250, Sri Lanka
           </p>
         </Section>
 

@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { runOrchestrator } from "@/lib/ai/orchestrator";
-import { createSSEStream, encodeSSE } from "@/lib/ai/streaming";
+import { createSSEStream } from "@/lib/ai/streaming";
 import { detectLocale } from "@/lib/utils/unicode";
 import type { ChatSSEEvent } from "@/types/ai";
 import type { Locale } from "@/types/domain";
@@ -10,8 +10,9 @@ const ChatRequestSchema = z.object({
   messages: z
     .array(
       z.object({
-        role: z.enum(["user", "model"]),
-        parts: z.array(z.object({ text: z.string() })),
+        // Accept both "model" (legacy Gemini) and "assistant" (OpenAI/Claude)
+        role: z.enum(["user", "assistant", "model"]),
+        content: z.string(),
       })
     )
     .min(1),
@@ -48,38 +49,53 @@ async function* chatGenerator(
   const lastUserMessage = [...body.messages]
     .reverse()
     .find((m) => m.role === "user");
-  const userText =
-    lastUserMessage?.parts.map((p) => p.text).join("") ?? "";
+  const userText = lastUserMessage?.content ?? "";
 
   const locale: Locale =
     body.locale ?? detectLocale(userText);
 
-  // Channel to forward tool_call events from the orchestrator into the generator
+  // Channel to forward tool_call events from the orchestrator into the generator.
+  // Uses a "notify" latch: the drain loop creates a fresh promise+resolve pair
+  // BEFORE suspending, so any concurrent orchestrator callback always has a live
+  // resolve to call — eliminating the race where done fires before we await.
   type ToolEvent = { tool: string; status: "running" | "done" };
   const toolQueue: ToolEvent[] = [];
   let orchestratorDone = false;
-  let orchestratorResolve: () => void;
-  const orchestratorPromise = new Promise<void>((r) => { orchestratorResolve = r; });
+
+  let notifyResolve: (() => void) | undefined;
+  function notify() {
+    const r = notifyResolve;
+    notifyResolve = undefined;
+    r?.();
+  }
+  function waitForNotify() {
+    return new Promise<void>((r) => { notifyResolve = r; });
+  }
 
   let result: import("@/lib/ai/orchestrator").OrchestratorResult | undefined;
   const orchestratorRun = runOrchestrator(body.messages, locale, (tool, status) => {
     toolQueue.push({ tool, status });
-    orchestratorResolve?.();
-    orchestratorPromise; // keep reference
+    notify();
   }).then((r) => {
     result = r;
     orchestratorDone = true;
-    orchestratorResolve?.();
+    notify();
   }).catch((err) => {
     console.error({ event: "chat_error", message: (err as Error).message });
     orchestratorDone = true;
-    orchestratorResolve?.();
+    notify();
   });
 
   // Drain tool events while orchestrator runs
   while (!orchestratorDone || toolQueue.length > 0) {
     if (toolQueue.length === 0 && !orchestratorDone) {
-      await new Promise<void>((r) => { orchestratorResolve = r; });
+      // Register the resolve BEFORE suspending so concurrent notify() calls land
+      const pending = waitForNotify();
+      // Re-check after registering — orchestrator may have finished between the
+      // while-condition check and this line
+      if (!orchestratorDone && toolQueue.length === 0) {
+        await pending;
+      }
       continue;
     }
     const ev = toolQueue.shift();

@@ -16,10 +16,6 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "kapruka.com",
       },
-      {
-        protocol: "https",
-        hostname: "static2.kapruka.com",
-      },
     ],
   },
 };

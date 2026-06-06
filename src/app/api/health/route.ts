@@ -7,7 +7,8 @@ export async function GET() {
     status: "ok",
     ts: new Date().toISOString(),
     env: {
-      gemini: !!process.env.GEMINI_API_KEY,
+      ai: !!process.env.AI_API_KEY,
+      ai_provider: process.env.AI_PROVIDER ?? "google",
       mcp: !!process.env.KAPRUKA_MCP_URL,
     },
   });

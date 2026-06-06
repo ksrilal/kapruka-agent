@@ -74,19 +74,11 @@ export default function PrivacyPage() {
 
         <Section title="4. AI Processing">
           <p>
-            Kiyo is powered by Google Gemini. Messages you send may be processed by Google's AI
-            infrastructure subject to{" "}
-            <a
-              href="https://policies.google.com/privacy"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline underline-offset-2 transition-colors hover:text-foreground"
-              style={{ color: "var(--purple-light)" }}
-            >
-              Google's Privacy Policy
-            </a>
-            . We do not pass personally identifiable information to the AI model unless you
-            include it in a message yourself (e.g. a delivery address).
+            Kiyo is powered by a third-party large language model (such as Google Gemini,
+            Anthropic Claude, or OpenAI GPT-4). Messages you send may be processed by the
+            respective AI provider's infrastructure, subject to their privacy policies. We do not
+            pass personally identifiable information to the AI model unless you include it in a
+            message yourself (e.g. a delivery address).
           </p>
         </Section>
 
@@ -118,11 +110,11 @@ export default function PrivacyPage() {
           <p className="mt-3">
             To exercise any of these rights, email{" "}
             <a
-              href="mailto:privacy@kapruka.com"
+              href="mailto:colombo.office@kapruka.com"
               className="underline underline-offset-2 transition-colors hover:text-foreground"
               style={{ color: "var(--purple-light)" }}
             >
-              privacy@kapruka.com
+              colombo.office@kapruka.com
             </a>
             .
           </p>
@@ -144,7 +136,7 @@ export default function PrivacyPage() {
           </p>
           <ul className="flex flex-col gap-2 list-none mt-2">
             <Li><strong className="text-foreground">Kapruka.com</strong> — order fulfilment, payment processing, and logistics.</Li>
-            <Li><strong className="text-foreground">Google Gemini</strong> — AI language model processing.</Li>
+            <Li><strong className="text-foreground">AI language model provider</strong> — large language model processing (Google Gemini, Anthropic Claude, or OpenAI GPT-4 depending on configuration).</Li>
             <Li><strong className="text-foreground">Vercel</strong> — hosting and edge network.</Li>
           </ul>
         </Section>
@@ -161,14 +153,14 @@ export default function PrivacyPage() {
           <p>
             For privacy-related enquiries, contact Kapruka Holdings (Pvt) Ltd:<br />
             <a
-              href="mailto:privacy@kapruka.com"
+              href="mailto:colombo.office@kapruka.com"
               className="underline underline-offset-2 transition-colors hover:text-foreground"
               style={{ color: "var(--purple-light)" }}
             >
-              privacy@kapruka.com
+              colombo.office@kapruka.com
             </a>
             <br />
-            No. 1, Aloe Avenue, Colombo 03, Sri Lanka.
+            147 Old Kottawa Road, Nugegoda 10250, Sri Lanka
           </p>
         </Section>
 
