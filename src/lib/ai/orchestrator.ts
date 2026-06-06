@@ -130,18 +130,30 @@ export async function runOrchestrator(
       return { text: result.text, embedded };
     }
 
-    // Execute all tool calls in this round (may be parallel)
+    // Execute all tool calls in this round (may be parallel).
+    // Errors are caught per-call and returned as structured error strings so
+    // the AI can read them and craft a helpful reply instead of crashing the request.
     const toolResultParts: ToolResultPart[] = await Promise.all(
       toolCalls.map(async (tc) => {
         onToolCall?.(tc.toolName, "running");
-        const toolResult = await executeTool(tc.toolName, tc.input as Record<string, unknown>);
+        let value: string;
+        try {
+          const toolResult = await executeTool(tc.toolName, tc.input as Record<string, unknown>);
+          embedded.push(toolResult);
+          value = String(toolResult);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          const is429 = msg.includes("429");
+          value = is429
+            ? `TOOL_ERROR: Kapruka is rate-limiting requests right now (429). Tell the user Kapruka is busy and ask them to try again in a moment. Do not retry the tool.`
+            : `TOOL_ERROR: ${msg}. Tell the user the tool failed and suggest trying again or rephrasing. Do not invent results.`;
+        }
         onToolCall?.(tc.toolName, "done");
-        embedded.push(toolResult);
         return {
           type: "tool-result" as const,
           toolCallId: tc.toolCallId,
           toolName: tc.toolName,
-          output: { type: "text" as const, value: String(toolResult) },
+          output: { type: "text" as const, value },
         };
       })
     );
