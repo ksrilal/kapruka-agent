@@ -11,6 +11,7 @@ const TOOL_LABELS: Record<string, string> = {
   check_delivery:       "Checking delivery options",
   create_order:         "Creating your order",
   track_order:          "Tracking your order",
+  __response__:         "Preparing response",
 };
 
 function label(tool: string) {
@@ -70,7 +71,9 @@ export function ThinkingIndicator({ toolSteps, isStreaming }: Props) {
             </div>
           ))}
 
-          {isStreaming && toolSteps!.every((s) => s.status === "done") && (
+          {isStreaming &&
+            toolSteps!.every((s) => s.status === "done") &&
+            !toolSteps!.some((s) => s.tool === "__response__") && (
             <div className="flex items-center gap-2">
               <span
                 className="h-2.5 w-2.5 rounded-full border-2 border-t-transparent animate-spin shrink-0"

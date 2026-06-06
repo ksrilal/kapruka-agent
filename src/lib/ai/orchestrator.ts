@@ -87,6 +87,13 @@ async function executeTool(name: string, args: Record<string, unknown>): Promise
   }
 }
 
+// Per-call timeout — keeps total request well within Vercel's 25s limit
+const GENERATE_TIMEOUT_MS = 20_000;
+
+function withTimeout(ms: number): AbortSignal {
+  return AbortSignal.timeout(ms);
+}
+
 // ─── Orchestrator ─────────────────────────────────────────────────────────────
 
 export async function runOrchestrator(
@@ -113,6 +120,8 @@ export async function runOrchestrator(
       system: systemPrompt,
       messages: currentMessages,
       tools: aiTools,
+      maxRetries: 0,
+      abortSignal: withTimeout(GENERATE_TIMEOUT_MS),
     });
 
     // staticToolCalls are the typed ones (our known tools)
@@ -147,11 +156,18 @@ export async function runOrchestrator(
     ];
   }
 
+  // Signal UI that synthesis is starting (tools done, now generating final reply)
+  onToolCall?.("__response__", "running");
+
   // Fallback: get final text after max rounds
   const final = await generateText({
     model,
     system: systemPrompt,
     messages: currentMessages,
+    maxRetries: 0,
+    abortSignal: withTimeout(GENERATE_TIMEOUT_MS),
   });
+
+  onToolCall?.("__response__", "done");
   return { text: final.text, embedded };
 }
