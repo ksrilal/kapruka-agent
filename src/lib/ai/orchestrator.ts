@@ -53,7 +53,7 @@ function buildModel(): LanguageModel {
     default: {
       const apiKey = process.env.AI_API_KEY ?? process.env.GOOGLE_API_KEY;
       if (!apiKey) throw new Error("GOOGLE_API_KEY not set");
-      const modelId = process.env.AI_MODEL ?? process.env.GOOGLE_AI_MODEL ?? "models/gemini-2.0-flash";
+      const modelId = process.env.AI_MODEL ?? process.env.GOOGLE_AI_MODEL ?? "models/gemini-3.5-flash";
       return createGoogleGenerativeAI({ apiKey })(modelId);
     }
   }
