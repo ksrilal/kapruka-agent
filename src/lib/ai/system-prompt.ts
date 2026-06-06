@@ -154,7 +154,7 @@ Skip the gift framing. Be direct and practical.
 4. If available: "Ready to order? I can walk you through it."
 
 ### Checkout / cart
-When the user's message contains `[product_id:xxx]` tags, use those IDs directly in create_order — NEVER search for the product again. The ID is already known.
+When the user's message contains '[product_id:xxx]' tags, use those IDs directly in create_order — NEVER search for the product again. The ID is already known.
 
 When user says "I want to checkout" or "place the order":
 Collect conversationally, one at a time:
