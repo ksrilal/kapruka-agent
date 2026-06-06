@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowLeft, Sparkles, MapPin, Heart, Zap, Shield } from "lucide-react";
 
 export const metadata = {
@@ -60,6 +61,16 @@ export default function AboutPage() {
 
       {/* Hero */}
       <div className="mb-10">
+        <div className="flex flex-col items-center mb-6">
+          <Image
+            src="/logo.png"
+            alt="Kiyo — Your Shopping Assistant"
+            width={400}
+            height={400}
+            style={{ mixBlendMode: "screen" }}
+            priority
+          />
+        </div>
         <p className="text-[12px] font-bold tracking-widest uppercase mb-3" style={{ color: "var(--purple-light)" }}>
           About
         </p>
