@@ -170,8 +170,8 @@ export function CartPanel() {
     if (!line) return;
     const price = productPrice(line.product);
     const cur = line.product.price?.currency ?? "LKR";
+    removeItem(pid);
     close();
-    clear();
     sendMessage(
       `I want to order ${line.quantity}x ${line.product.name} (${cur} ${(price * line.quantity).toLocaleString()}). Please help me place the order.`
     );
