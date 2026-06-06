@@ -3,7 +3,7 @@ import type { LanguageModel } from "ai";
 import type {
   ModelMessage,
   ToolResultPart,
-} from "@ai-sdk/provider-utils";
+} from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAI } from "@ai-sdk/openai";
