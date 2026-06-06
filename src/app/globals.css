@@ -302,11 +302,11 @@ body > div:first-child,
 
 /* ─── AI command bar ─────────────────────────────────────────────────────────── */
 .command-bar {
-  background: var(--glass-dark);
-  backdrop-filter: blur(40px) saturate(200%);
-  -webkit-backdrop-filter: blur(40px) saturate(200%);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--s5), 0 0 0 1px rgba(139,92,246,0.06) inset, var(--s-glow);
+  background: rgba(10,8,18,0.55);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgba(139,92,246,0.14);
+  box-shadow: var(--s5), 0 0 0 1px rgba(139,92,246,0.04) inset, var(--s-glow);
 }
 
 /* ─── Purple CTA button ──────────────────────────────────────────────────────── */

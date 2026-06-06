@@ -19,7 +19,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div style={{ display: "flex", flexDirection: "column", height: "100dvh", width: "100%", overflow: "hidden" }}>
       <Bubbles />
       <Header />
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", width: "100%", paddingTop: "4rem", paddingBottom: isStatic ? "0" : "5.5rem", overflow: "hidden" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", width: "100%", paddingTop: "4rem", overflow: "hidden" }}>
         {children}
       </div>
       {!isStatic && <CommandBar />}

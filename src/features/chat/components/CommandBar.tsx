@@ -71,6 +71,15 @@ export function CommandBar() {
     );
   }, []);
 
+  // Refocus textarea when AI finishes responding so user can type immediately
+  const prevStreamingRef = useRef(false);
+  useEffect(() => {
+    if (prevStreamingRef.current && !isStreaming) {
+      setTimeout(() => textareaRef.current?.focus(), 50);
+    }
+    prevStreamingRef.current = isStreaming;
+  }, [isStreaming]);
+
   useEffect(() => {
     function onKey(e: globalThis.KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
