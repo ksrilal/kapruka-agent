@@ -147,11 +147,12 @@ export function useChat() {
                 ),
               }));
               // Persist order to localStorage so it survives refresh
-              const cartItems = useChatStore.getState().messages
+              const allProducts = useChatStore.getState().messages
                 .filter((m) => m.products && m.products.length > 0)
-                .flatMap((m) => m.products ?? [])
-                .map((p) => p.name);
-              savePendingOrder(event.order, cartItems);
+                .flatMap((m) => m.products ?? []);
+              const cartItems = allProducts.map((p) => p.name);
+              const imageUrl = allProducts[0]?.image_url ?? null;
+              savePendingOrder(event.order, cartItems, imageUrl);
               openOrdersPanel();
             } else if (event.type === "orderStatus") {
               useChatStore.setState((s) => ({

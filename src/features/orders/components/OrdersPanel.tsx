@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Image from "next/image";
 import { X, Package, ExternalLink, Clock, Trash2, RefreshCw } from "lucide-react";
 import { useOrdersStore } from "@/features/orders/store";
 import { useShopStore } from "@/features/shop/store";
@@ -34,12 +35,24 @@ function PendingOrderRow({ saved, onRemove }: { saved: SavedOrder; onRemove: () 
       }}
     >
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <div
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
-            style={{ background: "var(--purple-soft)" }}
+            className="h-12 w-12 shrink-0 rounded-xl overflow-hidden"
+            style={{ background: "var(--surface-2)" }}
           >
-            <Package className="h-3.5 w-3.5" style={{ color: "var(--purple-light)" }} />
+            {saved.imageUrl ? (
+              <Image
+                src={saved.imageUrl}
+                alt={itemNames[0] ?? "Order item"}
+                width={48}
+                height={48}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center">
+                <Package className="h-5 w-5" style={{ color: "var(--purple-light)" }} />
+              </div>
+            )}
           </div>
           <div>
             <p className="text-[12px] font-semibold" style={{ color: "var(--ink)" }}>

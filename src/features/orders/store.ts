@@ -8,6 +8,7 @@ export interface SavedOrder {
   order: Order;
   savedAt: number;        // epoch ms
   itemNames: string[];    // for display — extracted from the chat context
+  imageUrl?: string | null;
 }
 
 export interface SavedTracking {
@@ -24,7 +25,7 @@ interface OrdersStore {
   close: () => void;
   toggle: () => void;
 
-  savePendingOrder: (order: Order, itemNames?: string[]) => void;
+  savePendingOrder: (order: Order, itemNames?: string[], imageUrl?: string | null) => void;
   saveTracking: (status: OrderStatus) => void;
   removePending: (orderRef: string) => void;
   removeTracking: (orderNumber: string) => void;
@@ -42,11 +43,11 @@ export const useOrdersStore = create<OrdersStore>()(
       close: () => set({ isOpen: false }),
       toggle: () => set((s) => ({ isOpen: !s.isOpen })),
 
-      savePendingOrder: (order, itemNames = []) => {
+      savePendingOrder: (order, itemNames = [], imageUrl = null) => {
         set((s) => {
           // Replace if same ref already exists
           const filtered = s.pending.filter((p) => p.order.order_ref !== order.order_ref);
-          return { pending: [{ order, savedAt: Date.now(), itemNames }, ...filtered] };
+          return { pending: [{ order, savedAt: Date.now(), itemNames, imageUrl }, ...filtered] };
         });
       },
 
