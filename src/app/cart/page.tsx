@@ -113,7 +113,7 @@ export default function CartPage() {
       <div className="rounded-2xl border border-border bg-(--surface) p-4 shadow-(--shadow-sm)">
         <div className="flex items-center justify-between mb-3">
           <span className="text-[14px] text-muted-foreground">Subtotal</span>
-          <span className="text-[17px] font-bold text-(--text-primary)">{formatPrice(subtotal(), items[0]?.product.price?.currency)}</span>
+          <span className="text-[17px] font-bold text-(--text-primary)">{formatPrice(subtotal(), items[0]?.product.price?.currency ?? "LKR")}</span>
         </div>
         <Link
           href="/"

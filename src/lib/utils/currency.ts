@@ -14,8 +14,8 @@ function getFormatter(currency: string): Intl.NumberFormat {
   return f;
 }
 
-export function formatPrice(amount: number, currency = "LKR"): string {
-  return getFormatter(currency).format(amount);
+export function formatPrice(amount: number, currency?: string | null): string {
+  return getFormatter(currency ?? "LKR").format(amount);
 }
 
 // Legacy alias — kept for any callers that haven't migrated yet
