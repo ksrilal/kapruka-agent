@@ -155,7 +155,7 @@ export function CartPanel() {
   function handleCheckout() {
     if (!sendMessage) return;
     const itemList = items
-      .map((i) => `${i.quantity}x ${i.product.name} (${cartCurrency} ${productPrice(i.product).toLocaleString()})`)
+      .map((i) => `${i.quantity}x ${i.product.name} [product_id:${productId(i.product)}] (${cartCurrency} ${productPrice(i.product).toLocaleString()})`)
       .join(", ");
     close();
     clear();
@@ -173,7 +173,7 @@ export function CartPanel() {
     removeItem(pid);
     close();
     sendMessage(
-      `I want to order ${line.quantity}x ${line.product.name} (${cur} ${(price * line.quantity).toLocaleString()}). Please help me place the order.`
+      `I want to order ${line.quantity}x ${line.product.name} [product_id:${pid}] (${cur} ${(price * line.quantity).toLocaleString()}). Please help me place the order.`
     );
   }
 
