@@ -4,6 +4,12 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { ConversationMessage, Locale } from "@/types/domain";
 
+const noopStorage = {
+  getItem: () => null,
+  setItem: () => {},
+  removeItem: () => {},
+};
+
 function nanoid() {
   return Math.random().toString(36).slice(2, 10);
 }
@@ -15,7 +21,7 @@ interface ChatStore {
   sessionId: string | null;
   addMessage: (msg: ConversationMessage) => void;
   appendAssistantText: (id: string, text: string) => void;
-  setMessageError: (id: string, retryable: boolean) => void;
+  setMessageError: (id: string, retryable: boolean, errorMessage?: string) => void;
   setStreaming: (v: boolean) => void;
   setLocale: (locale: Locale) => void;
   reset: () => void;
@@ -44,10 +50,10 @@ export const useChatStore = create<ChatStore>()(
         }));
       },
 
-      setMessageError(id, retryable) {
+      setMessageError(id, retryable, errorMessage) {
         set((s) => ({
           messages: s.messages.map((m) =>
-            m.id === id ? { ...m, isError: true, retryable } : m
+            m.id === id ? { ...m, isError: true, retryable, errorMessage } : m
           ),
         }));
       },
@@ -67,7 +73,7 @@ export const useChatStore = create<ChatStore>()(
     {
       name: "kiyo-chat-session",
       storage: createJSONStorage(() =>
-        typeof window !== "undefined" ? sessionStorage : (undefined as never)
+        typeof window !== "undefined" ? sessionStorage : noopStorage
       ),
       // Persist messages + sessionId so refresh stays on the same session.
       // isStreaming is always false on load — don't persist it.

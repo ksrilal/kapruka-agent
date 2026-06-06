@@ -38,7 +38,9 @@ export function ChatBubble({ message, onRetry, isStreaming }: ChatBubbleProps) {
         {/* Error */}
         {message.isError ? (
           <p className="text-[14px] pt-1" style={{ color: "var(--ink-2)" }}>
-            Something went wrong.{" "}
+            {message.errorMessage?.includes("429")
+              ? "Kapruka is a bit busy right now — please try again in a moment."
+              : "Something went wrong."}{" "}
             {message.retryable && onRetry && (
               <button
                 onClick={() => onRetry(message.id)}

@@ -4,8 +4,9 @@ import Image from "next/image";
 import { ExternalLink, ShoppingCart, Check } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { formatLKR } from "@/lib/utils/currency";
-import { productPrice, productOriginalPrice } from "@/types/domain";
+import { productPrice, productOriginalPrice, productId } from "@/types/domain";
 import { useCartStore } from "@/features/cart/store";
+import { useProductImage } from "@/lib/hooks/useProductImage";
 import type { ProductSummary } from "@/types/domain";
 
 function categoryEmoji(category?: string | null): string {
@@ -22,32 +23,6 @@ function categoryEmoji(category?: string | null): string {
   return "🎁";
 }
 
-const imgCache = new Map<string, string | null>();
-
-function useProductImage(productUrl: string): string | null {
-  const [src, setSrc] = useState<string | null>(() => imgCache.get(productUrl) ?? null);
-
-  useEffect(() => {
-    if (imgCache.has(productUrl)) {
-      setSrc(imgCache.get(productUrl) ?? null);
-      return;
-    }
-    let cancelled = false;
-    fetch(`/api/product-image?url=${encodeURIComponent(productUrl)}`)
-      .then((r) => r.json())
-      .then((data: { image_url: string | null }) => {
-        if (cancelled) return;
-        imgCache.set(productUrl, data.image_url);
-        setSrc(data.image_url);
-      })
-      .catch(() => {
-        if (!cancelled) imgCache.set(productUrl, null);
-      });
-    return () => { cancelled = true; };
-  }, [productUrl]);
-
-  return src;
-}
 
 interface Props {
   product: ProductSummary;
@@ -66,7 +41,7 @@ export function ProductCard({ product, priority }: Props) {
   const addItem = useCartStore((s) => s.addItem);
   const openCart = useCartStore((s) => s.open);
   const items = useCartStore((s) => s.items);
-  const inCart = items.some((i) => i.product.id === product.id);
+  const inCart = items.some((i) => productId(i.product) === productId(product));
 
   const [expanded, setExpanded] = useState(false);
   const [justAdded, setJustAdded] = useState(false);

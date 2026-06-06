@@ -4,6 +4,12 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { Order, OrderStatus } from "@/types/domain";
 
+const noopStorage = {
+  getItem: () => null,
+  setItem: () => {},
+  removeItem: () => {},
+};
+
 export const TERMINAL_STATUSES = new Set(["delivered", "cancelled"]);
 
 export function isTerminal(status: string): boolean {
@@ -35,6 +41,7 @@ interface OrdersStore {
   savePendingOrder: (order: Order, itemNames?: string[], imageUrl?: string | null) => void;
   saveTracking: (status: OrderStatus) => void;
   updateTracking: (orderNumber: string, status: OrderStatus) => void;
+  stampPolled: (orderNumber: string, at: number) => void;
   promotePendingToTracked: (orderRef: string, status: OrderStatus) => void;
   removePending: (orderRef: string) => void;
   removeTracking: (orderNumber: string) => void;
@@ -76,6 +83,14 @@ export const useOrdersStore = create<OrdersStore>()(
         }));
       },
 
+      stampPolled: (orderNumber, at) => {
+        set((s) => ({
+          tracked: s.tracked.map((t) =>
+            t.status.order_number === orderNumber ? { ...t, lastPolledAt: at } : t
+          ),
+        }));
+      },
+
       // Called when user confirms payment: removes from pending, adds to tracked
       promotePendingToTracked: (orderRef, status) => {
         set((s) => {
@@ -106,7 +121,7 @@ export const useOrdersStore = create<OrdersStore>()(
     {
       name: "kapruka-orders-v1",
       storage: createJSONStorage(() =>
-        typeof window !== "undefined" ? localStorage : (undefined as never)
+        typeof window !== "undefined" ? localStorage : noopStorage
       ),
       partialize: (s) => ({ pending: s.pending, tracked: s.tracked }),
     }

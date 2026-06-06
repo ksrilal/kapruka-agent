@@ -147,6 +147,7 @@ export interface ConversationMessage {
   orderStatus?: OrderStatus;
   isError?: boolean;
   retryable?: boolean;
+  errorMessage?: string;
   tool_calls?: ToolCall[];
   tool_results?: ToolResult[];
   toolSteps?: ToolStep[];

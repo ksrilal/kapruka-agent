@@ -12,7 +12,7 @@ import { useChatStore } from "@/features/chat/store";
 
 // Rotating placeholders — mix of English, Sinhala, and Tanglish
 const PROMPTS = [
-  { text: "Birthday cake for Kandy under LKR 3,000",   lang: "EN" },
+  { text: "Birthday cake for Kandy under LKR 10,000",   lang: "EN" },
   { text: "අම්මාගේ උපන්දිනයට ලස්සන කේක් එකක් හොයලා දෙන්න",               lang: "සිං" },
   { text: "Send flowers to my mum in Colombo",          lang: "EN" },
   { text: "Anna gift pack onnum iruka?",                lang: "TGL" },

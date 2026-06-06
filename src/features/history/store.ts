@@ -4,6 +4,12 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { ConversationMessage } from "@/types/domain";
 
+const noopStorage = {
+  getItem: () => null,
+  setItem: () => {},
+  removeItem: () => {},
+};
+
 export interface SavedSession {
   id: string;
   savedAt: number;
@@ -92,7 +98,7 @@ export const useHistoryStore = create<HistoryStore>()(
     {
       name: "kiyo-history-v1",
       storage: createJSONStorage(() =>
-        typeof window !== "undefined" ? localStorage : (undefined as never)
+        typeof window !== "undefined" ? localStorage : noopStorage
       ),
       partialize: (s) => ({ sessions: s.sessions }),
     }

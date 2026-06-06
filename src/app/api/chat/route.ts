@@ -36,6 +36,14 @@ function getClientIp(req: NextRequest): string {
 
 function checkRateLimit(ip: string): boolean {
   const now = Date.now();
+
+  // Evict expired entries periodically to prevent unbounded growth
+  if (RATE_LIMIT_MAP.size > 1000) {
+    for (const [key, val] of RATE_LIMIT_MAP) {
+      if (now > val.resetAt) RATE_LIMIT_MAP.delete(key);
+    }
+  }
+
   const entry = RATE_LIMIT_MAP.get(ip);
   if (!entry || now > entry.resetAt) {
     RATE_LIMIT_MAP.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
@@ -76,6 +84,7 @@ async function* chatGenerator(
   }
 
   let result: import("@/lib/ai/orchestrator").OrchestratorResult | undefined;
+  let orchestratorError: Error | undefined;
   const orchestratorRun = runOrchestrator(body.messages, locale, (tool, status) => {
     toolQueue.push({ tool, status });
     notify();
@@ -84,6 +93,7 @@ async function* chatGenerator(
     orchestratorDone = true;
     notify();
   }).catch((err) => {
+    orchestratorError = err as Error;
     console.error({ event: "chat_error", message: (err as Error).message });
     orchestratorDone = true;
     notify();
@@ -109,7 +119,12 @@ async function* chatGenerator(
   await orchestratorRun;
 
   if (!result) {
-    yield { type: "error" as const, message: "AI service temporarily unavailable.", retryable: true };
+    const is429 = orchestratorError?.message?.includes("429");
+    yield {
+      type: "error" as const,
+      message: is429 ? "MCP error 429" : "AI service temporarily unavailable.",
+      retryable: !is429,
+    };
     return;
   }
 
@@ -157,11 +172,11 @@ async function* chatGenerator(
           const key = p.id ?? JSON.stringify(p);
           if (!seen.has(key)) seen.set(key, p);
         }
-        yield { type: "products", products: [...seen.values()] as never[] };
+        yield { type: "products" as const, products: [...seen.values()] as import("@/types/domain").ProductSummary[] };
       } else if (parsed.__type === "order" && parsed.data) {
-        yield { type: "order", order: parsed.data as never };
+        yield { type: "order" as const, order: parsed.data as import("@/types/domain").Order };
       } else if (parsed.__type === "orderStatus" && parsed.data) {
-        yield { type: "orderStatus", orderStatus: parsed.data as never };
+        yield { type: "orderStatus" as const, orderStatus: parsed.data as import("@/types/domain").OrderStatus };
       }
     } catch { /* malformed — skip */ }
   }

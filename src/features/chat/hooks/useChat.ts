@@ -162,7 +162,7 @@ export function useChat() {
               }));
               saveTracking(event.orderStatus);
             } else if (event.type === "error") {
-              setMessageError(assistantId, event.retryable ?? false);
+              setMessageError(assistantId, event.retryable ?? false, event.message);
             }
           }
         }

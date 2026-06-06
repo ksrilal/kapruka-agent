@@ -115,7 +115,7 @@ export async function callMcpTool(
           mcp_tool: toolName,
           status: res.status,
           duration_ms: Date.now() - start,
-          outcome: "client_error",
+          outcome: res.status >= 500 ? "server_error" : "client_error",
         }));
         throw Object.assign(new Error(`MCP error ${res.status}`), { retryable });
       }

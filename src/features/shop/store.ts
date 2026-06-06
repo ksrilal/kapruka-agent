@@ -4,6 +4,12 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { ProductSummary } from "@/types/domain";
 
+const noopStorage = {
+  getItem: () => null,
+  setItem: () => {},
+  removeItem: () => {},
+};
+
 interface ShopStore {
   cartOpen: boolean;
   commandOpen: boolean;
@@ -66,7 +72,9 @@ export const useShopStore = create<ShopStore>()(
     }),
     {
       name: "kapruka-shop",
-      storage: createJSONStorage(() => sessionStorage),
+      storage: createJSONStorage(() =>
+        typeof window !== "undefined" ? sessionStorage : noopStorage
+      ),
       // Only persist data, not UI state or refs
       partialize: (s) => ({
         featuredProducts: s.featuredProducts,

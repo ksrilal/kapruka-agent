@@ -1,11 +1,138 @@
 "use client";
 
 import Image from "next/image";
-import { X, Minus, Plus, Trash2, ShoppingBag, Sparkles } from "lucide-react";
+import { X, Minus, Plus, Trash2, ShoppingBag, Sparkles, ShoppingCart } from "lucide-react";
 import { useCartStore } from "@/features/cart/store";
 import { useShopStore } from "@/features/shop/store";
 import { productId, productPrice } from "@/types/domain";
 import { formatLKR } from "@/lib/utils/currency";
+import { useProductImage } from "@/lib/hooks/useProductImage";
+import type { CartLineItem } from "@/features/cart/store";
+
+// ─── CartItemRow ──────────────────────────────────────────────────────────────
+
+function CartItemRow({
+  item,
+  multiItem,
+  onRemove,
+  onUpdateQty,
+  onCheckoutThis,
+}: {
+  item: CartLineItem;
+  multiItem: boolean;
+  onRemove: (pid: string) => void;
+  onUpdateQty: (pid: string, qty: number) => void;
+  onCheckoutThis: (pid: string) => void;
+}) {
+  const { product, quantity } = item;
+  const pid = productId(product);
+  const price = productPrice(product);
+  const isCake = product.category?.name?.toLowerCase().includes("cake");
+
+  // Prefer MCP image_url; fall back to scraping the product page
+  const scrapedImage = useProductImage(!product.image_url ? product.url : null);
+  const imageSrc = product.image_url ?? scrapedImage;
+
+  return (
+    <div
+      className="group flex gap-3 rounded-2xl p-3 transition-shadow anim-fade-in"
+      style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+    >
+      {/* Thumbnail — taller to show more of the image */}
+      <div
+        className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl"
+        style={{ background: "var(--surface-2)" }}
+      >
+        {imageSrc ? (
+          <Image
+            src={imageSrc}
+            alt={product.name}
+            fill
+            className="object-cover"
+            sizes="80px"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-3xl select-none">
+            {isCake ? "🎂" : "🎁"}
+          </div>
+        )}
+      </div>
+
+      <div className="min-w-0 flex-1 flex flex-col justify-between py-0.5">
+        <div>
+          <p className="text-[13px] font-medium line-clamp-2 leading-snug" style={{ color: "var(--ink)" }}>
+            {product.name}
+          </p>
+          <p className="mt-1 text-[15px] font-bold" style={{ color: "var(--purple-light)" }}>
+            {formatLKR(price * quantity)}
+          </p>
+        </div>
+
+        {/* Icing text for cakes */}
+        {isCake && (
+          <input
+            type="text"
+            placeholder="Cake message (optional)"
+            maxLength={40}
+            className="mt-2 w-full rounded-lg px-2 py-1 text-[11px] outline-none"
+            style={{
+              background: "var(--surface-2)",
+              border: "1px solid var(--border)",
+              color: "var(--ink)",
+            }}
+            onChange={(e) => useCartStore.getState().updateIcing(pid, e.target.value)}
+          />
+        )}
+      </div>
+
+      <div className="flex flex-col items-end justify-between py-0.5">
+        <button
+          onClick={() => onRemove(pid)}
+          className="opacity-0 transition-opacity group-hover:opacity-100"
+          style={{ color: "var(--ink-3)" }}
+          aria-label="Remove"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+
+        <div className="flex flex-col items-end gap-1.5">
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => onUpdateQty(pid, quantity - 1)}
+              className="flex h-6 w-6 items-center justify-center rounded-lg transition-colors active:scale-95"
+              style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
+            >
+              <Minus className="h-3 w-3" />
+            </button>
+            <span className="w-5 text-center text-[13px] font-semibold" style={{ color: "var(--ink)" }}>
+              {quantity}
+            </span>
+            <button
+              onClick={() => onUpdateQty(pid, quantity + 1)}
+              className="flex h-6 w-6 items-center justify-center rounded-lg transition-colors active:scale-95"
+              style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
+            >
+              <Plus className="h-3 w-3" />
+            </button>
+          </div>
+
+          {multiItem && (
+            <button
+              onClick={() => onCheckoutThis(pid)}
+              className="flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-semibold transition-all active:scale-95"
+              style={{ background: "var(--purple-soft)", color: "var(--purple-light)", border: "1px solid rgba(139,92,246,0.2)" }}
+            >
+              <ShoppingCart className="h-2.5 w-2.5" />
+              Order this
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── CartPanel ────────────────────────────────────────────────────────────────
 
 export function CartPanel() {
   const isOpen = useCartStore((s) => s.isOpen);
@@ -13,6 +140,7 @@ export function CartPanel() {
   const items = useCartStore((s) => s.items);
   const removeItem = useCartStore((s) => s.removeItem);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
+  const clear = useCartStore((s) => s.clear);
   const itemCount = useCartStore((s) => s.itemCount);
   const subtotal = useCartStore((s) => s.subtotal);
   const focusSearch = useShopStore((s) => s.focusSearch);
@@ -29,8 +157,21 @@ export function CartPanel() {
       .map((i) => `${i.quantity}x ${i.product.name} (LKR ${productPrice(i.product).toLocaleString()})`)
       .join(", ");
     close();
+    clear();
     sendMessage(
       `I want to checkout. My cart has: ${itemList}. Total: LKR ${total.toLocaleString()}. Please help me place the order.`
+    );
+  }
+
+  function handleCheckoutItem(pid: string) {
+    if (!sendMessage) return;
+    const line = items.find((i) => productId(i.product) === pid);
+    if (!line) return;
+    const price = productPrice(line.product);
+    close();
+    clear();
+    sendMessage(
+      `I want to order ${line.quantity}x ${line.product.name} (LKR ${(price * line.quantity).toLocaleString()}). Please help me place the order.`
     );
   }
 
@@ -95,88 +236,16 @@ export function CartPanel() {
             </div>
           ) : (
             <div className="flex flex-col gap-3">
-              {items.map(({ product, quantity }) => {
-                const pid = productId(product);
-                const price = productPrice(product);
-                const isCake = product.category?.name?.toLowerCase().includes("cake");
-
-                return (
-                  <div
-                    key={pid}
-                    className="group flex gap-3 rounded-2xl p-3 transition-shadow anim-fade-in"
-                    style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
-                  >
-                    {/* Thumbnail */}
-                    <div
-                      className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl"
-                      style={{ background: "var(--surface-2)" }}
-                    >
-                      {product.image_url ? (
-                        <Image src={product.image_url} alt={product.name} fill className="object-cover" sizes="64px" />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-2xl">
-                          {isCake ? "🎂" : "🎁"}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <p className="t-small font-medium line-clamp-2 leading-snug" style={{ color: "var(--ink)" }}>
-                        {product.name}
-                      </p>
-                      <p className="mt-1 text-[14px] font-bold" style={{ color: "var(--purple-light)" }}>
-                        {formatLKR(price * quantity)}
-                      </p>
-
-                      {/* Icing text for cakes */}
-                      {isCake && (
-                        <input
-                          type="text"
-                          placeholder="Cake message (optional)"
-                          maxLength={40}
-                          className="mt-2 w-full rounded-lg px-2 py-1 text-[11px] outline-none"
-                          style={{
-                            background: "var(--surface-2)",
-                            border: "1px solid var(--border)",
-                            color: "var(--ink)",
-                          }}
-                          onChange={(e) => useCartStore.getState().updateIcing(pid, e.target.value)}
-                        />
-                      )}
-                    </div>
-
-                    <div className="flex flex-col items-end gap-2">
-                      <button
-                        onClick={() => removeItem(pid)}
-                        className="opacity-0 transition-opacity group-hover:opacity-100"
-                        style={{ color: "var(--ink-3)" }}
-                        aria-label="Remove"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => updateQuantity(pid, quantity - 1)}
-                          className="flex h-6 w-6 items-center justify-center rounded-lg transition-colors active:scale-95"
-                          style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
-                        >
-                          <Minus className="h-3 w-3" />
-                        </button>
-                        <span className="w-5 text-center text-[13px] font-semibold" style={{ color: "var(--ink)" }}>
-                          {quantity}
-                        </span>
-                        <button
-                          onClick={() => updateQuantity(pid, quantity + 1)}
-                          className="flex h-6 w-6 items-center justify-center rounded-lg transition-colors active:scale-95"
-                          style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
-                        >
-                          <Plus className="h-3 w-3" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+              {items.map((item) => (
+                <CartItemRow
+                  key={productId(item.product)}
+                  item={item}
+                  multiItem={items.length > 1}
+                  onRemove={removeItem}
+                  onUpdateQty={updateQuantity}
+                  onCheckoutThis={handleCheckoutItem}
+                />
+              ))}
             </div>
           )}
         </div>

@@ -1,8 +1,16 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-// In-process cache with TTL
+// In-process cache with TTL and size cap
 const cache = new Map<string, { url: string | null; at: number }>();
 const TTL_MS = 60 * 60 * 1000; // 1 hour
+const CACHE_MAX = 500;
+
+function cacheSet(key: string, value: { url: string | null; at: number }) {
+  if (cache.size >= CACHE_MAX) {
+    cache.delete(cache.keys().next().value!);
+  }
+  cache.set(key, value);
+}
 
 // In-flight deduplication — prevents N concurrent requests for same URL
 const inFlight = new Map<string, Promise<string | null>>();
@@ -24,10 +32,10 @@ function scrapeImage(productUrl: string): Promise<string | null> {
         ?? html.match(/<meta[^>]+content="([^"]+)"[^>]+property="og:image"/i);
 
       const imageUrl = match?.[1] ?? null;
-      cache.set(productUrl, { url: imageUrl, at: Date.now() });
+      cacheSet(productUrl, { url: imageUrl, at: Date.now() });
       return imageUrl;
     } catch {
-      cache.set(productUrl, { url: null, at: Date.now() });
+      cacheSet(productUrl, { url: null, at: Date.now() });
       return null;
     } finally {
       inFlight.delete(productUrl);
@@ -38,9 +46,18 @@ function scrapeImage(productUrl: string): Promise<string | null> {
   return promise;
 }
 
+function isKaprukaUrl(raw: string): boolean {
+  try {
+    const { hostname } = new URL(raw);
+    return hostname === "kapruka.com" || hostname.endsWith(".kapruka.com");
+  } catch {
+    return false;
+  }
+}
+
 export async function GET(req: NextRequest) {
   const productUrl = req.nextUrl.searchParams.get("url");
-  if (!productUrl || !productUrl.includes("kapruka.com")) {
+  if (!productUrl || !isKaprukaUrl(productUrl)) {
     return NextResponse.json({ error: "invalid url" }, { status: 400 });
   }
 

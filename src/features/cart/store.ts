@@ -5,6 +5,12 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { productId, productPrice } from "@/types/domain";
 import type { ProductSummary } from "@/types/domain";
 
+const noopStorage = {
+  getItem: () => null,
+  setItem: () => {},
+  removeItem: () => {},
+};
+
 export interface CartLineItem {
   product: ProductSummary;
   quantity: number;
@@ -86,7 +92,7 @@ export const useCartStore = create<CartStore>()(
     {
       name: "kapruka-cart-v2",
       storage: createJSONStorage(() =>
-        typeof window !== "undefined" ? sessionStorage : (undefined as never)
+        typeof window !== "undefined" ? sessionStorage : noopStorage
       ),
       partialize: (s) => ({ items: s.items }),
     }

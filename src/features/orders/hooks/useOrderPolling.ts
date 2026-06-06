@@ -35,12 +35,14 @@ export function useOrderPolling() {
 
     async function pollAll() {
       // Read fresh state directly from the store to avoid stale closure
-      const { tracked: current, updateTracking } = useOrdersStore.getState();
+      const { tracked: current, updateTracking, stampPolled } = useOrdersStore.getState();
       const now = Date.now();
       for (const saved of current) {
         if (isTerminal(saved.status.status)) continue;
         // Skip if polled recently (55s gap avoids double-fire on mount + interval)
         if (saved.lastPolledAt && now - saved.lastPolledAt < 55_000) continue;
+        // Stamp before fetch so a slow request doesn't trigger a second concurrent poll
+        stampPolled(saved.status.order_number, now);
         const status = await fetchOrderStatus(saved.status.order_number);
         if (status) updateTracking(saved.status.order_number, status);
       }

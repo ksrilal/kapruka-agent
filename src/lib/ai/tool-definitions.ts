@@ -72,7 +72,7 @@ export const aiTools = {
         address: z.string(),
         city: z.string(),
         date: z.string(),
-        location_type: z.string().optional(),
+        location_type: z.enum(["apartment", "house", "office", "other"]).optional().describe("Type of delivery location."),
         instructions: z.string().optional(),
       }),
       sender: z.object({
