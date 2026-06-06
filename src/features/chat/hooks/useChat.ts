@@ -178,14 +178,24 @@ export function useChat() {
         setMessageError(assistantId, true);
       } finally {
         setStreaming(false);
-        // If the assistant message is still empty after streaming (no text, no cards),
-        // remove the orphan bubble entirely rather than showing a blank
-        const finalMsg = useChatStore.getState().messages.find((m) => m.id === assistantId);
-        if (finalMsg && !finalMsg.content && !finalMsg.products && !finalMsg.order && !finalMsg.orderStatus && !finalMsg.isError) {
-          useChatStore.setState((s) => ({
-            messages: s.messages.filter((m) => m.id !== assistantId),
-          }));
-        }
+        // Remove orphan bubble only if it has absolutely nothing to show.
+        // Read state inside setState so we see the final committed value —
+        // avoids a race where isError was just set but not yet visible.
+        useChatStore.setState((s) => {
+          const finalMsg = s.messages.find((m) => m.id === assistantId);
+          if (
+            finalMsg &&
+            !finalMsg.content &&
+            !finalMsg.products?.length &&
+            !finalMsg.order &&
+            !finalMsg.orderStatus &&
+            !finalMsg.isError &&
+            !finalMsg.toolSteps?.length
+          ) {
+            return { messages: s.messages.filter((m) => m.id !== assistantId) };
+          }
+          return s;
+        });
       }
     },
     [isStreaming, addMessage, appendAssistantText, setMessageError, setStreaming, setLocale, setFeaturedProducts, setLastAiText, savePendingOrder, saveTracking, openOrdersPanel]

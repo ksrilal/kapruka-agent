@@ -1,7 +1,7 @@
 const MCP_URL = process.env.KAPRUKA_MCP_URL ?? "https://mcp.kapruka.com/mcp";
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 300;
-const FETCH_TIMEOUT_MS = 25_000;
+const FETCH_TIMEOUT_MS = 8_000;
 
 let _sessionId: string | null = null;
 let _initPromise: Promise<string> | null = null;
@@ -83,9 +83,7 @@ export async function callMcpTool(
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     if (attempt > 0) {
       await sleep(RETRY_DELAY_MS);
-      // Reset session on retry so we get a fresh one
-      _sessionId = null;
-      _initPromise = null;
+      // Session is only reset on 404/406 below — don't reset unconditionally here
     }
 
     try {

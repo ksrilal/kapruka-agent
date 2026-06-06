@@ -160,14 +160,19 @@ export async function runOrchestrator(
   onToolCall?.("__response__", "running");
 
   // Fallback: get final text after max rounds
-  const final = await generateText({
-    model,
-    system: systemPrompt,
-    messages: currentMessages,
-    maxRetries: 0,
-    abortSignal: withTimeout(GENERATE_TIMEOUT_MS),
-  });
+  try {
+    const final = await generateText({
+      model,
+      system: systemPrompt,
+      messages: currentMessages,
+      maxRetries: 0,
+      abortSignal: withTimeout(GENERATE_TIMEOUT_MS),
+    });
 
-  onToolCall?.("__response__", "done");
-  return { text: final.text, embedded };
+    onToolCall?.("__response__", "done");
+    return { text: final.text, embedded };
+  } catch (err) {
+    onToolCall?.("__response__", "done");
+    throw err;
+  }
 }

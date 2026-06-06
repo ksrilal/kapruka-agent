@@ -1,9 +1,9 @@
+// Tell Vercel to allow up to 60s for this route (requires Pro; Hobby gets 10s)
+export const maxDuration = 60;
+
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { runOrchestrator } from "@/lib/ai/orchestrator";
-
-// Tell Vercel to allow up to 60s for this route (requires Pro; Hobby gets 10s)
-export const maxDuration = 60;
 import { createSSEStream } from "@/lib/ai/streaming";
 import { detectLocale } from "@/lib/utils/unicode";
 import type { ChatSSEEvent } from "@/types/ai";

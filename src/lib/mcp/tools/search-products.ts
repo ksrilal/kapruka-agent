@@ -38,12 +38,21 @@ export async function searchProducts(input: SearchProductsInput): Promise<string
     return callMcpTool("kapruka_search_products", { ...rest }) as Promise<string>;
   }
 
-  for (const q of queries) {
-    const result = await callMcpTool("kapruka_search_products", { ...input, q }) as string;
-    if (hasResults(result)) return result;
+  // Run all fallback queries in parallel — return the first one that has results.
+  // This cuts latency from (N × RTT) to (1 × RTT) when multiple queries are needed.
+  const results = await Promise.allSettled(
+    queries.map((q) => callMcpTool("kapruka_search_products", { ...input, q }) as Promise<string>)
+  );
+
+  for (const r of results) {
+    if (r.status === "fulfilled" && hasResults(r.value)) return r.value;
   }
 
-  // All queries tried — return result of broadest (last) query
-  const lastQ = queries[queries.length - 1];
-  return callMcpTool("kapruka_search_products", { ...input, q: lastQ }) as Promise<string>;
+  // No query had results — return the first successful response (broadest query)
+  const first = results.find((r) => r.status === "fulfilled");
+  if (first?.status === "fulfilled") return first.value;
+
+  // All failed — throw the last error
+  const lastFailed = results.findLast((r) => r.status === "rejected");
+  throw (lastFailed as PromiseRejectedResult).reason;
 }
