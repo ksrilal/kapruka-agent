@@ -10,16 +10,12 @@ import { useShopStore } from "@/features/shop/store";
 import { useChat } from "@/features/chat/hooks/useChat";
 import { useChatStore } from "@/features/chat/store";
 
-// Rotating placeholders — mix of English, Sinhala, and Tanglish
+// Rotating placeholder text — mix of English, Sinhala, and Tanglish
 const PROMPTS = [
-  { text: "Birthday cake for Kandy under LKR 10,000",   lang: "EN" },
-  { text: "අම්මාගේ උපන්දිනයට ලස්සන කේක් එකක් හොයලා දෙන්න",               lang: "සිං" },
-  { text: "Send flowers to my mum in Colombo",          lang: "EN" },
-  { text: "Anna gift pack onnum iruka?",                lang: "TGL" },
-  { text: "Jewellery under LKR 5,000",                  lang: "EN" },
-  { text: "Colombo deliver karanawada?",                lang: "TGL" },
-  { text: "ළමයෙකුට හොඳම තෑගි මොනවාද?",               lang: "සිං" },
-  { text: "Chocolate cake for tomorrow",                lang: "EN" },
+  { text: "Ask anything...",            lang: "EN" },
+  { text: "Ona deyak ahanna...",        lang: "TGL" },
+  { text: "ඕන දෙයක් අහන්න...",          lang: "සිං" },
+  { text: "Ethaiyum kaelungal...",      lang: "TGL" },
 ];
 
 const LANG_META: Record<string, { label: string; color: string; bg: string }> = {
@@ -130,7 +126,7 @@ export function CommandBar() {
     r.start();
   }
 
-  const currentPrompt = PROMPTS[promptIdx];
+  const currentPrompt = PROMPTS[promptIdx % PROMPTS.length];
   const langMeta = hasMessages ? LANG_META[locale] ?? LANG_META.en : null;
 
   return (
@@ -164,7 +160,7 @@ export function CommandBar() {
                     onChange={(e) => { setValue(e.target.value); autoResize(); }}
                     onKeyDown={handleKey}
                     onFocus={openCommand}
-                    placeholder=""
+                    placeholder={currentPrompt?.text ?? "Ask anything"}
                     disabled={isStreaming}
                     className="flex-1 min-w-0 resize-none bg-transparent text-[15px] leading-relaxed text-foreground outline-none placeholder:text-muted-foreground disabled:opacity-0"
                     style={{ maxHeight: 120, caretColor: "var(--purple-light)" }}
