@@ -239,7 +239,7 @@ export function CommandBar() {
                   onClick={submit}
                   disabled={!value.trim()}
                   title="Send"
-                  className="btn-purple flex h-9 w-9 items-center justify-center rounded-xl disabled:opacity-30 disabled:shadow-none active:scale-95"
+                  className="btn-purple flex h-9 w-9 items-center justify-center rounded-xl disabled:cursor-default disabled:opacity-30 disabled:shadow-none active:scale-95"
                 >
                   <ArrowUp className="h-4 w-4" />
                 </button>

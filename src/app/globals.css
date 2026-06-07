@@ -103,6 +103,21 @@ body {
 body > div:first-child,
 #__next { height: 100%; }
 
+/* Pointer cursor on every interactive element, app-wide */
+button:not(:disabled),
+a,
+[role="button"],
+[role="link"],
+[role="tab"],
+[role="menuitem"],
+[role="checkbox"],
+[role="switch"],
+label[for],
+select,
+summary {
+  cursor: pointer;
+}
+
 /* ─── Scrollbars ─────────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 3px; height: 3px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -344,12 +359,12 @@ body > div:first-child,
   transition: opacity 0.2s, transform 0.2s, box-shadow 0.2s;
   box-shadow: 0 4px 20px var(--purple-glow);
 }
-.btn-purple:hover {
+.btn-purple:hover:not(:disabled) {
   opacity: 0.92;
   transform: translateY(-1px);
   box-shadow: 0 8px 32px var(--purple-glow);
 }
-.btn-purple:active { transform: scale(0.97); }
+.btn-purple:active:not(:disabled) { transform: scale(0.97); }
 
 /* ─── Typing cursor ──────────────────────────────────────────────────────────── */
 .typing::after {
