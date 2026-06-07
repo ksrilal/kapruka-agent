@@ -10,12 +10,19 @@ import { useShopStore } from "@/features/shop/store";
 import { useChat } from "@/features/chat/hooks/useChat";
 import { useChatStore } from "@/features/chat/store";
 
-// Rotating placeholder text — mix of English, Sinhala, and Tanglish
+// Rotating placeholder text for the empty/landing state — mix of English, Sinhala, and Tanglish
 const PROMPTS = [
-  { text: "Ask anything...",            lang: "EN" },
-  { text: "Ona deyak ahanna...",        lang: "TGL" },
-  { text: "ඕන දෙයක් අහන්න...",          lang: "සිං" },
-  { text: "Ethaiyum kaelungal...",      lang: "TGL" },
+  { text: "What are you shopping for today?", lang: "EN" },
+  { text: "Ada mokakda hoyanne?", lang: "TGL" },
+  { text: "අද මොකක්ද හොයන්නේ?", lang: "සිං" },
+  { text: "Inniku enna thedureenga?", lang: "TGL" },
+];
+
+// Rotating placeholder once a conversation is underway — discovery prompts no longer fit
+const ACTIVE_PLACEHOLDERS = [
+  "Type a message.",
+  "Type a message..",
+  "Type a message...",
 ];
 
 const LANG_META: Record<string, { label: string; color: string; bg: string }> = {
@@ -39,6 +46,7 @@ const LANG_META: Record<string, { label: string; color: string; bg: string }> = 
 export function CommandBar() {
   const [value, setValue] = useState("");
   const [promptIdx, setPromptIdx] = useState(0);
+  const [activePlaceholderIdx, setActivePlaceholderIdx] = useState(0);
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -54,8 +62,24 @@ export function CommandBar() {
     setSearchRef(textareaRef as React.RefObject<HTMLTextAreaElement | null>);
   }, [setSearchRef]);
 
+  const hasMessagesRef = useRef(hasMessages);
   useEffect(() => {
-    const t = setInterval(() => setPromptIdx((i) => (i + 1) % PROMPTS.length), 3500);
+    hasMessagesRef.current = hasMessages;
+  });
+
+  useEffect(() => {
+    const t = setInterval(() => {
+      if (hasMessagesRef.current) return;
+      setPromptIdx((i) => (i + 1) % PROMPTS.length);
+    }, 3500);
+    return () => clearInterval(t);
+  }, []);
+
+  useEffect(() => {
+    const t = setInterval(() => {
+      if (!hasMessagesRef.current) return;
+      setActivePlaceholderIdx((i) => (i + 1) % ACTIVE_PLACEHOLDERS.length);
+    }, 500);
     return () => clearInterval(t);
   }, []);
 
@@ -127,6 +151,9 @@ export function CommandBar() {
   }
 
   const currentPrompt = PROMPTS[promptIdx % PROMPTS.length];
+  const placeholderText = hasMessages
+    ? ACTIVE_PLACEHOLDERS[activePlaceholderIdx % ACTIVE_PLACEHOLDERS.length]
+    : currentPrompt?.text ?? "Ask anything";
   const langMeta = hasMessages ? LANG_META[locale] ?? LANG_META.en : null;
 
   return (
@@ -160,7 +187,7 @@ export function CommandBar() {
                     onChange={(e) => { setValue(e.target.value); autoResize(); }}
                     onKeyDown={handleKey}
                     onFocus={openCommand}
-                    placeholder={currentPrompt?.text ?? "Ask anything"}
+                    placeholder={placeholderText}
                     disabled={isStreaming}
                     className="flex-1 min-w-0 resize-none bg-transparent text-[15px] leading-relaxed text-foreground outline-none placeholder:text-muted-foreground disabled:opacity-0"
                     style={{ maxHeight: 120, caretColor: "var(--purple-light)" }}
