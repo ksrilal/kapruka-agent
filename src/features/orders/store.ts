@@ -45,7 +45,6 @@ interface OrdersStore {
   promotePendingToTracked: (orderRef: string, status: OrderStatus) => void;
   removePending: (orderRef: string) => void;
   removeTracking: (orderNumber: string) => void;
-  pruneExpired: () => void;
 }
 
 export const useOrdersStore = create<OrdersStore>()(
@@ -109,13 +108,6 @@ export const useOrdersStore = create<OrdersStore>()(
 
       removeTracking: (orderNumber) => {
         set((s) => ({ tracked: s.tracked.filter((t) => t.status.order_number !== orderNumber) }));
-      },
-
-      pruneExpired: () => {
-        const now = Date.now();
-        set((s) => ({
-          pending: s.pending.filter((p) => new Date(p.order.expires_at).getTime() > now),
-        }));
       },
     }),
     {

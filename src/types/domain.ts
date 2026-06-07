@@ -18,9 +18,6 @@ export function productOriginalPrice(p: ProductSummary): number | undefined {
   const v = p.compare_at_price?.amount;
   return v && v > (p.price?.amount ?? 0) ? v : undefined;
 }
-export function productThumbnail(p: ProductSummary): string | null {
-  return p.image_url;
-}
 
 // ─── Cart ─────────────────────────────────────────────────────────────────────
 

@@ -94,6 +94,40 @@ function withTimeout(ms: number): AbortSignal {
   return AbortSignal.timeout(ms);
 }
 
+// Runs a batch of tool calls in parallel, capturing per-call errors as
+// structured strings so the AI can read them and craft a helpful reply
+// instead of the request crashing.
+async function runToolCalls(
+  toolCalls: ReadonlyArray<{ toolName: string; toolCallId: string; input: unknown }>,
+  embedded: unknown[],
+  onToolCall?: (tool: string, status: "running" | "done") => void
+): Promise<ToolResultPart[]> {
+  return Promise.all(
+    toolCalls.map(async (tc) => {
+      onToolCall?.(tc.toolName, "running");
+      let value: string;
+      try {
+        const toolResult = await executeTool(tc.toolName, tc.input as Record<string, unknown>);
+        embedded.push(toolResult);
+        value = String(toolResult);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        const is429 = msg.includes("429");
+        value = is429
+          ? `TOOL_ERROR: Kapruka is rate-limiting requests right now (429). Tell the user Kapruka is busy and ask them to try again in a moment. Do not retry the tool.`
+          : `TOOL_ERROR: ${msg}. Tell the user the tool failed and suggest trying again or rephrasing. Do not invent results.`;
+      }
+      onToolCall?.(tc.toolName, "done");
+      return {
+        type: "tool-result" as const,
+        toolCallId: tc.toolCallId,
+        toolName: tc.toolName,
+        output: { type: "text" as const, value },
+      };
+    })
+  );
+}
+
 // ─── Orchestrator ─────────────────────────────────────────────────────────────
 
 export async function runOrchestrator(
@@ -127,36 +161,34 @@ export async function runOrchestrator(
     // staticToolCalls are the typed ones (our known tools)
     const toolCalls = result.staticToolCalls ?? [];
     if (toolCalls.length === 0) {
-      return { text: result.text, embedded };
+      if (result.text.trim()) {
+        return { text: result.text, embedded };
+      }
+      // Provider occasionally returns a genuinely empty final turn (no text, no
+      // tool calls) — a transient hiccup, not "I'm done, nothing to say". Rather
+      // than hand the user a canned string, fold a recovery directive into the
+      // SYSTEM prompt (not a fake user turn — that risks Kiyo replying to "the
+      // system note" as if the user said it) so she notices and recovers in her
+      // own voice, tone, and language — in character, locale-consistent.
+      const recoverySystemPrompt =
+        systemPrompt +
+        "\n\n═══════════════════════════════════════════════\nRECOVERY — YOUR LAST REPLY CAME BACK EMPTY\n═══════════════════════════════════════════════\n" +
+        "Something glitched and you didn't actually say anything to the user last turn. " +
+        "Don't mention glitches, errors, or \"system notes\" — just notice naturally, in character, " +
+        "in the same language and tone you've been using, and ask the user to repeat what they said " +
+        "(e.g. \"Sorry, lost my train of thought there — say that again?\" in their language/style).";
+      const retry = await generateText({
+        model,
+        system: recoverySystemPrompt,
+        messages: currentMessages,
+        maxRetries: 0,
+        abortSignal: withTimeout(GENERATE_TIMEOUT_MS),
+      });
+      return { text: retry.text, embedded };
     }
 
     // Execute all tool calls in this round (may be parallel).
-    // Errors are caught per-call and returned as structured error strings so
-    // the AI can read them and craft a helpful reply instead of crashing the request.
-    const toolResultParts: ToolResultPart[] = await Promise.all(
-      toolCalls.map(async (tc) => {
-        onToolCall?.(tc.toolName, "running");
-        let value: string;
-        try {
-          const toolResult = await executeTool(tc.toolName, tc.input as Record<string, unknown>);
-          embedded.push(toolResult);
-          value = String(toolResult);
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err);
-          const is429 = msg.includes("429");
-          value = is429
-            ? `TOOL_ERROR: Kapruka is rate-limiting requests right now (429). Tell the user Kapruka is busy and ask them to try again in a moment. Do not retry the tool.`
-            : `TOOL_ERROR: ${msg}. Tell the user the tool failed and suggest trying again or rephrasing. Do not invent results.`;
-        }
-        onToolCall?.(tc.toolName, "done");
-        return {
-          type: "tool-result" as const,
-          toolCallId: tc.toolCallId,
-          toolName: tc.toolName,
-          output: { type: "text" as const, value },
-        };
-      })
-    );
+    const toolResultParts = await runToolCalls(toolCalls, embedded, onToolCall);
 
     // Use result.response.messages for the assistant turn — these carry providerOptions
     // (including Gemini's thoughtSignature) which must be preserved when continuing

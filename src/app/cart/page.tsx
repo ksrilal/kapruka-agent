@@ -5,7 +5,21 @@ import Image from "next/image";
 import { Minus, Plus, Trash2, ArrowLeft, ShoppingBag } from "lucide-react";
 import { formatPrice } from "@/lib/utils/currency";
 import { useCartStore } from "@/features/cart/store";
-import { productId, productPrice, productThumbnail } from "@/types/domain";
+import { useProductImage } from "@/lib/hooks/useProductImage";
+import { productId, productPrice } from "@/types/domain";
+import type { ProductSummary } from "@/types/domain";
+
+// AI-emitted product cards always carry image_url: null (the real thumbnail
+// is fetched async by scraping the product page) — mirrors CartPanel's pattern.
+function CartItemThumbnail({ product }: { product: ProductSummary }) {
+  const scrapedImage = useProductImage(!product.image_url ? product.url : null);
+  const imageSrc = product.image_url ?? scrapedImage;
+  return imageSrc ? (
+    <Image src={imageSrc} alt={product.name} fill className="object-cover" sizes="64px" />
+  ) : (
+    <div className="flex h-full items-center justify-center text-2xl">🎁</div>
+  );
+}
 
 export default function CartPage() {
   const items = useCartStore((s) => s.items);
@@ -55,7 +69,6 @@ export default function CartPage() {
         {items.map(({ product, quantity }) => {
           const pid = productId(product);
           const price = productPrice(product);
-          const thumbnail = productThumbnail(product);
 
           return (
             <div
@@ -64,11 +77,7 @@ export default function CartPage() {
             >
               {/* Image */}
               <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-muted">
-                {thumbnail ? (
-                  <Image src={thumbnail} alt={product.name} fill className="object-cover" sizes="64px" />
-                ) : (
-                  <div className="flex h-full items-center justify-center text-2xl">🎁</div>
-                )}
+                <CartItemThumbnail product={product} />
               </div>
 
               {/* Info */}

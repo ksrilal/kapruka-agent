@@ -5,7 +5,9 @@ import { useChatStore } from "../store";
 import { useShopStore } from "@/features/shop/store";
 import { useOrdersStore } from "@/features/orders/store";
 import { useHistoryStore } from "@/features/history/store";
+import { useCartStore } from "@/features/cart/store";
 import { detectLocale } from "@/lib/utils/unicode";
+import { productId } from "@/types/domain";
 import type { ConversationMessage } from "@/types/domain";
 import type { ChatSSEEvent } from "@/types/ai";
 
@@ -22,6 +24,8 @@ export function useChat() {
   const saveTracking = useOrdersStore((s) => s.saveTracking);
   const openOrdersPanel = useOrdersStore((s) => s.open);
   const saveSession = useHistoryStore((s) => s.saveSession);
+  const addCartItem = useCartStore((s) => s.addItem);
+  const openCart = useCartStore((s) => s.open);
   const abortRef = useRef<AbortController | null>(null);
 
   // Auto-save to history when page unloads — uses stable sessionId so refresh never duplicates
@@ -146,14 +150,59 @@ export function useChat() {
                   m.id === assistantId ? { ...m, order: event.order } : m
                 ),
               }));
-              // Persist order to localStorage so it survives refresh
-              const allProducts = useChatStore.getState().messages
-                .filter((m) => m.products && m.products.length > 0)
-                .flatMap((m) => m.products ?? []);
-              const cartItems = allProducts.map((p) => p.name);
-              const imageUrl = allProducts[0]?.image_url ?? null;
+              // Persist order to localStorage so it survives refresh.
+              // Use only the most recent products card as a best-guess for what's
+              // in this order — flattening every card shown all session would mix
+              // in unrelated products from earlier searches (e.g. user browsed
+              // chocolates, then flowers, then ordered the flowers: showing
+              // "chocolates, flowers" on the order would be misleading).
+              const recentProducts = [...useChatStore.getState().messages]
+                .reverse()
+                .find((m) => m.products && m.products.length > 0)
+                ?.products ?? [];
+              const cartItems = recentProducts.map((p) => p.name);
+              const imageUrl = recentProducts[0]?.image_url ?? null;
               savePendingOrder(event.order, cartItems, imageUrl);
               openOrdersPanel();
+              // Order confirmed — remove the items that were actually checked
+              // out from the cart. The checkout request (CartPanel) tags each
+              // product with [product_id:xxx]. create_order needs several fields
+              // collected conversationally across multiple turns (see TOOL RULES),
+              // so the tagged message is rarely the LAST user message by the time
+              // the order lands — scan user turns since the previous order in
+              // this session (so a stale tag from an earlier, separate checkout
+              // episode that never completed isn't re-applied to this one).
+              const allMsgs = useChatStore.getState().messages;
+              const prevOrderIdx = (() => {
+                for (let i = allMsgs.length - 2; i >= 0; i--) {
+                  if (allMsgs[i].order) return i;
+                }
+                return -1;
+              })();
+              const taggedIds = new Set(
+                allMsgs
+                  .slice(prevOrderIdx + 1)
+                  .filter((m) => m.role === "user")
+                  .flatMap((m) => [...m.content.matchAll(/\[product_id:([^\]]+)\]/g)].map((mt) => mt[1]))
+              );
+              for (const pid of taggedIds) {
+                useCartStore.getState().removeItem(pid);
+              }
+            } else if (event.type === "cartAction") {
+              // Resolve the AI's product_id against products already shown in
+              // this conversation — the AI only knows IDs, not full ProductSummary objects.
+              const known = useChatStore.getState().messages
+                .flatMap((m) => m.products ?? []);
+              const product = known.find((p) => productId(p) === event.productId);
+              if (product) {
+                addCartItem(product, event.quantity);
+                openCart();
+              } else {
+                // AI referenced a product_id that was never actually shown this
+                // session — likely a hallucinated/stale ID. Don't touch the cart;
+                // log so this is visible if the model starts doing it often.
+                console.warn({ event: "cart_action_unresolved_product", productId: event.productId });
+              }
             } else if (event.type === "orderStatus") {
               useChatStore.setState((s) => ({
                 messages: s.messages.map((m) =>

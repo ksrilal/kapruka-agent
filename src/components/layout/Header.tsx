@@ -16,7 +16,6 @@ export function Header() {
 
   const toggleOrders = useOrdersStore((s) => s.toggle);
   const pendingOrders = useOrdersStore((s) => s.pending);
-  const pruneExpired = useOrdersStore((s) => s.pruneExpired);
 
   const toggleHistory = useHistoryStore((s) => s.toggle);
   const historySessions = useHistoryStore((s) => s.sessions);
@@ -34,8 +33,7 @@ export function Header() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
-    pruneExpired();
-  }, [pruneExpired]);
+  }, []);
 
   const cartCount = mounted ? cartItemCount() : 0;
   const ordersCount = mounted ? pendingOrders.length : 0;

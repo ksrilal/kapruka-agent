@@ -140,7 +140,6 @@ export function CartPanel() {
   const items = useCartStore((s) => s.items);
   const removeItem = useCartStore((s) => s.removeItem);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
-  const clear = useCartStore((s) => s.clear);
   const itemCount = useCartStore((s) => s.itemCount);
   const subtotal = useCartStore((s) => s.subtotal);
   const focusSearch = useShopStore((s) => s.focusSearch);
@@ -158,7 +157,10 @@ export function CartPanel() {
       .map((i) => `${i.quantity}x ${i.product.name} [product_id:${productId(i.product)}] (${cartCurrency} ${productPrice(i.product).toLocaleString()})`)
       .join(", ");
     close();
-    clear();
+    // Don't clear the cart here — sendMessage is fire-and-forget and the AI
+    // hasn't actually placed the order yet (it may fail, ask clarifying
+    // questions, or the user may change their mind). Clearing now would lose
+    // the user's selections on a checkout that never completed.
     sendMessage(
       `I want to checkout. My cart has: ${itemList}. Total: ${cartCurrency} ${total.toLocaleString()}. Please help me place the order.`
     );
@@ -170,8 +172,10 @@ export function CartPanel() {
     if (!line) return;
     const price = productPrice(line.product);
     const cur = line.product.price?.currency ?? "LKR";
-    removeItem(pid);
     close();
+    // Don't remove the item here — see handleCheckout: the order isn't
+    // confirmed yet, just requested. Removing now risks losing it if the
+    // AI flow doesn't complete.
     sendMessage(
       `I want to order ${line.quantity}x ${line.product.name} [product_id:${pid}] (${cur} ${(price * line.quantity).toLocaleString()}). Please help me place the order.`
     );

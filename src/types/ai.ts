@@ -52,10 +52,18 @@ export interface ChatToolCallEvent {
   status: "running" | "done";
 }
 
+export interface ChatCartActionEvent {
+  type: "cartAction";
+  action: "add";
+  productId: string;
+  quantity: number;
+}
+
 export type ChatSSEEvent =
   | ChatTextEvent
   | ChatErrorEvent
   | ChatProductsEvent
   | ChatOrderEvent
   | ChatOrderStatusEvent
-  | ChatToolCallEvent;
+  | ChatToolCallEvent
+  | ChatCartActionEvent;

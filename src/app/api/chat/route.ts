@@ -183,9 +183,32 @@ async function* chatGenerator(
 
   // Step 2: emit structured events
   const emittedTypes = new Set<string>();
+  // cartAction is a MUTATING operation (unlike products/order/orderStatus which
+  // are idempotent to re-render) — if a model repeats the same block, re-emitting
+  // it would double-add to the cart. Dedupe per (action, product_id) pair, while
+  // still allowing different products to each be added in one reply.
+  const seenCartActions = new Set<string>();
   for (const block of structuredBlocks) {
     try {
       const parsed = JSON.parse(block) as { __type: string; data: unknown };
+      if (parsed.__type === "cartAction" && parsed.data && typeof parsed.data === "object" && !Array.isArray(parsed.data)) {
+        const data = parsed.data as { action?: string; product_id?: string; quantity?: number };
+        if (data.action === "add" && typeof data.product_id === "string" && data.product_id) {
+          const dedupeKey = `${data.action}:${data.product_id}`;
+          if (!seenCartActions.has(dedupeKey)) {
+            seenCartActions.add(dedupeKey);
+            emittedTypes.add(parsed.__type);
+            yield {
+              type: "cartAction" as const,
+              action: "add",
+              productId: data.product_id,
+              quantity: typeof data.quantity === "number" && data.quantity > 0 ? data.quantity : 1,
+            };
+          }
+        }
+        continue;
+      }
+
       if (emittedTypes.has(parsed.__type)) continue;
       emittedTypes.add(parsed.__type);
       if (parsed.__type === "products" && Array.isArray(parsed.data)) {
@@ -223,8 +246,17 @@ async function* chatGenerator(
     yield { type: "text", text: "Your order is ready — tap Pay Now on the card below." };
   } else if (emittedTypes.has("orderStatus")) {
     yield { type: "text", text: "Here's the latest status for your order." };
+  } else if (emittedTypes.has("cartAction")) {
+    yield { type: "text", text: "Done — added to your cart!" };
+  } else {
+    // The orchestrator succeeded but produced no text and no cards — the model
+    // returned an empty final turn (provider hiccup). Don't leave a blank bubble.
+    console.error({ event: "chat_empty_response" });
+    yield {
+      type: "text",
+      text: "Hmm, I lost my train of thought there — could you say that again?",
+    };
   }
-  // If nothing at all — the error path already handled it above
 }
 
 export async function POST(req: NextRequest) {

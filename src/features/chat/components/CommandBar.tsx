@@ -13,8 +13,8 @@ import { useChatStore } from "@/features/chat/store";
 // Rotating placeholder text for the empty/landing state — mix of English, Sinhala, and Tanglish
 const PROMPTS = [
   { text: "What are you shopping for today?", lang: "EN" },
-  { text: "Ada mokakda hoyanne?", lang: "TGL" },
-  { text: "අද මොකක්ද හොයන්නේ?", lang: "සිං" },
+  { text: "Oya mokakda hoyanne?", lang: "TGL" },
+  { text: "ඔයාට මොනවද ඕනේ?", lang: "සිං" },
   { text: "Inniku enna thedureenga?", lang: "TGL" },
 ];
 

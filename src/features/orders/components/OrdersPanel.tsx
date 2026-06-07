@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import {
   X, Package, ExternalLink, Clock, Trash2, RefreshCw, CheckCircle2, XCircle, Loader2,
@@ -334,14 +334,9 @@ function OrdersPanelContent({ onClose }: { onClose: () => void }) {
   const tracked = useOrdersStore((s) => s.tracked);
   const removePending = useOrdersStore((s) => s.removePending);
   const removeTracking = useOrdersStore((s) => s.removeTracking);
-  const pruneExpired = useOrdersStore((s) => s.pruneExpired);
 
   // Polling only runs while this component is mounted (panel open)
   useOrderPolling();
-
-  useEffect(() => {
-    pruneExpired();
-  }, [pruneExpired]);
 
   const totalCount = pending.length + tracked.length;
 
