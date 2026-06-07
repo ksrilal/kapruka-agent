@@ -2,6 +2,7 @@
 
 import { ShoppingCart, Package, History, SquarePen } from "lucide-react";
 import { KiyoAvatar } from "@/components/ui/KiyoAvatar";
+import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useCartStore } from "@/features/cart/store";
 import { useOrdersStore } from "@/features/orders/store";
@@ -22,6 +23,12 @@ export function Header() {
 
   const hasMessages = useChatStore((s) => s.messages.length > 0);
   const { newChat, isStreaming } = useChat();
+  const router = useRouter();
+
+  function goHome() {
+    newChat();
+    router.push("/");
+  }
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -41,7 +48,7 @@ export function Header() {
     >
       <div className="flex h-16 items-center justify-between">
         <button
-          onClick={newChat}
+          onClick={goHome}
           className="flex items-center gap-3 cursor-pointer text-left w-auto"
           aria-label="Go to home"
         >

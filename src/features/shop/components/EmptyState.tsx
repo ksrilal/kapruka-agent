@@ -44,7 +44,6 @@ export function EmptyState() {
   const { sendMessage } = useChat();
   const [subtitleIdx, setSubtitleIdx] = useState(0);
   const [visible, setVisible] = useState(true);
-
   useEffect(() => {
     const interval = setInterval(() => {
       setVisible(false);
@@ -61,7 +60,7 @@ export function EmptyState() {
   return (
     <div className="relative flex h-full flex-col items-center overflow-y-auto px-4 sm:px-6 pt-4 sm:pt-6">
 
-      {/* Orbs */}
+      {/* Orbs — static ambient glows */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="orb orb-primary"   style={{ top: "-160px", left: "50%", transform: "translateX(-50%)" }} />
         <div className="orb orb-secondary" style={{ bottom: "-80px", left: "-100px" }} />
