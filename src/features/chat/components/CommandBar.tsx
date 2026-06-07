@@ -167,7 +167,7 @@ export function CommandBar() {
                     placeholder=""
                     disabled={isStreaming}
                     className="flex-1 min-w-0 resize-none bg-transparent text-[15px] leading-relaxed text-foreground outline-none placeholder:text-muted-foreground disabled:opacity-0"
-                    style={{ maxHeight: 120 }}
+                    style={{ maxHeight: 120, caretColor: "var(--purple-light)" }}
                   />
                   {/* Detected language pill — only show when conversation is active */}
                   {langMeta && (
@@ -226,7 +226,11 @@ export function CommandBar() {
 
           {/* Placeholder language hint — only on empty state */}
           {!hasMessages && !value && (
-            <div className="mt-2 flex items-center gap-1 sm:gap-1.5 pl-9 sm:pl-11 flex-wrap">
+            <div className="mt-2 flex justify-center">
+            <div
+              className="inline-flex items-center gap-1 sm:gap-1.5 rounded-full px-2.5 py-1 flex-wrap w-fit"
+              style={{ background: "var(--surface-2)" }}
+            >
               <span className="text-[11px]" style={{ color: "var(--ink-3)" }}>Type in</span>
               {[
                 { label: "English", color: "var(--ink-3)" },
@@ -239,6 +243,7 @@ export function CommandBar() {
                 </span>
               ))}
               <span className="hidden sm:inline text-[11px]" style={{ color: "var(--ink-3)" }}>— Kiyo understands all three</span>
+            </div>
             </div>
           )}
         </div>
