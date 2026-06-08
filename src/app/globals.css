@@ -87,6 +87,105 @@
   --font-sans: var(--font-geist-sans, system-ui, sans-serif);
 }
 
+/* ─── Light theme ────────────────────────────────────────────────────────────── */
+/* Same purple brand identity, flipped for a light backdrop. Toggled via a
+   `.light` class on <html> (see ThemeToggle / theme store). */
+html.light {
+  --bg:           #faf9fd;
+  --bg-2:         #f1eef8;
+  --surface:      #ffffff;
+  --surface-2:    #f5f2fb;
+
+  --border:       rgba(124,58,237,0.12);
+  --border-2:     rgba(124,58,237,0.22);
+
+  --ink:          #211c33;
+  --ink-2:        #6b6285;
+  --ink-3:        #847ba0;
+
+  /* Brand purple — slightly deepened so it holds contrast on white */
+  --purple:       #7c3aed;
+  --purple-light: #7c3aed;
+  --purple-hover: #6d28d9;
+  --purple-deep:  #ede9fe;
+  --purple-glow:  rgba(124,58,237,0.22);
+  --purple-soft:  rgba(124,58,237,0.08);
+  --purple-soft-2:rgba(124,58,237,0.045);
+
+  /* Accent: warm violet-pink */
+  --accent:       #a855f7;
+  --accent-soft:  rgba(168,85,247,0.10);
+
+  /* Gold for prices */
+  --gold:         #d97706;
+  --gold-soft:    rgba(217,119,6,0.10);
+
+  /* Green for success */
+  --green:        #059669;
+  --green-soft:   rgba(5,150,105,0.10);
+
+  /* Glass — light, purple-tinted */
+  --glass:        rgba(255,255,255,0.72);
+  --glass-dark:   rgba(255,255,255,0.85);
+  --glass-border: rgba(124,58,237,0.14);
+
+  /* Orb gradient colors — softened for a light backdrop */
+  --orb-1: #c4b5fd;
+  --orb-2: #f5d0e8;
+  --orb-3: #ddd6fe;
+
+  /* Shadows — soft purple-tinted depth instead of heavy black */
+  --s1: 0 1px 3px rgba(124,58,237,0.08);
+  --s2: 0 2px 8px rgba(124,58,237,0.10), 0 1px 2px rgba(124,58,237,0.06);
+  --s3: 0 8px 28px rgba(124,58,237,0.14), 0 2px 8px rgba(124,58,237,0.08);
+  --s4: 0 20px 56px rgba(124,58,237,0.16), 0 6px 20px rgba(124,58,237,0.08);
+  --s5: 0 40px 88px rgba(124,58,237,0.18), 0 12px 32px rgba(124,58,237,0.10);
+  --s-glow: 0 0 40px var(--purple-glow), 0 0 80px rgba(124,58,237,0.10);
+
+  /* Tailwind bridge */
+  --background:          var(--bg);
+  --foreground:          var(--ink);
+  --muted:               var(--bg-2);
+  --muted-foreground:    var(--ink-2);
+  --card:                var(--surface);
+  --card-foreground:     var(--ink);
+  --border-color:        var(--border);
+  --primary:             var(--purple);
+  --primary-foreground:  #ffffff;
+  --destructive:         #dc2626;
+  --destructive-foreground: #ffffff;
+}
+
+/* Hardcoded (non-token) surfaces tuned for the dark backdrop — re-tuned for light */
+html.light .command-bar {
+  background: rgba(255,255,255,0.65);
+  border: 1px solid rgba(124,58,237,0.16);
+  box-shadow: var(--s5), 0 0 0 1px rgba(124,58,237,0.05) inset, var(--s-glow);
+}
+html.light .backdrop {
+  background: rgba(33,28,51,0.28);
+}
+html.light .cursor-blob {
+  background-image: linear-gradient(#7c3aed 10%, #db2777);
+  opacity: 0.4;
+  filter: blur(140px);
+}
+html.light .cursor-blob-dim {
+  opacity: 0.22;
+}
+html.light .orb-primary {
+  background: radial-gradient(circle at center, #a78bfa 0%, #c4b5fd 45%, transparent 72%);
+  opacity: 0.5;
+}
+html.light .orb-secondary {
+  background: radial-gradient(circle at center, #f0abfc 0%, #c4b5fd 50%, transparent 72%);
+  opacity: 0.4;
+}
+html.light .orb-accent {
+  background: radial-gradient(circle at center, #c4b5fd 0%, transparent 72%);
+  opacity: 0.3;
+}
+
 /* ─── Reset & Base ───────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; }
 html { height: 100%; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
@@ -153,6 +252,24 @@ summary {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+html.light .gradient-text {
+  background: linear-gradient(135deg, #6d28d9 0%, #a21caf 60%, #be185d 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+/* ─── Brand logo badge ───────────────────────────────────────────────────────── */
+/* Both logo assets are flat opaque squares (no transparency) — a dark card for
+   logo.png, a white card for logo-white.png. `screen` dissolves the dark card
+   into a dark page background; `multiply` dissolves the white card into a light
+   one — same trick, inverted, so only the mascot/wordmark appear to float. */
+.brand-logo {
+  border-radius: var(--r5);
+  mix-blend-mode: screen;
+}
+html.light .brand-logo {
+  mix-blend-mode: multiply;
 }
 
 /* ─── Soap bubbles ───────────────────────────────────────────────────────────── */

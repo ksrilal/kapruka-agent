@@ -1,6 +1,6 @@
 "use client";
 
-import { ShoppingCart, Package, History, SquarePen } from "lucide-react";
+import { ShoppingCart, Package, History, SquarePen, Sun, Moon } from "lucide-react";
 import { KiyoAvatar } from "@/components/ui/KiyoAvatar";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -9,6 +9,7 @@ import { useOrdersStore } from "@/features/orders/store";
 import { useHistoryStore } from "@/features/history/store";
 import { useChatStore } from "@/features/chat/store";
 import { useChat } from "@/features/chat/hooks/useChat";
+import { useThemeStore, syncThemeFromDom } from "@/features/theme/store";
 
 export function Header() {
   const toggleCart = useCartStore((s) => s.toggle);
@@ -24,6 +25,9 @@ export function Header() {
   const { newChat, isStreaming } = useChat();
   const router = useRouter();
 
+  const theme = useThemeStore((s) => s.theme);
+  const toggleTheme = useThemeStore((s) => s.toggleTheme);
+
   function goHome() {
     newChat();
     router.push("/");
@@ -31,6 +35,7 @@ export function Header() {
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
+    syncThemeFromDom();
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
@@ -62,6 +67,19 @@ export function Header() {
         </button>
 
         <div className="flex items-center gap-2">
+          {/* Theme toggle */}
+          {mounted && (
+            <button
+              onClick={toggleTheme}
+              aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+              title={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+              className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:text-foreground active:scale-95"
+              style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
+            >
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
+          )}
+
           {/* New chat — only visible when a conversation is active */}
           {mounted && hasMessages && (
             <button

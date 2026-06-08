@@ -24,9 +24,16 @@ export const viewport: Viewport = {
   themeColor: "#0a0812",
 };
 
+// Runs before paint to apply the saved theme — avoids a flash of the wrong
+// theme on load. Defaults to dark when nothing is stored yet.
+const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem("kiyo-theme");if(t==="light"){document.documentElement.classList.add("light");}}catch(e){}})();`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={geist.variable}>
+    <html lang="en" className={geist.variable} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body suppressHydrationWarning>
         <CursorGlow />
         <ErrorBoundary>

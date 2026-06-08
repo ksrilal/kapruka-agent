@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { X, History, Trash2, MessageSquare, Clock, ChevronRight, Sparkles } from "lucide-react";
 import { useHistoryStore } from "@/features/history/store";
 import { useChatStore } from "@/features/chat/store";
@@ -114,6 +115,7 @@ export function HistoryPanel() {
   const deleteSession = useHistoryStore((s) => s.deleteSession);
   const clearAll = useHistoryStore((s) => s.clearAll);
   const [mounted, setMounted] = useState(false);
+  const router = useRouter();
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setMounted(true); }, []);
@@ -128,6 +130,9 @@ export function HistoryPanel() {
     // Scroll to latest after mount
     useShopStore.getState().focusSearch();
     close();
+    // Restoring a session always means viewing it in the chat — if we're on a
+    // static page (About, Q&A, etc.) navigate home so the user actually sees it
+    router.push("/");
   }
 
   return (

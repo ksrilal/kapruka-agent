@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { X, Minus, Plus, Trash2, ShoppingBag, Sparkles, ShoppingCart } from "lucide-react";
 import { useCartStore } from "@/features/cart/store";
 import { useShopStore } from "@/features/shop/store";
@@ -144,6 +145,7 @@ export function CartPanel() {
   const subtotal = useCartStore((s) => s.subtotal);
   const focusSearch = useShopStore((s) => s.focusSearch);
   const sendMessage = useShopStore((s) => s.sendMessage);
+  const router = useRouter();
 
   if (!isOpen) return null;
 
@@ -164,6 +166,9 @@ export function CartPanel() {
     sendMessage(
       `I want to checkout. My cart has: ${itemList}. Total: ${cartCurrency} ${total.toLocaleString()}. Please help me place the order.`
     );
+    // Checkout always plays out in the chat — navigate home so the user sees
+    // Kiyo respond, even when triggered from a static page (About, Q&A, etc.)
+    router.push("/");
   }
 
   function handleCheckoutItem(pid: string) {
@@ -179,6 +184,7 @@ export function CartPanel() {
     sendMessage(
       `I want to order ${line.quantity}x ${line.product.name} [product_id:${pid}] (${cur} ${(price * line.quantity).toLocaleString()}). Please help me place the order.`
     );
+    router.push("/");
   }
 
   return (
@@ -234,7 +240,7 @@ export function CartPanel() {
                 </p>
               </div>
               <button
-                onClick={() => { close(); focusSearch(); }}
+                onClick={() => { close(); router.push("/"); focusSearch(); }}
                 className="btn-purple flex items-center gap-1.5 px-5 py-2 t-small font-semibold"
               >
                 Start shopping
