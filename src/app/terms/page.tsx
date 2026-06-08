@@ -99,7 +99,7 @@ export default function TermsPage() {
 
         <Section title="7. AI-Generated Content">
           <p>
-            Kiyo uses a large language model (such as Google Gemini, Anthropic Claude, or OpenAI GPT-4) to generate responses. While we strive for accuracy:
+            Kiyo uses a large language model (such as Anthropic Claude, OpenAI GPT, or Google Gemini, depending on configuration) to generate responses. While we strive for accuracy:
           </p>
           <ul className="flex flex-col gap-2 list-none mt-2">
             <Li>AI responses may occasionally contain errors, inaccuracies, or outdated information.</Li>
@@ -131,17 +131,13 @@ export default function TermsPage() {
           </p>
         </Section>
 
-        <Section title="10. Rate Limits">
+        <Section title="10. Fair Use">
           <p>
-            To ensure fair access for all users, the following limits apply:
-          </p>
-          <ul className="flex flex-col gap-2 list-none mt-2">
-            <Li>Up to 60 API requests per minute per IP address.</Li>
-            <Li>Up to 30 order creation requests per hour per IP address.</Li>
-          </ul>
-          <p className="mt-3">
-            Exceeding these limits will result in temporary request throttling. Persistent abuse
-            may result in IP-level blocking.
+            Kiyo is provided for personal shopping use. To keep the Service available and
+            responsive for everyone, we may apply reasonable technical safeguards — such as
+            request throttling — against usage patterns that look automated, abusive, or
+            disruptive to the Service's infrastructure. Continued misuse may result in
+            suspension of access.
           </p>
         </Section>
 

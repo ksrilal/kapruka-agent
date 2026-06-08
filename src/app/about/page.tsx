@@ -20,7 +20,7 @@ const PILLARS = [
     color: "#34d399",
     bg: "rgba(52,211,153,0.12)",
     title: "Delivery Across Sri Lanka",
-    body: "Powered by Kapruka's island-wide logistics network, Kiyo can dispatch gifts, flowers, cakes, and more to over 300 cities and towns.",
+    body: "Powered by Kapruka's island-wide logistics network, Kiyo can dispatch gifts, flowers, cakes, and more across Sri Lanka — just name the destination city and Kiyo checks live delivery availability and timing for you.",
   },
   {
     icon: Heart,

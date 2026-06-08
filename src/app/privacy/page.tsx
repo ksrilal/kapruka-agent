@@ -74,8 +74,8 @@ export default function PrivacyPage() {
 
         <Section title="4. AI Processing">
           <p>
-            Kiyo is powered by a third-party large language model (such as Google Gemini,
-            Anthropic Claude, or OpenAI GPT-4). Messages you send may be processed by the
+            Kiyo is powered by a third-party large language model (such as Anthropic Claude,
+            OpenAI GPT, or Google Gemini, depending on configuration). Messages you send may be processed by the
             respective AI provider's infrastructure, subject to their privacy policies. We do not
             pass personally identifiable information to the AI model unless you include it in a
             message yourself (e.g. a delivery address).
@@ -84,9 +84,12 @@ export default function PrivacyPage() {
 
         <Section title="5. Data Retention">
           <p>
-            Chat history is stored in your browser's local storage and is not retained on our
-            servers beyond the duration required to complete your order. Order records are retained
-            by Kapruka for up to 7 years as required by Sri Lankan commercial law.
+            Chat history, cart contents, and session state live entirely in your browser's local
+            storage — Kiyo does not operate a backend database and does not persist your
+            conversations on its own servers. During an active session, your messages pass through
+            Kiyo's server only momentarily, to be relayed to the AI provider and to Kapruka's order
+            systems. Order records themselves are retained by Kapruka as required by Sri Lankan
+            commercial law.
           </p>
         </Section>
 
@@ -136,7 +139,7 @@ export default function PrivacyPage() {
           </p>
           <ul className="flex flex-col gap-2 list-none mt-2">
             <Li><strong className="text-foreground">Kapruka.com</strong> — order fulfilment, payment processing, and logistics.</Li>
-            <Li><strong className="text-foreground">AI language model provider</strong> — large language model processing (Google Gemini, Anthropic Claude, or OpenAI GPT-4 depending on configuration).</Li>
+            <Li><strong className="text-foreground">AI language model provider</strong> — large language model processing (Anthropic Claude, OpenAI GPT, or Google Gemini, depending on configuration).</Li>
             <Li><strong className="text-foreground">Vercel</strong> — hosting and edge network.</Li>
           </ul>
         </Section>

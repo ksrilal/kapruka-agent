@@ -17,7 +17,7 @@ const SECTIONS = [
       },
       {
         q: "What languages does Kiyo understand?",
-        a: "Kiyo understands English, Sinhala (සිංහල), and Tanglish (a natural mix of Tamil and English). You can switch between languages mid-conversation — no need to restart.",
+        a: "Kiyo understands English, Sinhala (සිංහල), Tamil (தமிழ்), and Tanglish — Sinhala or Tamil typed out in everyday Latin letters, the way most Sri Lankans actually text (e.g. \"mage ammata gift ekak ona\"). Just type naturally in whichever style feels comfortable — Kiyo will match it.",
       },
       {
         q: "Do I need to create an account?",
@@ -30,7 +30,7 @@ const SECTIONS = [
     items: [
       {
         q: "Which cities does Kapruka deliver to?",
-        a: "Kapruka delivers island-wide across Sri Lanka — over 300 cities and towns including Colombo, Kandy, Galle, Jaffna, Matara, Kurunegala, and more. You can ask Kiyo to check delivery availability for any specific location.",
+        a: "Kapruka delivers island-wide across Sri Lanka, including major cities like Colombo, Kandy, Galle, Jaffna, Matara, and Kurunegala. Coverage and delivery timing can vary by location — just tell Kiyo the destination city and it'll check live availability, delivery dates, and any charges for you.",
       },
       {
         q: "Can I send a gift from overseas?",
