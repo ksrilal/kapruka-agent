@@ -291,7 +291,7 @@ function TrackingRow({ saved, onRemove }: { saved: SavedTracking; onRemove: () =
         <span style={{ color: "var(--ink-3)" }}>Delivery</span>
         <span style={{ color: "var(--ink)" }}>{status.delivery_date}</span>
         <span style={{ color: "var(--ink-3)" }}>Amount</span>
-        <span style={{ color: "var(--gold)" }}>LKR {status.amount}</span>
+        <span style={{ color: "var(--gold)" }}>{status.amount.currency} {status.amount.value}</span>
       </div>
 
       {/* Progress timeline */}

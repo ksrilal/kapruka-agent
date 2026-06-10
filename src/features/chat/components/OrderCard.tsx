@@ -89,7 +89,7 @@ export function OrderStatusCard({ status }: { status: OrderStatus }) {
         </div>
         <div className="flex justify-between">
           <span>Amount</span>
-          <span style={{ color: "var(--gold)" }}>LKR {status.amount}</span>
+          <span style={{ color: "var(--gold)" }}>{status.amount.currency} {status.amount.value}</span>
         </div>
       </div>
 

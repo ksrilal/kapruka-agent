@@ -6,6 +6,7 @@ import { z } from "zod";
 import { runOrchestrator } from "@/lib/ai/orchestrator";
 import { createSSEStream } from "@/lib/ai/streaming";
 import { detectLocale } from "@/lib/utils/unicode";
+import { TrackOrderOutputSchema } from "@/types/mcp";
 import type { ChatSSEEvent } from "@/types/ai";
 import type { Locale } from "@/types/domain";
 
@@ -221,7 +222,13 @@ async function* chatGenerator(
       } else if (parsed.__type === "order" && parsed.data) {
         yield { type: "order" as const, order: parsed.data as import("@/types/domain").Order };
       } else if (parsed.__type === "orderStatus" && parsed.data) {
-        yield { type: "orderStatus" as const, orderStatus: parsed.data as import("@/types/domain").OrderStatus };
+        const statusResult = TrackOrderOutputSchema.safeParse(parsed.data);
+        if (statusResult.success) {
+          yield { type: "orderStatus" as const, orderStatus: statusResult.data as import("@/types/domain").OrderStatus };
+        } else {
+          console.error({ event: "order_status_schema_fail", issues: statusResult.error.issues });
+          emittedTypes.delete(parsed.__type);
+        }
       }
     } catch { /* malformed — skip */ }
   }

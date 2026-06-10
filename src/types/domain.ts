@@ -90,7 +90,7 @@ export interface OrderStatus {
   order_date: string;
   delivery_date: string;
   shipped_date: string | null;
-  amount: string;
+  amount: { value: string; currency: string };
   payment_method: string;
   comments: string | null;
   recipient: OrderTrackingRecipient;

@@ -273,7 +273,10 @@ export const TrackOrderOutputSchema = z.object({
   order_date: z.string(),
   delivery_date: z.string(),
   shipped_date: z.string().nullable(),
-  amount: z.string(),
+  amount: z.object({
+    value: z.string(),
+    currency: z.string(),
+  }),
   payment_method: z.string(),
   comments: z.string().nullable(),
   recipient: z.object({

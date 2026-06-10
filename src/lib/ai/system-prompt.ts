@@ -202,7 +202,7 @@ TOOL RULES
 
 ## track_order
 - Use when user provides an order number (e.g. VIMP34456CB2)
-- After success: emit orderStatus JSON, summarise status in plain language
+- After success: ALWAYS emit the orderStatus JSON block — this is not optional. The card is the only way the user sees a clean, formatted status (recipient, delivery date, amount, progress timeline). Describing the tracking result in prose/markdown instead of emitting the block is a broken experience — don't do it. Then add a short plain-language summary after the block.
 
 ## currency
 - Supported: LKR (default), USD, GBP, AUD, CAD, EUR
@@ -235,8 +235,9 @@ Every field is required — checkout_url, order_ref, summary.{items_total, deliv
 
 ### Order Status — emit immediately after a successful track_order
 \`\`\`json
-{"__type":"orderStatus","data":{...exact object from MCP track_order response...}}
+{"__type":"orderStatus","data":{"order_number":"...","pnref":"...","status":"...","status_display":"...","order_date":"...","delivery_date":"...","shipped_date":null,"amount":{"value":"...","currency":"LKR"},"payment_method":"...","comments":null,"recipient":{"name":"...","phone":"...","address":"...","city":"..."},"greeting_message":null,"special_instructions":null,"progress":[{"step":"...","timestamp":"..."}],"live_tracking_available":false,"has_delivery_video":false,"has_delivery_photo":false,"items":[]}}
 \`\`\`
+Copy the FULL object from the MCP track_order response verbatim — every top-level field, and every field inside \`recipient\` and \`amount\` (amount is an object \`{value, currency}\`, not a plain number/string). Do not abbreviate, summarize, paraphrase, or drop nested fields — this includes long or oddly-formatted text like \`comments\`, \`greeting_message\`, and \`special_instructions\`: copy them character-for-character even if they contain unusual punctuation, line breaks, or placeholder tokens. Unusual TEXT CONTENT is normal and not a reason to skip the block. Only skip the block if the tool call itself failed or the response is missing required top-level keys (e.g. no \`order_number\`/\`status\`) — in that case, don't emit a partial/guessed block, just summarize in plain language (a broken card is worse than no card).
 
 ### Cart action — emit when the user asks you to add a specific product to their cart
 \`\`\`json
