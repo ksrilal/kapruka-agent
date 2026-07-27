@@ -6,6 +6,7 @@ import {
 } from "react";
 import { ArrowUp, Square, Mic, MicOff } from "lucide-react";
 import { KiyoAvatar } from "@/components/ui/KiyoAvatar";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useShopStore } from "@/features/shop/store";
 import { useChat } from "@/features/chat/hooks/useChat";
 import { useChatStore } from "@/features/chat/store";
@@ -213,36 +214,51 @@ export function CommandBar() {
             {/* Actions */}
             <div className="flex items-center gap-1.5 mb-0.5">
               {speechSupported && (
-                <button
-                  onClick={isListening ? () => recognitionRef.current?.stop() : startListening}
-                  title={isListening ? "Stop recording" : "Voice input"}
-                  className={`flex h-8 w-8 items-center justify-center rounded-xl transition-all ${
-                    isListening
-                      ? "bg-primary text-white shadow-[0_0_0_4px_var(--purple-soft)]"
-                      : "text-muted-foreground hover:text-foreground hover:bg-(--surface-2)"
-                  }`}
-                >
-                  {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={isListening ? () => recognitionRef.current?.stop() : startListening}
+                      aria-label={isListening ? "Stop recording" : "Voice input"}
+                      className={`flex h-8 w-8 items-center justify-center rounded-xl transition-all ${
+                        isListening
+                          ? "bg-primary text-white shadow-[0_0_0_4px_var(--purple-soft)]"
+                          : "text-muted-foreground hover:text-foreground hover:bg-(--surface-2)"
+                      }`}
+                    >
+                      {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>{isListening ? "Stop recording" : "Voice input"}</TooltipContent>
+                </Tooltip>
               )}
 
               {isStreaming ? (
-                <button
-                  onClick={stop}
-                  title="Stop"
-                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-(--surface-2) text-foreground transition-all hover:bg-(--border-2) active:scale-95"
-                >
-                  <Square className="h-3.5 w-3.5 fill-current" />
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={stop}
+                      aria-label="Stop"
+                      className="flex h-9 w-9 items-center justify-center rounded-xl bg-(--surface-2) text-foreground transition-all hover:bg-(--border-2) active:scale-95"
+                    >
+                      <Square className="h-3.5 w-3.5 fill-current" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Stop</TooltipContent>
+                </Tooltip>
               ) : (
-                <button
-                  onClick={submit}
-                  disabled={!value.trim()}
-                  title="Send"
-                  className="btn-purple flex h-9 w-9 items-center justify-center rounded-xl disabled:cursor-default disabled:opacity-30 disabled:shadow-none active:scale-95"
-                >
-                  <ArrowUp className="h-4 w-4" />
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={submit}
+                      disabled={!value.trim()}
+                      aria-label="Send"
+                      className="btn-purple flex h-9 w-9 items-center justify-center rounded-xl disabled:cursor-default disabled:opacity-30 disabled:shadow-none active:scale-95"
+                    >
+                      <ArrowUp className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Send</TooltipContent>
+                </Tooltip>
               )}
             </div>
           </div>

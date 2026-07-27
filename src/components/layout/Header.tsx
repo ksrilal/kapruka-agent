@@ -2,6 +2,7 @@
 
 import { ShoppingCart, Package, History, SquarePen, Sun, Moon } from "lucide-react";
 import { KiyoAvatar } from "@/components/ui/KiyoAvatar";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useCartStore } from "@/features/cart/store";
@@ -69,15 +70,21 @@ export function Header() {
         <div className="flex items-center gap-2">
           {/* Theme toggle */}
           {mounted && (
-            <button
-              onClick={toggleTheme}
-              aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
-              title={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
-              className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:text-foreground active:scale-95"
-              style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
-            >
-              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={toggleTheme}
+                  aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+                  className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:text-foreground active:scale-95"
+                  style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
+                >
+                  {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+              </TooltipContent>
+            </Tooltip>
           )}
 
           {/* New chat — only visible when a conversation is active */}
@@ -97,15 +104,19 @@ export function Header() {
 
           {/* History button */}
           <div className="relative">
-            <button
-              onClick={toggleHistory}
-              aria-label="Chat history"
-              title="Chat History"
-              className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:text-foreground active:scale-95"
-              style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
-            >
-              <History className="h-4 w-4" />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={toggleHistory}
+                  aria-label="Chat history"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:text-foreground active:scale-95"
+                  style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
+                >
+                  <History className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Chat history</TooltipContent>
+            </Tooltip>
             {historyCount > 0 && (
               <span className="badge-count" style={{ background: "var(--purple)" }}>
                 {historyCount}
@@ -115,15 +126,19 @@ export function Header() {
 
           {/* Orders button */}
           <div className="relative">
-            <button
-              onClick={toggleOrders}
-              aria-label="My orders"
-              title="My Orders"
-              className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:text-foreground active:scale-95"
-              style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
-            >
-              <Package className="h-4 w-4" />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={toggleOrders}
+                  aria-label="My orders"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:text-foreground active:scale-95"
+                  style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
+                >
+                  <Package className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>My orders</TooltipContent>
+            </Tooltip>
             {ordersCount > 0 && (
               <span className="badge-count" style={{ background: "var(--gold)" }}>
                 {ordersCount}
@@ -133,15 +148,19 @@ export function Header() {
 
           {/* Cart button */}
           <div className="relative">
-            <button
-              onClick={toggleCart}
-              aria-label="Open cart"
-              title="Cart"
-              className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:text-foreground active:scale-95"
-              style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
-            >
-              <ShoppingCart className="h-4 w-4" />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={toggleCart}
+                  aria-label="Open cart"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:text-foreground active:scale-95"
+                  style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Cart</TooltipContent>
+            </Tooltip>
             {cartCount > 0 && (
               <span className="badge-count">{cartCount > 99 ? "99+" : cartCount}</span>
             )}

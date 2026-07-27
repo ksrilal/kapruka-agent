@@ -70,6 +70,9 @@
   --primary-foreground:  #ffffff;
   --destructive:         #ef4444;
   --destructive-foreground: #ffffff;
+  --popover:             var(--surface-2);
+  --popover-foreground:  var(--ink);
+  --ring:                var(--purple);
 }
 
 @theme inline {
@@ -84,6 +87,9 @@
   --color-primary-foreground: #ffffff;
   --color-destructive:        #ef4444;
   --color-destructive-foreground: #ffffff;
+  --color-popover:            var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-ring:               var(--ring);
   --font-sans: var(--font-geist-sans, system-ui, sans-serif);
 }
 
@@ -154,6 +160,9 @@ html.light {
   --primary-foreground:  #ffffff;
   --destructive:         #dc2626;
   --destructive-foreground: #ffffff;
+  --popover:             var(--surface-2);
+  --popover-foreground:  var(--ink);
+  --ring:                var(--purple);
 }
 
 /* Hardcoded (non-token) surfaces tuned for the dark backdrop — re-tuned for light */

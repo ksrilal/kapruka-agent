@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { X, History, Trash2, MessageSquare, Clock, ChevronRight, Sparkles } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useHistoryStore } from "@/features/history/store";
 import { useChatStore } from "@/features/chat/store";
 import { useShopStore } from "@/features/shop/store";
@@ -86,16 +87,21 @@ function SessionCard({ session, index, onRestore, onDelete }: {
               <MessageSquare className="h-3 w-3" />
               {session.messageCount} messages
             </span>
-            <button
-              onClick={(e) => { e.stopPropagation(); onDelete(session.id); }}
-              className="ml-auto flex h-5 w-5 items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-all"
-              style={{ color: hovered ? "var(--ink-3)" : "var(--ink-3)" }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#f87171")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--ink-3)")}
-              aria-label="Delete session"
-            >
-              <Trash2 className="h-3 w-3" />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDelete(session.id); }}
+                  className="ml-auto flex h-5 w-5 items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-all"
+                  style={{ color: hovered ? "var(--ink-3)" : "var(--ink-3)" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "#f87171")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "var(--ink-3)")}
+                  aria-label="Delete session"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Delete session</TooltipContent>
+            </Tooltip>
           </div>
         </div>
 
@@ -163,13 +169,19 @@ export function HistoryPanel() {
                 Clear all
               </button>
             )}
-            <button
-              onClick={close}
-              className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors active:scale-95"
-              style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
-            >
-              <X className="h-4 w-4" />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={close}
+                  aria-label="Close chat history"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors active:scale-95"
+                  style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Close</TooltipContent>
+            </Tooltip>
           </div>
         </div>
 

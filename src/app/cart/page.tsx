@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Minus, Plus, Trash2, ArrowLeft, ShoppingBag } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatPrice } from "@/lib/utils/currency";
 import { useCartStore } from "@/features/cart/store";
 import { useProductImage } from "@/lib/hooks/useProductImage";
@@ -52,12 +53,18 @@ export default function CartPage() {
     <div className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 animate-fade-up">
       {/* Back */}
       <div className="mb-6 flex items-center gap-3">
-        <Link
-          href="/"
-          className="flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-(--surface) text-muted-foreground shadow-(--shadow-xs) transition-all hover:shadow-(--shadow-sm) hover:text-(--text-primary) active:scale-95"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Link>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Link
+              href="/"
+              aria-label="Back to chat"
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-(--surface) text-muted-foreground shadow-(--shadow-xs) transition-all hover:shadow-(--shadow-sm) hover:text-(--text-primary) active:scale-95"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </TooltipTrigger>
+          <TooltipContent>Back to chat</TooltipContent>
+        </Tooltip>
         <h1 className="text-[17px] font-semibold text-(--text-primary)">Your Cart</h1>
         <span className="ml-auto text-[13px] text-muted-foreground">
           {itemCount()} item{itemCount() !== 1 ? "s" : ""}
@@ -88,31 +95,46 @@ export default function CartPage() {
 
               {/* Qty controls */}
               <div className="flex items-center gap-1">
-                <button
-                  onClick={() => updateQuantity(pid, quantity - 1)}
-                  className="flex h-7 w-7 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary active:scale-95"
-                  aria-label="Decrease"
-                >
-                  <Minus className="h-3 w-3" />
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => updateQuantity(pid, quantity - 1)}
+                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary active:scale-95"
+                      aria-label="Decrease quantity"
+                    >
+                      <Minus className="h-3 w-3" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Decrease quantity</TooltipContent>
+                </Tooltip>
                 <span className="w-6 text-center text-[13px] font-medium">{quantity}</span>
-                <button
-                  onClick={() => updateQuantity(pid, quantity + 1)}
-                  className="flex h-7 w-7 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary active:scale-95"
-                  aria-label="Increase"
-                >
-                  <Plus className="h-3 w-3" />
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => updateQuantity(pid, quantity + 1)}
+                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary active:scale-95"
+                      aria-label="Increase quantity"
+                    >
+                      <Plus className="h-3 w-3" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Increase quantity</TooltipContent>
+                </Tooltip>
               </div>
 
               {/* Remove */}
-              <button
-                onClick={() => removeItem(pid)}
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-red-500 active:scale-95"
-                aria-label="Remove"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => removeItem(pid)}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-red-500 active:scale-95"
+                    aria-label="Remove item"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Remove item</TooltipContent>
+              </Tooltip>
             </div>
           );
         })}

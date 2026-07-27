@@ -5,6 +5,7 @@ import Image from "next/image";
 import {
   X, Package, ExternalLink, Clock, Trash2, RefreshCw, CheckCircle2, XCircle, Loader2,
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useOrdersStore, isTerminal } from "@/features/orders/store";
 import { useOrderPolling } from "@/features/orders/hooks/useOrderPolling";
 import type { SavedOrder, SavedTracking } from "@/features/orders/store";
@@ -122,14 +123,19 @@ function PendingOrderRow({ saved, onRemove }: { saved: SavedOrder; onRemove: () 
             )}
           </div>
         </div>
-        <button
-          onClick={onRemove}
-          className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-          style={{ color: "var(--ink-3)" }}
-          aria-label="Remove order"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={onRemove}
+              className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              style={{ color: "var(--ink-3)" }}
+              aria-label="Remove order"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>Remove order</TooltipContent>
+        </Tooltip>
       </div>
 
       {/* Amount + Pay Now / expiry */}
@@ -189,14 +195,20 @@ function PendingOrderRow({ saved, onRemove }: { saved: SavedOrder; onRemove: () 
               autoFocus
               disabled={loading}
             />
-            <button
-              onClick={() => void handleConfirmPayment()}
-              disabled={loading || !orderNum.trim()}
-              className="flex items-center gap-1 rounded-xl px-3 py-2 text-[12px] font-semibold text-white disabled:opacity-40"
-              style={{ background: "var(--purple)" }}
-            >
-              {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Track"}
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => void handleConfirmPayment()}
+                  disabled={loading || !orderNum.trim()}
+                  aria-label="Track order"
+                  className="flex items-center gap-1 rounded-xl px-3 py-2 text-[12px] font-semibold text-white disabled:opacity-40"
+                  style={{ background: "var(--purple)" }}
+                >
+                  {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Track"}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>{loading ? "Tracking…" : "Track order"}</TooltipContent>
+            </Tooltip>
           </div>
           {error && <p className="text-[11px]" style={{ color: "var(--destructive)" }}>{error}</p>}
           <button
@@ -267,18 +279,28 @@ function TrackingRow({ saved, onRemove }: { saved: SavedTracking; onRemove: () =
 
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           {!terminal && (
-            <button
-              onClick={() => void handleManualRefresh()}
-              disabled={refreshing}
-              style={{ color: "var(--ink-3)" }}
-              aria-label="Refresh tracking"
-            >
-              <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => void handleManualRefresh()}
+                  disabled={refreshing}
+                  style={{ color: "var(--ink-3)" }}
+                  aria-label="Refresh tracking"
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Refresh tracking</TooltipContent>
+            </Tooltip>
           )}
-          <button onClick={onRemove} style={{ color: "var(--ink-3)" }} aria-label="Remove">
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button onClick={onRemove} style={{ color: "var(--ink-3)" }} aria-label="Remove order">
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>Remove order</TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
@@ -356,13 +378,19 @@ function OrdersPanelContent({ onClose }: { onClose: () => void }) {
               {totalCount === 0 ? "No saved orders" : `${totalCount} order${totalCount !== 1 ? "s" : ""}`}
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors active:scale-95"
-            style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={onClose}
+                aria-label="Close orders"
+                className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors active:scale-95"
+                style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>Close</TooltipContent>
+          </Tooltip>
         </div>
 
         {/* Content */}

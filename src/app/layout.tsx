@@ -4,6 +4,7 @@ import "./globals.css";
 import { AppShell } from "@/components/layout/AppShell";
 import { ErrorBoundary } from "@/components/layout/ErrorBoundary";
 import { CursorGlow } from "@/components/layout/CursorGlow";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { Analytics } from "@vercel/analytics/next";
 
 const geist = Geist({
@@ -35,11 +36,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body suppressHydrationWarning>
-        <CursorGlow />
-        <ErrorBoundary>
-          <AppShell>{children}</AppShell>
-        </ErrorBoundary>
-        <Analytics />
+        <TooltipProvider delayDuration={200}>
+          <CursorGlow />
+          <ErrorBoundary>
+            <AppShell>{children}</AppShell>
+          </ErrorBoundary>
+          <Analytics />
+        </TooltipProvider>
       </body>
     </html>
   );

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { X, Minus, Plus, Trash2, ShoppingBag, Sparkles, ShoppingCart } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCartStore } from "@/features/cart/store";
 import { useShopStore } from "@/features/shop/store";
 import { productId, productPrice } from "@/types/domain";
@@ -87,34 +88,51 @@ function CartItemRow({
       </div>
 
       <div className="flex flex-col items-end justify-between py-0.5">
-        <button
-          onClick={() => onRemove(pid)}
-          className="opacity-0 transition-opacity group-hover:opacity-100"
-          style={{ color: "var(--ink-3)" }}
-          aria-label="Remove"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={() => onRemove(pid)}
+              className="opacity-0 transition-opacity group-hover:opacity-100"
+              style={{ color: "var(--ink-3)" }}
+              aria-label="Remove"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>Remove item</TooltipContent>
+        </Tooltip>
 
         <div className="flex flex-col items-end gap-1.5">
           <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => onUpdateQty(pid, quantity - 1)}
-              className="flex h-6 w-6 items-center justify-center rounded-lg transition-colors active:scale-95"
-              style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
-            >
-              <Minus className="h-3 w-3" />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => onUpdateQty(pid, quantity - 1)}
+                  aria-label="Decrease quantity"
+                  className="flex h-6 w-6 items-center justify-center rounded-lg transition-colors active:scale-95"
+                  style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
+                >
+                  <Minus className="h-3 w-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Decrease quantity</TooltipContent>
+            </Tooltip>
             <span className="w-5 text-center text-[13px] font-semibold" style={{ color: "var(--ink)" }}>
               {quantity}
             </span>
-            <button
-              onClick={() => onUpdateQty(pid, quantity + 1)}
-              className="flex h-6 w-6 items-center justify-center rounded-lg transition-colors active:scale-95"
-              style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
-            >
-              <Plus className="h-3 w-3" />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => onUpdateQty(pid, quantity + 1)}
+                  aria-label="Increase quantity"
+                  className="flex h-6 w-6 items-center justify-center rounded-lg transition-colors active:scale-95"
+                  style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
+                >
+                  <Plus className="h-3 w-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Increase quantity</TooltipContent>
+            </Tooltip>
           </div>
 
           {multiItem && (
@@ -214,13 +232,19 @@ export function CartPanel() {
               </p>
             )}
           </div>
-          <button
-            onClick={close}
-            className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:text-foreground active:scale-95"
-            style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={close}
+                aria-label="Close cart"
+                className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:text-foreground active:scale-95"
+                style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>Close</TooltipContent>
+          </Tooltip>
         </div>
 
         {/* Items */}
