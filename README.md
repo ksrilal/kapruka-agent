@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Kiyo — Kapruka Shopping Assistant
+
+Kiyo is a conversational AI shopping assistant for [Kapruka](https://www.kapruka.com), built on
+Next.js. There is no owned product/order database — all catalog, delivery, and order data comes
+from the external **Kapruka MCP** server; the app itself is a thin, stateful-on-the-client chat
+front end.
+
+See [specs/001-ai-shopping-assistant/](specs/001-ai-shopping-assistant/) for the full spec, plan,
+data model, and API contracts (kept in sync with the code as of 2026-07-27), and
+[DEPLOYMENT.md](DEPLOYMENT.md) for environment variables and deploy steps.
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) — the chat UI is the home page; there is no
+separate `/chat` route.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+You'll need an API key for at least one AI provider in `.env.local`:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+GOOGLE_API_KEY=your_google_api_key_here
+KAPRUKA_MCP_URL=https://mcp.kapruka.com/mcp
+```
+
+By default the app uses Google Gemini. Set `AI_PROVIDER=anthropic` or `AI_PROVIDER=openai` (with
+the matching `ANTHROPIC_API_KEY`/`OPENAI_API_KEY`) to use a different provider instead — see
+[DEPLOYMENT.md](DEPLOYMENT.md) for the full list of env vars.
+
+## What's actually implemented
+
+- **Conversational product discovery, cart, delivery check, guest checkout, and order tracking** —
+  all inside one chat interface (`src/app/page.tsx`), with an AI orchestration layer
+  (`src/lib/ai/orchestrator.ts`) that supports Google Gemini, Anthropic Claude, or OpenAI.
+- **No database, no authentication** — all client state (cart, orders, chat history, theme) is
+  Zustand-managed and persisted to `sessionStorage`/`localStorage` in the browser.
+- **Voice input** (Web Speech API) — voice output/TTS is not implemented.
+- **Light/dark theme**, **chat history** (last 5 sessions), and an **Orders panel** with status
+  polling — none of these were in the original spec, but all are real and shipped.
+
+Not implemented despite being planned at some point: `next-intl` UI translation (chat responses
+are multilingual via the AI itself; static UI chrome is English-only), gift bundle grouping, and
+any automated accessibility/performance test gates. See
+[specs/001-ai-shopping-assistant/spec.md](specs/001-ai-shopping-assistant/spec.md) for the full
+list of what's implemented vs. deferred.
 
 ## Learn More
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+This app uses Next.js — to learn more, see the
+[Next.js Documentation](https://nextjs.org/docs).
 
 ## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+See [DEPLOYMENT.md](DEPLOYMENT.md) for required environment variables and rate-limit notes before
+deploying.

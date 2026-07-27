@@ -1,6 +1,11 @@
 # Research: Kiyo Shopping Assistant
 
 **Date**: 2026-06-05 | **Branch**: `001-ai-shopping-assistant`
+**Last reconciled with codebase**: 2026-07-27
+
+> This document records the original pre-build research and decisions. Several decisions were
+> later changed during implementation; those are marked **[CHANGED]** inline with what actually
+> shipped instead.
 
 ## 1. Kapruka MCP — Live Discovery
 
@@ -27,38 +32,51 @@ and avoids custom API mapping work.
 
 ---
 
-## 2. AI Orchestration — models/gemini-3.5-flash + Vercel AI SDK
+## 2. AI Orchestration — Vercel AI SDK, multi-provider **[CHANGED]**
 
-**Decision**: Use models/gemini-3.5-flash via `@google/generative-ai` wrapped with the Vercel AI SDK
-(`ai` package) for streaming. Expose MCP tools as Gemini function declarations.
+**Original decision**: Use `models/gemini-3.5-flash` via `@google/generative-ai` wrapped with the
+Vercel AI SDK for streaming.
 
-**Rationale**: models/gemini-3.5-flash provides fast, cost-effective inference with strong multilingual
-capability including Sinhala. The Vercel AI SDK provides a unified streaming interface (`useChat`
-hook) that integrates directly with Next.js streaming Route Handlers, reducing boilerplate.
+**What actually shipped**: The Vercel AI SDK (`ai` v6) `generateText()` API is used directly with
+a runtime-selected provider — `@ai-sdk/google` (default), `@ai-sdk/anthropic`, or `@ai-sdk/openai`
+— chosen via the `AI_PROVIDER` env var (`src/lib/ai/orchestrator.ts`). The raw
+`@google/generative-ai` SDK is not used at all. Default models: `models/gemini-2.0-flash` (Google),
+`claude-sonnet-4-6` (Anthropic), `gpt-4o` (OpenAI) — all overridable via env vars. This was a
+deliberate widening from "Gemini-only" to "provider-agnostic," not an accident, but it means this
+document's original framing (Gemini vs. GPT-4o as mutually exclusive alternatives) is inverted:
+both are now supported simultaneously, switchable at deploy time.
 
-**Alternatives considered**:
+**Rationale for the change**: Provider outages/quota limits could be worked around without a code
+change; different deployments (e.g. challenge judging vs. production) could use different
+providers without a redeploy of orchestration logic.
 
-- GPT-4o: Strong multilingual but higher cost and no Sinhala-specific optimisation advantage
-- Raw Gemini SDK without Vercel AI SDK: More control but requires manual streaming plumbing
-
-**Tool calling strategy**: Each Kapruka MCP tool is registered as a Gemini function declaration.
-When Gemini decides to call a tool, the Route Handler intercepts the function call, executes
-the corresponding typed MCP wrapper, and feeds the result back into the conversation.
+**Tool calling strategy**: Each Kapruka MCP tool is registered as an AI-SDK tool via a Zod schema
+(`zodSchema()` in `tool-definitions.ts`), not a raw Gemini function declaration — this is what
+makes the same tool set work unmodified across all three providers. When the model calls a tool,
+`runOrchestrator()` intercepts it, executes the corresponding typed MCP wrapper, and feeds the
+result back into the conversation (up to 4 rounds, tool calls within a round run in parallel).
 
 **System prompt**: Built per-request using `lib/ai/system-prompt.ts` with the detected locale
-(en/si/ta-Latn) injected. The prompt instructs Gemini to act as a friendly shopping concierge,
-respond in the user's detected language, and always return product results as structured JSON
-that the UI renders as cards (never as plain text lists).
+(en/si/ta-Latn) injected. The prompt instructs the model to act as "Kiyo," a friendly shopping
+concierge, respond in the user's detected language, and always return product/order/cart results
+as structured `{"__type":...}` JSON blocks that `/api/chat/route.ts` extracts and the UI renders
+as cards (never as plain text lists). This part of the original decision held.
 
 ---
 
-## 3. Multilingual Strategy — next-intl + Gemini
+## 3. Multilingual Strategy — next-intl + LLM **[CHANGED — next-intl half never shipped]**
 
-**Decision**: Separate UI strings (next-intl) from AI response language (Gemini system prompt).
+**Original decision**: Separate UI strings (next-intl) from AI response language (system prompt).
 
-**Rationale**: UI chrome (buttons, labels, placeholders) needs deterministic translations managed
-in JSON files. AI responses need flexible, context-aware language generation. Mixing the two
-would create a brittle system.
+**What actually shipped**: Only the second half. AI response language is fully handled by the
+system prompt as planned. `next-intl` was never installed, and while `src/lib/i18n/messages/`
+(en/si/ta-Latn JSON) and `src/lib/i18n/config.ts` exist in the repo, nothing imports them — all
+static UI chrome (buttons, labels, page copy) is English-only today. This is the single largest
+gap between this document's plan and the shipped app.
+
+**Rationale (as originally written, still valid if this is revisited)**: UI chrome needs
+deterministic translations managed in JSON files; AI responses need flexible, context-aware
+language generation; mixing the two would create a brittle system.
 
 **Locale detection**: On each user message, the server inspects the text for Sinhala Unicode
 block characters (U+0D80–U+0DFF) to detect Sinhala, checks for common Tanglish patterns
@@ -88,44 +106,53 @@ rejected (re-render performance for cart updates in a chat-heavy UI); localStora
 
 ---
 
-## 5. Voice I/O — Web Speech API
+## 5. Voice I/O — Web Speech API **[CHANGED — output half never shipped]**
 
-**Decision**: Use the browser-native Web Speech API for both speech-to-text input and
+**Original decision**: Use the browser-native Web Speech API for both speech-to-text input and
 text-to-speech output. No external voice service.
 
-**Rationale**: Zero cost, zero latency overhead from an external API, and sufficient quality for
-the target use case. Safari iOS and Chrome Android both support the API. A confidence threshold
-check triggers the "confirm what I heard" flow described in FR-016/FR-017 and the edge cases.
+**What actually shipped**: Speech-to-text input only, implemented in `CommandBar.tsx` via
+`SpeechRecognition`/`webkitSpeechRecognition`. There is no text-to-speech/voice output anywhere in
+the codebase — no `SpeechSynthesis` usage, no audio playback of assistant responses. The
+"confirm what I heard" correction flow (FR-016 edge case) was not verified as separately
+implemented beyond normal text-editing of the transcribed input.
 
-**Limitations**: Not available in Firefox desktop without a flag. Degradation: voice button hidden
-when `'speechRecognition' in window` is false.
+**Rationale (input half)**: Zero cost, zero latency overhead from an external API, sufficient
+quality for the target use case, and native support in Safari iOS/Chrome Android.
 
-**Alternatives considered**: Whisper API (OpenAI) — rejected (adds latency, cost, and complexity);
-Google Cloud Speech-to-Text — rejected (same reasons).
+**Limitations**: Not available in Firefox desktop without a flag.
 
 ---
 
-## 6. Performance Strategy
+## 6. Performance Strategy **[PARTIALLY VERIFIED]**
 
 **Decision**: Streaming first, skeleton screens, Next.js Image, and strict bundle budget.
 
-**Key choices**:
+**Key choices — as actually implemented**:
 
-- Gemini responses stream via `text/event-stream` → Vercel AI SDK renders tokens progressively
-- Product images use `next/image` with `sizes` tuned to card widths
-- `loading.tsx` + React Suspense on the `/chat` route
-- Dynamic imports for CartDrawer (not in initial paint path)
-- No third-party analytics scripts in the critical path (Vercel Analytics is edge-injected)
-- Bundle analyser (`@next/bundle-analyzer`) integrated into the dev workflow
+- Responses stream via a custom `text/event-stream` protocol (`createSSEStream`, hand-parsed
+  client-side in `useChat.ts`) — not the Vercel AI SDK's built-in streaming helpers as this
+  section originally implied.
+- Product images: since Kapruka MCP never returns `image_url`, images are backfilled via a
+  server-side `og:image` scrape proxy (`/api/product-image`) and consumed through
+  `useProductImage.ts`. Whether `next/image` is used for final rendering was not re-verified in
+  this pass.
+- There is no `/chat` route (`loading.tsx`/Suspense boundaries described here don't apply — the
+  chat UI is the home route `/`).
+- `@next/bundle-analyzer` is present in `package.json` dev dependencies, confirming the bundle
+  analyser choice.
+- No automated Lighthouse/CWV check exists in CI to confirm the stated targets are actually met.
 
-**Target**: LCP ≤ 2.5 s, INP ≤ 200 ms, CLS ≤ 0.1, Lighthouse ≥ 80 mobile.
+**Target (unverified by CI)**: LCP ≤ 2.5 s, INP ≤ 200 ms, CLS ≤ 0.1, Lighthouse ≥ 80 mobile.
 
 ---
 
 ## 7. MCP Client Resilience
 
-**Decision**: Retry up to 2 times with 500 ms backoff on network errors or 5xx responses.
-Log all tool calls with tool name, params summary, duration, and outcome.
+**Decision**: Retry up to 2 times on network errors or 5xx responses (actual backoff in
+`src/lib/mcp/client.ts` is 300 ms, not the 500 ms originally planned). Tool call outcomes are
+logged via structured `console.error` on failure; there is no full per-call success/duration log
+as originally described — only failures are logged.
 
 **Rationale**: The MCP endpoint is a third-party service; transient failures must not surface
 as hard errors. Two retries balance resilience against rate-limit compliance (60 req/min).
@@ -141,7 +168,10 @@ as hard errors. Two retries balance resilience against rate-limit compliance (60
 ## 8. Checkout Flow Design
 
 **Decision**: Collect checkout fields conversationally (one prompt per field), validate each
-inline, then call `kapruka_create_order` in a single server-side request.
+inline, then call `kapruka_create_order` in a single server-side request. This is implemented
+entirely as behavioral guidance in `system-prompt.ts` plus the `create_order` tool's Zod schema —
+there is no dedicated stepwise checkout form component (the `checkout/` feature folder from the
+original plan does not exist).
 
 **Field collection order**:
 
