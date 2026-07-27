@@ -127,7 +127,7 @@ function PendingOrderRow({ saved, onRemove }: { saved: SavedOrder; onRemove: () 
           <TooltipTrigger asChild>
             <button
               onClick={onRemove}
-              className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="shrink-0 opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
               style={{ color: "var(--ink-3)" }}
               aria-label="Remove order"
             >
@@ -277,7 +277,7 @@ function TrackingRow({ saved, onRemove }: { saved: SavedTracking; onRemove: () =
           </div>
         </div>
 
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center gap-1 opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
           {!terminal && (
             <Tooltip>
               <TooltipTrigger asChild>

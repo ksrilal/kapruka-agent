@@ -1,47 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Cake, Flower2, Gift, Candy, Gem, Baby, ShoppingBag, Smartphone } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { ArrowUp } from "lucide-react";
 import { useChat } from "@/features/chat/hooks/useChat";
+import { useIsDesktop } from "@/lib/hooks/useIsDesktop";
+import { CommandBar } from "@/features/chat/components/CommandBar";
+import { CategoryWheel } from "./CategoryWheel";
+import { KiyoBubble } from "./KiyoBubble";
 import { Footer } from "@/components/layout/Footer";
 
-interface Category {
-  icon: LucideIcon;
-  label: string;
-  query: string;
-  color: string;
-}
-
 const SUBTITLES = [
-  { lang: "English",  text: "Tell me what you're looking for.",  color: "var(--ink-2)",        bg: "var(--surface-2)" },
-  { lang: "සිංහල",   text: "ඔබට අවශ්‍ය දේ කියන්න.",            color: "var(--purple-light)", bg: "var(--purple-soft)" },
-  { lang: "Tanglish", text: "Oyata ona de kiyanna.",             color: "var(--accent)",       bg: "var(--accent-soft)" },
-];
-
-const CATEGORIES: Category[] = [
-  { icon: Cake,        label: "Cakes",       query: "Show me birthday cakes",    color: "#f59e0b" },
-  { icon: Flower2,     label: "Flowers",     query: "Show me flowers",           color: "#ec4899" },
-  { icon: Gift,        label: "Gifts",       query: "Show me gift hampers",      color: "#8b5cf6" },
-  { icon: Candy,       label: "Chocolates",  query: "Show me chocolates",        color: "#ef4444" },
-  { icon: Baby,        label: "Toys",        query: "Show me toys for kids",     color: "#06b6d4" },
-  { icon: Gem,         label: "Jewellery",   query: "Show me jewellery",         color: "#a78bfa" },
-  { icon: Smartphone,  label: "Electronics", query: "Show me electronics",       color: "#10b981" },
-  { icon: ShoppingBag, label: "Fashion",     query: "Show me fashion and clothing", color: "#f97316" },
-];
-
-// Mix of English, Sinhala, and Tanglish — judges will see all three
-const EXAMPLES = [
-  { text: "Birthday cake for Kandy under LKR 10,000", lang: "EN" },
-  { text: "අම්මාගේ උපන්දිනයට ලස්සන කේක් එකක් හොයලා දෙන්න", lang: "සිං" },           // "Send flowers to my mum in Colombo"
-  { text: "Flowers for my mum in Colombo",            lang: "EN" },
-  { text: "Anna gift pack onnum iruka?",              lang: "TGL" }, // "Any gift packs available?" — Tanglish
-  { text: "Best gifts for a 5-year-old",              lang: "EN" },
-  { text: "Colombo deliver karanawada?",              lang: "TGL" }, // "Can you deliver to Colombo?"
+  { lang: "English",             text: "Tell me what you're looking for.",  color: "var(--ink-2)",        bg: "var(--surface-2)" },
+  { lang: "සිංහල",              text: "ඔබට අවශ්‍ය දේ කියන්න.",            color: "var(--purple-light)", bg: "var(--purple-soft)" },
+  { lang: "Sinhala", text: "Oya mokakda hoyanne?",              color: "var(--purple-light)", bg: "var(--purple-soft)" },
+  { lang: "Tanglish",            text: "Unakku enna venumo sollu.",         color: "var(--accent)",       bg: "var(--accent-soft)" },
 ];
 
 export function EmptyState() {
   const { sendMessage } = useChat();
+  const isDesktop = useIsDesktop();
   const [subtitleIdx, setSubtitleIdx] = useState(0);
   const [visible, setVisible] = useState(true);
   useEffect(() => {
@@ -57,8 +34,60 @@ export function EmptyState() {
 
   const subtitle = SUBTITLES[subtitleIdx];
 
+  // Measured so the category wheel's search box can align to the input's
+  // row instead of the viewport's vertical middle (which drifts from the
+  // input on shorter/taller screens).
+  const inputWrapRef = useRef<HTMLDivElement>(null);
+  const [inputCenterY, setInputCenterY] = useState<number | null>(null);
+  useEffect(() => {
+    function measure() {
+      const el = inputWrapRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      setInputCenterY(r.top + r.height / 2);
+    }
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [isDesktop]);
+
+  // On shorter viewports this page can scroll (see spacing comments below) —
+  // surface a scroll-to-top button once the user has actually scrolled down,
+  // so getting back to the input/hero doesn't require manual scrolling.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    function onScroll() {
+      setScrolled((el?.scrollTop ?? 0) > 40);
+    }
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
-    <div className="relative flex h-full flex-col items-center overflow-y-auto px-4 sm:px-6 pt-4 sm:pt-6">
+    <div ref={scrollRef} className="scrollbar-visible relative flex h-full flex-col items-center overflow-y-auto px-4 sm:px-6 pt-3 sm:pt-6">
+
+      {/* Scroll-to-top — only appears once the user has actually scrolled
+          down (shorter viewports can make this page taller than the
+          viewport), so returning to the input never requires manual
+          scrolling. Fixed within this panel, not the whole page. */}
+      <button
+        onClick={() => scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" })}
+        aria-label="Scroll to top"
+        className={`fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 flex h-10 w-10 items-center justify-center rounded-full transition-all duration-200 ${
+          scrolled ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 translate-y-2 pointer-events-none"
+        }`}
+        style={{
+          background: "var(--surface-2)",
+          border: "1px solid var(--border-2)",
+          boxShadow: "var(--s3)",
+          color: "var(--ink-2)",
+        }}
+      >
+        <ArrowUp className="h-4 w-4" />
+      </button>
 
       {/* Orbs — static ambient glows */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -67,23 +96,28 @@ export function EmptyState() {
         <div className="orb orb-accent"    style={{ top: "60px", right: "-80px" }} />
       </div>
 
-      {/* Main content — grows to fill space, keeping footer at bottom */}
-      <div className="relative z-10 flex flex-col items-center flex-1 justify-center w-full max-w-2xl">
+      {/* Main content — one shared column width (max-w-2xl) from hero to
+          footer, so the whole page reads as a single composition. Centered
+          in the viewport via my-auto. Desktop vertical rhythm uses clamp()
+          tied to viewport height (dvh) instead of fixed px, so spacing
+          compresses automatically on shorter screens and never forces a
+          scrollbar, while still expanding generously on taller ones. */}
+      <div className="relative z-10 flex flex-col items-center justify-center sm:justify-start flex-1 w-full max-w-2xl my-auto py-6 sm:py-[clamp(0.5rem,2dvh,1.25rem)]">
 
-      {/* Hero */}
-      <div className="text-center max-w-2xl">
-        <p className="text-[13px] font-semibold tracking-widest uppercase pb-2 mb-5" style={{ color: "var(--purple-light)" }}>
+      {/* Hero — immersive on desktop, compact on mobile (input lives in the fixed CommandBar there) */}
+      <div className="text-center w-full">
+        <p className="block text-[13px] font-semibold tracking-widest uppercase pb-2 mb-[clamp(0.25rem,1dvh,0.75rem)]" style={{ color: "var(--purple-light)" }}>
           Kiyo · Powered by Kapruka
         </p>
-        <h1 className="t-display text-foreground mb-6 pb-3">
-          Shopping that starts<br />
+        <h1 className="t-display text-foreground mb-2 sm:mb-[clamp(0.5rem,1.5dvh,1rem)] pb-1 sm:pb-3">
+          Shopping starts<br />
           <span className="gradient-text">with a conversation.</span>
         </h1>
 
         {/* Rotating subtitle */}
-        <div className="flex flex-col items-center gap-2 pb-5">
+        <div className="flex flex-col items-center gap-2 pb-2 sm:pb-[clamp(0.5rem,1.5dvh,1rem)]">
           <span
-            className="rounded-full px-3 py-1 text-[11px] font-bold tracking-wide uppercase"
+            className="inline-block rounded-full px-3 py-1 text-[11px] font-bold tracking-wide uppercase"
             style={{
               background: subtitle.bg,
               color: subtitle.color,
@@ -95,13 +129,13 @@ export function EmptyState() {
             {subtitle.lang}
           </span>
           <p
-            className="text-[18px] font-medium leading-snug"
+            className="text-[15px] sm:text-[18px] font-medium leading-snug"
             style={{
               color: subtitle.color,
               transition: "opacity 0.35s ease, transform 0.35s ease",
               opacity: visible ? 1 : 0,
               transform: visible ? "translateY(0)" : "translateY(6px)",
-              minHeight: "1.6em",
+              minHeight: "1.4em",
             }}
           >
             {subtitle.text}
@@ -109,54 +143,40 @@ export function EmptyState() {
         </div>
       </div>
 
-      {/* Category chips */}
-      <div className="mt-8 flex flex-wrap items-center justify-center gap-2.5">
-        {CATEGORIES.map(({ icon: Icon, label, query, color }) => (
-          <button
-            key={label}
-            onClick={() => sendMessage(query)}
-            className="group flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2.5 transition-all duration-200 hover:border-(--border-2) hover:bg-(--surface-2) hover:-translate-y-0.5 hover:shadow-lg active:scale-95"
-          >
-            <span
-              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
-              style={{ background: `${color}22` }}
-            >
-              <Icon className="h-3 w-3" style={{ color }} strokeWidth={2} />
-            </span>
-            <span className="text-[13px] font-medium text-foreground whitespace-nowrap">{label}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Example prompts — 2-column grid */}
-      <div className="mt-8 w-full pt-7">
-        <p className="text-center text-[11px] tracking-widest uppercase font-medium mb-3 pb-3" style={{ color: "var(--ink-3)" }}>
-          Try asking...
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        {EXAMPLES.map(({ text, lang }) => (
-          <button
-            key={text}
-            onClick={() => sendMessage(text)}
-            className="text-left rounded-xl border border-border bg-card px-4 py-2.5 text-[13px] transition-all hover:border-(--border-2) hover:bg-(--surface-2) hover:-translate-y-0.5 active:scale-[0.98] flex items-start justify-between gap-2"
-            style={{ color: "var(--ink-2)" }}
-          >
-            <span className="flex-1 leading-snug">&ldquo;{text}&rdquo;</span>
-            <span
-              className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold mt-0.5"
-              style={{
-                background: lang === "සිං" ? "var(--purple-soft)" : lang === "TGL" ? "var(--accent-soft)" : "var(--surface-2)",
-                color: lang === "සිං" ? "var(--purple-light)" : lang === "TGL" ? "var(--accent)" : "var(--ink-3)",
-              }}
-            >
-              {lang}
-            </span>
-          </button>
-        ))}
+      {/* Desktop: the input is the natural continuation of the hero, not a
+          separate section further down — same component that docks to the
+          bottom once a conversation starts (see AppShell). */}
+      {isDesktop && (
+        <div className="w-full pt-3 sm:pt-[clamp(2rem,4dvh,3rem)]">
+          <div ref={inputWrapRef}>
+            <CommandBar variant="inline" />
+          </div>
         </div>
+      )}
+
+      {/* Kiyo ambient bubbles — in normal document flow directly below the
+          input (desktop) / hero (mobile, where the real input is fixed to
+          the bottom of the viewport instead). No viewport measuring, so it
+          can never silently fail to render. The bubbles' own decorative
+          cloud-bumps float up to ~30px above their card (see KiyoBubble's
+          randomPuffs), so this padding has to clear that overhang too, not
+          just the card itself, or it reads as touching the input. Padding,
+          not margin, so it can't collapse into the adjacent block's spacing.
+          Generous spacing is prioritized on common desktop sizes (1440x900
+          and up); shorter viewports may need a short scroll to reach the
+          footer rather than crowding this section. */}
+      <div className="w-full pt-4 sm:pt-[clamp(2.5rem,5dvh,4rem)]">
+        <KiyoBubble onSend={sendMessage} />
       </div>
 
-        <Footer />
+      {/* Categories — continuously flowing conveyor pinned to the left edge
+          of the viewport, independent of this centered column's flow (see
+          CategoryWheel). Desktop-only. */}
+      <CategoryWheel onSend={sendMessage} inputCenterY={inputCenterY} />
+
+        <div className="hidden sm:block w-full sm:mt-[clamp(0.75rem,2dvh,1.5rem)]">
+          <Footer />
+        </div>
       </div>
     </div>
   );

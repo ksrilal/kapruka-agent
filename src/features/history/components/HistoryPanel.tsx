@@ -91,7 +91,7 @@ function SessionCard({ session, index, onRestore, onDelete }: {
               <TooltipTrigger asChild>
                 <button
                   onClick={(e) => { e.stopPropagation(); onDelete(session.id); }}
-                  className="ml-auto flex h-5 w-5 items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-all"
+                  className="ml-auto flex h-5 w-5 items-center justify-center rounded-md opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-all"
                   style={{ color: hovered ? "var(--ink-3)" : "var(--ink-3)" }}
                   onMouseEnter={(e) => (e.currentTarget.style.color = "#f87171")}
                   onMouseLeave={(e) => (e.currentTarget.style.color = "var(--ink-3)")}

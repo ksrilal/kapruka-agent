@@ -4,6 +4,7 @@ import {
   useState, useRef, useEffect,
   type KeyboardEvent,
 } from "react";
+import { usePathname } from "next/navigation";
 import { ArrowUp, Square, Mic, MicOff } from "lucide-react";
 import { KiyoAvatar } from "@/components/ui/KiyoAvatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -11,20 +12,9 @@ import { useShopStore } from "@/features/shop/store";
 import { useChat } from "@/features/chat/hooks/useChat";
 import { useChatStore } from "@/features/chat/store";
 
-// Rotating placeholder text for the empty/landing state — mix of English, Sinhala, and Tanglish
-const PROMPTS = [
-  { text: "What are you shopping for today?", lang: "EN" },
-  { text: "Oya mokakda hoyanne?", lang: "TGL" },
-  { text: "ඔයාට මොනවද ඕනේ?", lang: "සිං" },
-  { text: "Inniku enna thedureenga?", lang: "TGL" },
-];
-
-// Rotating placeholder once a conversation is underway — discovery prompts no longer fit
-const ACTIVE_PLACEHOLDERS = [
-  "Type a message.",
-  "Type a message..",
-  "Type a message...",
-];
+// Single static placeholder — no rotation, in either the empty/landing state
+// or once a conversation is underway.
+const PLACEHOLDER = "Ask Kiyo anything…";
 
 const LANG_META: Record<string, { label: string; color: string; bg: string }> = {
   en: {
@@ -44,10 +34,15 @@ const LANG_META: Record<string, { label: string; color: string; bg: string }> = 
   },
 };
 
-export function CommandBar() {
+interface CommandBarProps {
+  // "fixed" (default): pinned to the bottom of the viewport, as in active chat
+  // and on mobile. "inline": flows as part of the hero composition on desktop
+  // empty-state — same look, just not position:fixed and given more room.
+  variant?: "fixed" | "inline";
+}
+
+export function CommandBar({ variant = "fixed" }: CommandBarProps) {
   const [value, setValue] = useState("");
-  const [promptIdx, setPromptIdx] = useState(0);
-  const [activePlaceholderIdx, setActivePlaceholderIdx] = useState(0);
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -58,31 +53,11 @@ export function CommandBar() {
   const setSearchRef = useShopStore((s) => s.setSearchRef);
   const { isStreaming, sendMessage, stop, locale } = useChat();
   const hasMessages = useChatStore((s) => s.messages.length > 0);
+  const pathname = usePathname();
 
   useEffect(() => {
     setSearchRef(textareaRef as React.RefObject<HTMLTextAreaElement | null>);
   }, [setSearchRef]);
-
-  const hasMessagesRef = useRef(hasMessages);
-  useEffect(() => {
-    hasMessagesRef.current = hasMessages;
-  });
-
-  useEffect(() => {
-    const t = setInterval(() => {
-      if (hasMessagesRef.current) return;
-      setPromptIdx((i) => (i + 1) % PROMPTS.length);
-    }, 3500);
-    return () => clearInterval(t);
-  }, []);
-
-  useEffect(() => {
-    const t = setInterval(() => {
-      if (!hasMessagesRef.current) return;
-      setActivePlaceholderIdx((i) => (i + 1) % ACTIVE_PLACEHOLDERS.length);
-    }, 500);
-    return () => clearInterval(t);
-  }, []);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -100,6 +75,14 @@ export function CommandBar() {
     }
     prevStreamingRef.current = isStreaming;
   }, [isStreaming]);
+
+  // Always land with the cursor in the input on the home page, so typing can
+  // start immediately without an extra click.
+  useEffect(() => {
+    if (pathname === "/" && !hasMessages) {
+      setTimeout(() => textareaRef.current?.focus(), 50);
+    }
+  }, [pathname, hasMessages]);
 
   useEffect(() => {
     function onKey(e: globalThis.KeyboardEvent) {
@@ -151,24 +134,28 @@ export function CommandBar() {
     r.start();
   }
 
-  const currentPrompt = PROMPTS[promptIdx % PROMPTS.length];
-  const placeholderText = hasMessages
-    ? ACTIVE_PLACEHOLDERS[activePlaceholderIdx % ACTIVE_PLACEHOLDERS.length]
-    : currentPrompt?.text ?? "Ask anything";
   const langMeta = hasMessages ? LANG_META[locale] ?? LANG_META.en : null;
 
+  const isInline = variant === "inline";
+
   return (
-    <div className="fixed bottom-0 inset-x-0 z-50 flex flex-col items-center px-3 sm:px-4 pb-3 sm:pb-4 pointer-events-none">
-      <div className="w-full max-w-3xl pointer-events-auto">
+    <div
+      className={
+        isInline
+          ? "relative w-full flex flex-col items-center"
+          : "fixed bottom-0 inset-x-0 z-50 flex flex-col items-center px-3 sm:px-4 pb-3 sm:pb-4 pointer-events-none"
+      }
+    >
+      <div className={isInline ? "w-full" : "w-full max-w-3xl pointer-events-auto"}>
 
         <div
-          className={`command-bar rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 transition-all ${
-            commandOpen ? "ring-1 ring-(--purple)/40" : ""
-          }`}
+          className={`command-bar rounded-2xl transition-all ${
+            isInline ? "px-6 py-[clamp(0.875rem,2.5dvh,1.25rem)]" : "px-3.5 sm:px-4 py-3.5 sm:py-4"
+          } ${commandOpen ? "ring-1 ring-(--purple)/40" : ""}`}
         >
           <div className="flex items-end gap-3">
             {/* Kiyo avatar */}
-            <KiyoAvatar size={32} className="mb-0.5" />
+            <KiyoAvatar size={isInline ? 40 : 32} className="mb-0.5" />
 
             {/* Textarea + language pill */}
             <div className="flex-1 min-w-0">
@@ -188,9 +175,11 @@ export function CommandBar() {
                     onChange={(e) => { setValue(e.target.value); autoResize(); }}
                     onKeyDown={handleKey}
                     onFocus={openCommand}
-                    placeholder={placeholderText}
+                    placeholder={PLACEHOLDER}
                     disabled={isStreaming}
-                    className="flex-1 min-w-0 resize-none bg-transparent text-[15px] leading-relaxed text-foreground outline-none placeholder:text-muted-foreground disabled:opacity-0"
+                    className={`flex-1 min-w-0 resize-none bg-transparent leading-relaxed text-foreground outline-none placeholder:text-muted-foreground placeholder:opacity-50 disabled:opacity-0 ${
+                      isInline ? "text-[17px]" : "text-[15px]"
+                    }`}
                     style={{ maxHeight: 120, caretColor: "var(--purple-light)" }}
                   />
                   {/* Detected language pill — only show when conversation is active */}
@@ -262,29 +251,6 @@ export function CommandBar() {
               )}
             </div>
           </div>
-
-          {/* Placeholder language hint — only on empty state */}
-          {!hasMessages && !value && (
-            <div className="mt-2 flex justify-center">
-            <div
-              className="inline-flex items-center gap-1 sm:gap-1.5 rounded-full px-2.5 py-1 flex-wrap w-fit"
-              style={{ background: "var(--surface-2)" }}
-            >
-              <span className="text-[11px]" style={{ color: "var(--ink-3)" }}>Type in</span>
-              {[
-                { label: "English", color: "var(--ink-3)" },
-                { label: "සිංහල",  color: "var(--purple-light)" },
-                { label: "Tanglish", color: "var(--accent)" },
-              ].map(({ label, color }, i, arr) => (
-                <span key={label}>
-                  <span className="text-[11px] font-semibold" style={{ color }}>{label}</span>
-                  {i < arr.length - 1 && <span className="text-[11px]" style={{ color: "var(--ink-3)" }}>, </span>}
-                </span>
-              ))}
-              <span className="hidden sm:inline text-[11px]" style={{ color: "var(--ink-3)" }}>— Kiyo understands all three</span>
-            </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

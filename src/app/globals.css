@@ -233,6 +233,20 @@ summary {
 .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
+/* A more visible scrollbar for primary content areas (e.g. the empty-state
+   page) where scrolling is expected and should read as an obvious, usable
+   affordance rather than the near-invisible 3px default used elsewhere. */
+.scrollbar-visible { scrollbar-width: thin; scrollbar-color: var(--border-2) transparent; }
+.scrollbar-visible::-webkit-scrollbar { width: 8px; height: 8px; }
+.scrollbar-visible::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-visible::-webkit-scrollbar-thumb {
+  background: var(--border-2);
+  border-radius: 99px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.scrollbar-visible::-webkit-scrollbar-thumb:hover { background: var(--ink-3); background-clip: padding-box; }
+
 /* ─── Glass ──────────────────────────────────────────────────────────────────── */
 .glass {
   background: var(--glass);
@@ -466,6 +480,17 @@ html.light .brand-logo {
   .product-card:active { transform: scale(0.98); }
 }
 
+/* ─── Header bar ──────────────────────────────────────────────────────────────
+   Faint tint (not fully transparent) so if content ever scrolls beneath the
+   header on short viewports, the blurred edge reads as a soft fade rather
+   than a harsh visible seam. */
+.header-bar {
+  background: rgba(10,8,18,0.35);
+}
+html.light .header-bar {
+  background: rgba(250,249,253,0.45);
+}
+
 /* ─── AI command bar ─────────────────────────────────────────────────────────── */
 .command-bar {
   background: rgba(10,8,18,0.55);
@@ -473,6 +498,71 @@ html.light .brand-logo {
   -webkit-backdrop-filter: blur(24px) saturate(160%);
   border: 1px solid rgba(139,92,246,0.14);
   box-shadow: var(--s5), 0 0 0 1px rgba(139,92,246,0.04) inset, var(--s-glow);
+}
+
+/* ─── Category ticker (rotating marquee rows) ─────────────────────────────────
+   Two rows scroll in opposite directions, looping seamlessly because each
+   row's content is duplicated and the track translates exactly -50%. */
+.ticker-row-mask {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+.ticker-track {
+  animation: ticker-scroll 40s linear infinite;
+}
+.ticker-track-reverse {
+  animation-name: ticker-scroll-reverse;
+}
+.ticker-row-mask:hover .ticker-track {
+  animation-play-state: paused;
+}
+.ticker-paused .ticker-track {
+  animation-play-state: paused;
+}
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@keyframes ticker-scroll-reverse {
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track { animation: none; }
+}
+
+/* ─── Category wheel conveyor ───────────────────────────────────────────────── */
+/* Continuous top-to-bottom flow along a gentle outward curve (via the
+   --curve custom property, set per-lane in CategoryWheel.tsx) — pills bow
+   toward the page at the midpoint of their run and pull back in at the
+   top/bottom edges, rather than sitting on a strict geometric arc. */
+@keyframes wheel-conveyor {
+  0%   { top: -15%; left: 0; }
+  50%  { top: 50%;  left: var(--curve, 80px); }
+  100% { top: 115%; left: 0; }
+}
+.wheel-conveyor {
+  animation: wheel-conveyor linear infinite;
+}
+.wheel-conveyor:hover {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .wheel-conveyor { animation: none; }
+}
+
+/* Pop a category pill out toward the page on hover so it can be read/clicked
+   even mid-flow, detaching visually from the conveyor without affecting the
+   parent lane's own animated position. */
+.wheel-pill-pop {
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+.wheel-pill-pop:hover {
+  transform: translateX(28px) scale(1.05);
+  box-shadow: var(--s5), var(--s-glow);
+  z-index: 10;
+  position: relative;
 }
 
 /* ─── Purple CTA button ──────────────────────────────────────────────────────── */

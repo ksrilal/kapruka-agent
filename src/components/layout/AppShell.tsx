@@ -8,12 +8,21 @@ import { CartPanel } from "@/features/cart/components/CartPanel";
 import { OrdersPanel } from "@/features/orders/components/OrdersPanel";
 import { HistoryPanel } from "@/features/history/components/HistoryPanel";
 import { Bubbles } from "@/components/ui/Bubbles";
+import { useChatStore } from "@/features/chat/store";
+import { useIsDesktop } from "@/lib/hooks/useIsDesktop";
 
 const STATIC_PAGES = ["/about", "/qa", "/privacy", "/terms"];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isStatic = STATIC_PAGES.includes(pathname);
+  const hasMessages = useChatStore((s) => s.messages.length > 0);
+  const isDesktop = useIsDesktop();
+
+  // On desktop, while the empty-state hero is showing on the home route, the
+  // CommandBar renders inline inside that hero instead (see EmptyState) — so
+  // the fixed-bottom bar here is suppressed to avoid mounting it twice.
+  const showFixedCommandBar = !isStatic && !(isDesktop && pathname === "/" && !hasMessages);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100dvh", width: "100%", overflow: "hidden" }}>
@@ -22,7 +31,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div style={{ flex: 1, display: "flex", flexDirection: "column", width: "100%", paddingTop: "4rem", overflow: "hidden" }}>
         {children}
       </div>
-      {!isStatic && <CommandBar />}
+      {showFixedCommandBar && <CommandBar />}
       <CartPanel />
       <OrdersPanel />
       <HistoryPanel />
