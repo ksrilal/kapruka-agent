@@ -34,23 +34,6 @@ export function EmptyState() {
 
   const subtitle = SUBTITLES[subtitleIdx];
 
-  // Measured so the category wheel's search box can align to the input's
-  // row instead of the viewport's vertical middle (which drifts from the
-  // input on shorter/taller screens).
-  const inputWrapRef = useRef<HTMLDivElement>(null);
-  const [inputCenterY, setInputCenterY] = useState<number | null>(null);
-  useEffect(() => {
-    function measure() {
-      const el = inputWrapRef.current;
-      if (!el) return;
-      const r = el.getBoundingClientRect();
-      setInputCenterY(r.top + r.height / 2);
-    }
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, [isDesktop]);
-
   // On shorter viewports this page can scroll (see spacing comments below) —
   // surface a scroll-to-top button once the user has actually scrolled down,
   // so getting back to the input/hero doesn't require manual scrolling.
@@ -106,7 +89,7 @@ export function EmptyState() {
 
       {/* Hero — immersive on desktop, compact on mobile (input lives in the fixed CommandBar there) */}
       <div className="text-center w-full">
-        <p className="block text-[13px] font-semibold tracking-widest uppercase pb-2 mb-[clamp(0.25rem,1dvh,0.75rem)]" style={{ color: "var(--purple-light)" }}>
+        <p className="block text-[13px] font-semibold tracking-widest uppercase pb-2 pt-28 mb-[clamp(0.25rem,1dvh,0.75rem)]" style={{ color: "var(--purple-light)" }}>
           Kiyo · Powered by Kapruka
         </p>
         <h1 className="t-display text-foreground mb-2 sm:mb-[clamp(0.5rem,1.5dvh,1rem)] pb-1 sm:pb-3">
@@ -148,35 +131,35 @@ export function EmptyState() {
           bottom once a conversation starts (see AppShell). */}
       {isDesktop && (
         <div className="w-full pt-3 sm:pt-[clamp(2rem,4dvh,3rem)]">
-          <div ref={inputWrapRef}>
-            <CommandBar variant="inline" />
-          </div>
+          <CommandBar variant="inline" />
         </div>
       )}
 
-      {/* Kiyo ambient bubbles — in normal document flow directly below the
-          input (desktop) / hero (mobile, where the real input is fixed to
-          the bottom of the viewport instead). No viewport measuring, so it
-          can never silently fail to render. The bubbles' own decorative
-          cloud-bumps float up to ~30px above their card (see KiyoBubble's
-          randomPuffs), so this padding has to clear that overhang too, not
-          just the card itself, or it reads as touching the input. Padding,
-          not margin, so it can't collapse into the adjacent block's spacing.
-          Generous spacing is prioritized on common desktop sizes (1440x900
-          and up); shorter viewports may need a short scroll to reach the
-          footer rather than crowding this section. */}
-      <div className="w-full pt-4 sm:pt-[clamp(2.5rem,5dvh,4rem)]">
+      {/* Kiyo ambient bubbles — mobile: in normal document flow directly
+          below the hero (the real input is fixed to the bottom of the
+          viewport there instead), so this padding clears the bubbles'
+          decorative cloud-bump overhang (see KiyoBubble's randomPuffs).
+          Desktop: KiyoBubble renders itself as a fixed column anchored just
+          below the header, pinned to the right edge of the viewport, so
+          this wrapper contributes no spacing there. */}
+      <div className="w-full pt-4 sm:pt-0">
         <KiyoBubble onSend={sendMessage} />
       </div>
 
       {/* Categories — continuously flowing conveyor pinned to the left edge
           of the viewport, independent of this centered column's flow (see
           CategoryWheel). Desktop-only. */}
-      <CategoryWheel onSend={sendMessage} inputCenterY={inputCenterY} />
+      <CategoryWheel onSend={sendMessage} />
+      </div>
 
-        <div className="hidden sm:block w-full sm:mt-[clamp(0.75rem,2dvh,1.5rem)]">
-          <Footer />
-        </div>
+      {/* Footer — fixed to the bottom of the viewport instead of trailing
+          the scrollable content, so it's always reachable without scrolling.
+          Same transparent, no-background styling as before. */}
+      <div
+        className="pointer-events-auto fixed bottom-0 left-1/2 z-30 hidden w-full max-w-2xl sm:block"
+        style={{ transform: "translateX(-50%)" }}
+      >
+        <Footer />
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Cake, Flower2, Gift, Candy, Gem, Baby, ShoppingBag, Smartphone,
   Shirt, UtensilsCrossed, Apple, Carrot, Ticket, PackageOpen, ShoppingBasket,
@@ -59,29 +59,69 @@ const CATEGORIES: Category[] = [
 
 // Fixed, evenly-spaced slots along a gentle curve on the left edge of the
 // viewport — no animation, no collision risk. Scrolling the mouse wheel over
-// this area cycles which categories occupy the slots.
-const SLOT_COUNT = 13; // odd, so the middle slot is a single well-defined index
-const SEARCH_SLOT = Math.floor(SLOT_COUNT / 2);
-const SLOT_GAP = 48; // vertical distance between slot centers, px
-const CURVE_MAX_PX = 20; // how far the middle slots bow toward the page — subtle
+// this area cycles which categories occupy the slots. Slot count (height)
+// and pill width both scale with the actual viewport so the rail always
+// extends close to the footer without leaving dead space on taller or wider
+// screens, instead of a fixed size tuned for one common resolution.
+const RAIL_LEFT_OFFSET = 40; // shifts the whole rail in from the viewport's left edge
+const SLOT_GAP = 42; // vertical distance between slot centers, px
+const CURVE_MAX_PX = 50; // how far the middle slots bow toward the page — subtle
+// Anchors the rail's top just below the fixed header (4rem/64px) instead of
+// vertically centering on the input, which left a large empty band between
+// the header and the first visible pill on common viewport heights.
+const HEADER_CLEARANCE = 140;
+// Clear space to leave above the fixed footer at the bottom of the rail.
+// Kept small — the rail's own bottom mask-fade (see wheel-rail below)
+// already reads as a soft buffer, so a large fixed clearance on top of that
+// left a visually oversized dead zone on shorter viewports.
+const FOOTER_CLEARANCE = 24;
+// A pill's own rendered height extends past its slot's "top" position (slot
+// spacing is measured top-to-top), so the rail's true bottom-most extent is
+// SLOT_GAP*(slotCount-1) + PILL_HEIGHT, not just the top-to-top distance —
+// this has to be subtracted from the available space too, or the last pill
+// overflows past the intended footer clearance.
+const PILL_HEIGHT = 32;
+const MIN_SLOT_COUNT = 7;
+const MIN_PILL_WIDTH = 200;
+const MAX_PILL_WIDTH = 260;
+// How much of the extra width beyond a baseline viewport gets handed to the
+// pills — keeps them from growing all the way to fill very wide screens.
+const WIDTH_GROWTH_RATIO = 0.2;
+const BASELINE_VIEWPORT_WIDTH = 1440;
 
-const PILL_WIDTH = 180;
+// Returns null until mounted on the client and the real viewport has been
+// measured. The rail's whole layout (slot count, pill width, curve offsets)
+// depends on window dimensions the server can't know, so rendering a guessed
+// value during SSR and swapping it after mount causes a hydration mismatch —
+// callers should render nothing until this resolves.
+function useViewportSize() {
+  const [size, setSize] = useState<{ width: number; height: number } | null>(null);
+  useEffect(() => {
+    function measure() {
+      setSize({ width: window.innerWidth, height: window.innerHeight });
+    }
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+  return size;
+}
 
-function CategoryPill({ cat, onSelect }: { cat: Category; onSelect: (q: string) => void }) {
+function CategoryPill({ cat, onSelect, width }: { cat: Category; onSelect: (q: string) => void; width: number }) {
   const Icon = cat.icon;
   return (
     <button
       onClick={() => onSelect(cat.query)}
-      className="wheel-pill-pop flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 shadow-lg transition-all duration-200 hover:border-(--border-2) hover:bg-(--surface-2) active:scale-95"
-      style={{ width: PILL_WIDTH }}
+      className="wheel-pill wheel-pill-pop wheel-pill-fade-left flex items-center justify-end gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 shadow-lg transition-all duration-200 hover:border-(--border-2) hover:bg-(--surface-2) active:scale-95"
+      style={{ width }}
     >
+      <span className="min-w-0 truncate text-right text-[12px] font-medium text-muted-foreground">{cat.label}</span>
       <span
         className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full"
         style={{ background: `${cat.color}22` }}
       >
         <Icon className="h-2.5 w-2.5" style={{ color: cat.color }} strokeWidth={2} />
       </span>
-      <span className="flex-1 min-w-0 truncate text-right text-[12px] font-medium text-muted-foreground">{cat.label}</span>
     </button>
   );
 }
@@ -90,29 +130,29 @@ function SearchBox({
   search,
   onChange,
   onClear,
+  width,
 }: {
   search: string;
   onChange: (v: string) => void;
   onClear: () => void;
+  width: number;
 }) {
   return (
-    <div
-      className="flex items-center gap-2 rounded-full px-3 py-1.5 w-full max-w-45 shrink-0"
-      style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}
-    >
-      <Search className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--ink-3)" }} />
+    <div className="wheel-search wheel-pill-fade-left flex items-center gap-2 rounded-full px-3.5 py-2 shrink-0" style={{ width }}>
       <input
         type="text"
         value={search}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Search categories…"
-        className="flex-1 min-w-0 bg-transparent text-[12px] outline-none placeholder:text-muted-foreground"
+        className="flex-1 min-w-0 bg-transparent text-right text-[12px] font-medium outline-none placeholder:text-muted-foreground placeholder:font-normal"
         style={{ color: "var(--ink)" }}
       />
-      {search && (
+      {search ? (
         <button onClick={onClear} aria-label="Clear search" className="shrink-0">
-          <X className="h-3.5 w-3.5" style={{ color: "var(--ink-3)" }} />
+          <X className="h-3.5 w-3.5" style={{ color: "var(--purple-light)" }} />
         </button>
+      ) : (
+        <Search className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--purple-light)" }} />
       )}
     </div>
   );
@@ -124,14 +164,38 @@ function SearchBox({
 // deck, cycling all 31 through the fixed slots — no continuous animation.
 export function CategoryWheel({
   onSend,
-  inputCenterY,
 }: {
   onSend: (query: string) => void;
-  inputCenterY: number | null;
 }) {
   const [search, setSearch] = useState("");
   const [offset, setOffset] = useState(0);
   const scrollAccum = useRef(0);
+  const viewportSize = useViewportSize();
+
+  // Fill the space between the header and the footer instead of a fixed
+  // slot count tuned for one screen height. Falls back to the minimum until
+  // the viewport is measured (see useViewportSize) — safe because the whole
+  // component renders null in that case anyway, this just keeps every hook
+  // below unconditional.
+  const availableHeight = viewportSize
+    ? Math.max(viewportSize.height - HEADER_CLEARANCE - FOOTER_CLEARANCE - PILL_HEIGHT, SLOT_GAP * (MIN_SLOT_COUNT - 1))
+    : SLOT_GAP * (MIN_SLOT_COUNT - 1);
+  const rawSlotCount = Math.floor(availableHeight / SLOT_GAP) + 1;
+  // Keep odd, so the middle slot is a single well-defined index — round DOWN
+  // to the next odd count, never up, or the rail's footprint can exceed the
+  // available space it was just computed to fit within.
+  const slotCount = rawSlotCount % 2 === 0 ? rawSlotCount - 1 : rawSlotCount;
+  const searchSlot = Math.floor(slotCount / 2);
+
+  // Pills grow slightly on wider screens (more side space to use) but only
+  // by a fraction of the extra width, and capped, so they don't stretch to
+  // fill very wide monitors.
+  const pillWidth = viewportSize
+    ? Math.min(
+        MAX_PILL_WIDTH,
+        Math.max(MIN_PILL_WIDTH, MIN_PILL_WIDTH + (viewportSize.width - BASELINE_VIEWPORT_WIDTH) * WIDTH_GROWTH_RATIO)
+      )
+    : MIN_PILL_WIDTH;
 
   const filtered = search.trim()
     ? CATEGORIES.filter((c) => c.label.toLowerCase().includes(search.trim().toLowerCase()))
@@ -139,10 +203,10 @@ export function CategoryWheel({
   const isFiltering = search.trim().length > 0;
 
   // One slot (the middle one) is the fixed search box, not a category — so
-  // only SLOT_COUNT - 1 categories are shown at a time.
+  // only slotCount - 1 categories are shown at a time.
   const visible = useMemo(
-    () => Array.from({ length: SLOT_COUNT - 1 }, (_, i) => CATEGORIES[(offset + i) % CATEGORIES.length]),
-    [offset]
+    () => Array.from({ length: slotCount - 1 }, (_, i) => CATEGORIES[(offset + i) % CATEGORIES.length]),
+    [offset, slotCount]
   );
 
   // Each wheel "notch" (~90px of scroll delta) advances one category. Small
@@ -162,50 +226,60 @@ export function CategoryWheel({
     }
   }, []);
 
-  const top = inputCenterY ?? "50%";
-  const railHeight = SLOT_GAP * (SLOT_COUNT - 1);
+  // Anchored just below the header instead of vertically centered on the
+  // input — centering left a large empty band between the header and the
+  // rail's first visible pill on common viewport heights.
+  const top = HEADER_CLEARANCE;
+  const railHeight = SLOT_GAP * (slotCount - 1);
+  const railWidth = pillWidth + RAIL_LEFT_OFFSET + 40;
 
   // Bow the middle slots outward, pulling back in toward the edge at the
   // top/bottom of the rail — a shallow sine curve, not a strict half-circle.
-  const curveFor = (slotIdx: number) => Math.sin((slotIdx / (SLOT_COUNT - 1)) * Math.PI) * CURVE_MAX_PX;
+  const curveFor = (slotIdx: number) => Math.sin((slotIdx / (slotCount - 1)) * Math.PI) * CURVE_MAX_PX;
+
+  // Not yet mounted/measured — render nothing rather than a guessed size
+  // that would then change and mismatch the server-rendered HTML. Placed
+  // after all hooks above so their call order/count never changes between
+  // this render and the next.
+  if (!viewportSize) return null;
 
   return (
     <div
-      className="fixed left-0 hidden sm:block"
-      style={{ top, transform: "translateY(-50%)", width: 260, height: railHeight }}
+      className="fixed hidden sm:block"
+      style={{ top, left: RAIL_LEFT_OFFSET, width: railWidth, height: railHeight }}
       onWheel={handleWheel}
     >
       <div
-        className="relative h-full w-full"
-        style={{ maskImage: "linear-gradient(to bottom, transparent, black 12%, black 88%, transparent)" }}
+        className="wheel-rail relative h-full w-full"
+        style={{ maskImage: "linear-gradient(to bottom, transparent, black 4%, black 96%, transparent)" }}
       >
         {isFiltering ? (
           // While filtering, results fill outward from the search slot
           // (just above it, then just below, alternating) so they read as
           // grouped around the search box instead of stacking from the top.
-          filtered.slice(0, SLOT_COUNT - 1).map((cat, i) => {
+          filtered.slice(0, slotCount - 1).map((cat, i) => {
             const step = Math.floor(i / 2) + 1;
-            const slotIdx = i % 2 === 0 ? SEARCH_SLOT - step : SEARCH_SLOT + step;
+            const slotIdx = i % 2 === 0 ? searchSlot - step : searchSlot + step;
             return (
               <div
                 key={cat.label}
                 className="absolute left-0"
                 style={{ top: slotIdx * SLOT_GAP, transform: `translateX(${curveFor(slotIdx)}px)` }}
               >
-                <CategoryPill cat={cat} onSelect={onSend} />
+                <CategoryPill cat={cat} onSelect={onSend} width={pillWidth} />
               </div>
             );
           })
         ) : (
           visible.map((cat, i) => {
-            const slotIdx = i >= SEARCH_SLOT ? i + 1 : i;
+            const slotIdx = i >= searchSlot ? i + 1 : i;
             return (
               <div
                 key={`${cat.label}-${i}`}
                 className="absolute left-0"
                 style={{ top: slotIdx * SLOT_GAP, transform: `translateX(${curveFor(slotIdx)}px)` }}
               >
-                <CategoryPill cat={cat} onSelect={onSend} />
+                <CategoryPill cat={cat} onSelect={onSend} width={pillWidth} />
               </div>
             );
           })
@@ -215,16 +289,16 @@ export function CategoryWheel({
             same vertical rhythm and curve offset — not off to the side. */}
         <div
           className="absolute left-0"
-          style={{ top: SEARCH_SLOT * SLOT_GAP, transform: `translateX(${curveFor(SEARCH_SLOT)}px)` }}
+          style={{ top: searchSlot * SLOT_GAP, transform: `translateX(${curveFor(searchSlot)}px)` }}
         >
-          <SearchBox search={search} onChange={setSearch} onClear={() => setSearch("")} />
+          <SearchBox search={search} onChange={setSearch} onClear={() => setSearch("")} width={pillWidth} />
         </div>
       </div>
 
       {isFiltering && filtered.length === 0 && (
         <p
           className="absolute left-0 text-[12px]"
-          style={{ top: SEARCH_SLOT * SLOT_GAP + 40, color: "var(--ink-3)" }}
+          style={{ top: searchSlot * SLOT_GAP + 40, color: "var(--ink-3)" }}
         >
           No categories match &ldquo;{search}&rdquo;
         </p>

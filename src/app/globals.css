@@ -556,13 +556,44 @@ html.light .header-bar {
    even mid-flow, detaching visually from the conveyor without affecting the
    parent lane's own animated position. */
 .wheel-pill-pop {
-  transition: transform 200ms ease, box-shadow 200ms ease;
+  opacity: 0.85;
+  transition: transform 200ms ease, box-shadow 200ms ease, opacity 200ms ease;
 }
 .wheel-pill-pop:hover {
+  opacity: 1;
   transform: translateX(28px) scale(1.05);
   box-shadow: var(--s5), var(--s-glow);
   z-index: 10;
   position: relative;
+}
+
+/* Fades a pill's left end toward transparent while keeping its right end
+   (icon side, nearest the page content) fully opaque with its normal sharp
+   rounded edge — reads as bleeding off the screen edge on the left only. */
+.wheel-pill-fade-left {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 25%);
+  mask-image: linear-gradient(to right, transparent, #000 25%);
+}
+
+/* While any pill in the rail is hovered, dim every other pill so the
+   hovered one reads as clearly highlighted against the rest instead of
+   competing with siblings at the same opacity. */
+.wheel-rail:has(.wheel-pill:hover) .wheel-pill:not(:hover) {
+  opacity: 0.35;
+}
+
+/* Search field styled distinctly from the category pills — a tinted purple
+   border/background and a visible focus ring — so it reads as an input
+   control at a glance, not just another pill in the rail. */
+.wheel-search {
+  background: var(--purple-soft);
+  border: 1px solid var(--purple-light);
+  box-shadow: var(--s3);
+  transition: box-shadow 200ms ease, border-color 200ms ease;
+}
+.wheel-search:focus-within {
+  border-color: var(--purple);
+  box-shadow: var(--s3), 0 0 0 3px var(--purple-glow);
 }
 
 /* ─── Purple CTA button ──────────────────────────────────────────────────────── */
