@@ -136,13 +136,13 @@ function useViewportSize() {
   }, []);
   return size;
 }
-const TRANSITION_MS = 500;
+const TRANSITION_MS = 700;
 // Each bubble stays on screen at least this long once fully visible.
-const MIN_HOLD_MS = 10_000;
-const MAX_HOLD_MS = 16_000;
+const MIN_HOLD_MS = 13_000;
+const MAX_HOLD_MS = 20_000;
 // Random pause after a bubble exits before it (or the next message in that
 // slot) reappears — keeps slots from re-syncing over time.
-const MIN_GAP_MS = 1500;
+const MIN_GAP_MS = 2000;
 const MAX_GAP_MS = 5000;
 // Random initial delay so the three slots don't all start at once on mount.
 const MAX_INITIAL_DELAY_MS = 6000;
