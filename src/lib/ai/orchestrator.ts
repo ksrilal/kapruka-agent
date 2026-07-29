@@ -31,7 +31,7 @@ function resolveProvider(): AIProvider {
   return "google";
 }
 
-function buildModel(): LanguageModel {
+export function buildModel(): LanguageModel {
   const provider = resolveProvider();
 
   // Each provider has its own dedicated key + model env vars.

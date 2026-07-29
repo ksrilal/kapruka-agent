@@ -572,10 +572,12 @@ function BubbleSlot({
   );
 }
 
-// Builds ambient suggestions from the visitor's own cart/orders/chat history
-// so the bubbles feel like Kiyo remembers them, instead of generic prompts.
-// Falls back to KIYO_MESSAGES piece by piece wherever personal data is thin.
-function buildPersonalizedMessages({
+// Builds local (non-AI) personalized bubbles from the visitor's own cart/
+// orders/chat history — instant, no network round trip. Used to fill out the
+// pool alongside AI suggestions and the hardcoded fallback set, never in
+// place of them, so the pool can never shrink to a size that causes bubble
+// slots to converge on the same message.
+function buildLocalPersonalizedMessages({
   cartItems,
   pendingOrder,
   lastSession,
@@ -610,12 +612,102 @@ function buildPersonalizedMessages({
     messages.push({ displayText: "Want to pick up where we left off?", promptText: `Let's continue from: ${lastSession.title}` });
   }
 
-  return messages.length > 0 ? messages : KIYO_MESSAGES;
+  return messages;
 }
 
-// Reads cart/orders/history stores so suggestions reflect what the visitor
-// already has going on. Stores hydrate from storage after mount, so we show
-// the hardcoded KIYO_MESSAGES until then rather than flashing an empty state.
+const AI_SUGGESTIONS_CACHE_KEY = "kiyo-ai-suggestions-v1";
+// How many times each AI suggestion is repeated in the pool relative to a
+// single hardcoded/local entry — this is the "show them often" weighting.
+const AI_SUGGESTION_WEIGHT = 3;
+
+function readCachedAiSuggestions(): KiyoMessage[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(AI_SUGGESTIONS_CACHE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (m): m is KiyoMessage =>
+        typeof m === "object" && m !== null &&
+        typeof (m as KiyoMessage).displayText === "string" &&
+        typeof (m as KiyoMessage).promptText === "string"
+    );
+  } catch {
+    return [];
+  }
+}
+
+function writeCachedAiSuggestions(messages: KiyoMessage[]) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(AI_SUGGESTIONS_CACHE_KEY, JSON.stringify(messages));
+  } catch {
+    // storage full/unavailable — cache is best-effort, safe to skip
+  }
+}
+
+// Fetches fresh AI-generated suggestions (grounded in real cart/order/history
+// data) every time the visitor lands on the home page. Returns whatever was
+// last cached in localStorage immediately, then swaps in the fresh response
+// once it resolves — the fetch never blocks what's shown.
+function useAiKiyoSuggestions({
+  mounted,
+  cartItems,
+  pendingOrder,
+  lastSession,
+}: {
+  mounted: boolean;
+  cartItems: CartLineItem[];
+  pendingOrder: SavedOrder | undefined;
+  lastSession: SavedSession | undefined;
+}): KiyoMessage[] {
+  const [aiMessages, setAiMessages] = useState<KiyoMessage[]>(() => readCachedAiSuggestions());
+
+  useEffect(() => {
+    if (!mounted) return;
+    if (cartItems.length === 0 && !pendingOrder && !lastSession) return;
+
+    const controller = new AbortController();
+    fetch("/api/suggestions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
+      body: JSON.stringify({
+        cartItems: cartItems.slice(0, 5).map((i) => ({
+          name: i.product.name,
+          category: i.product.category?.name,
+        })),
+        pendingOrder: pendingOrder
+          ? { orderRef: pendingOrder.order.order_ref, itemName: pendingOrder.itemNames[0] }
+          : undefined,
+        lastSession: lastSession ? { title: lastSession.title } : undefined,
+      }),
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { suggestions?: KiyoMessage[] } | null) => {
+        if (!data?.suggestions?.length) return;
+        setAiMessages(data.suggestions);
+        writeCachedAiSuggestions(data.suggestions);
+      })
+      .catch(() => {
+        // network error / aborted — keep showing cached + hardcoded messages
+      });
+
+    return () => controller.abort();
+    // Re-fetch whenever the visitor arrives at the home page with this hook
+    // freshly mounted, and whenever their underlying history actually changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mounted]);
+
+  return aiMessages;
+}
+
+// Reads cart/orders/history stores and blends three tiers into one pool:
+// AI-generated suggestions (repeated for weight, shown "often"), local
+// template suggestions from real data, and the hardcoded fallback set. The
+// pool is never allowed to shrink to a size that makes bubble slots converge
+// on the same message.
 function usePersonalizedKiyoMessages(): KiyoMessage[] {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -627,10 +719,15 @@ function usePersonalizedKiyoMessages(): KiyoMessage[] {
   const pendingOrder = useOrdersStore((s) => s.pending[0]);
   const lastSession = useHistoryStore((s) => s.sessions[0]);
 
+  const aiMessages = useAiKiyoSuggestions({ mounted, cartItems, pendingOrder, lastSession });
+
   return useMemo(() => {
     if (!mounted) return KIYO_MESSAGES;
-    return buildPersonalizedMessages({ cartItems, pendingOrder, lastSession });
-  }, [mounted, cartItems, pendingOrder, lastSession]);
+    const local = buildLocalPersonalizedMessages({ cartItems, pendingOrder, lastSession });
+    const weightedAi = Array.from({ length: AI_SUGGESTION_WEIGHT }, () => aiMessages).flat();
+    const pool = [...weightedAi, ...local, ...KIYO_MESSAGES];
+    return pool.length > 0 ? pool : KIYO_MESSAGES;
+  }, [mounted, cartItems, pendingOrder, lastSession, aiMessages]);
 }
 
 // Desktop: fixed single column stacked down the right edge of the viewport,
