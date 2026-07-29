@@ -258,7 +258,7 @@ function CategoryWheel({ onSelect }: { onSelect: (query: string) => void }) {
       {viewportSize && (
         <div
           ref={railElRef}
-          className="fixed hidden sm:block z-40"
+          className="fixed hidden sm:block z-60"
           style={{ top, left: RAIL_LEFT_OFFSET, width: railWidth, height: railHeight }}
         >
           <div
