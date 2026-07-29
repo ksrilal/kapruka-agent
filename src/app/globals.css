@@ -236,21 +236,22 @@ summary {
 /* ─── Marquee — slow, continuous auto-scroll rail (never pauses) ────────────── */
 @keyframes marquee      { from { transform: translateX(0); }        to { transform: translateX(-50%); } }
 @keyframes marqueeRight { from { transform: translateX(-66.667%); } to { transform: translateX(0); } }
-.marquee-track       { display: flex; width: max-content; animation: marquee 35s linear infinite; }
-.marquee-track-right { display: flex; width: max-content; animation: marqueeRight 60s linear infinite; }
+.marquee-track       { display: flex; width: max-content; animation: marquee 120s linear infinite; }
+.marquee-track-right { display: flex; width: max-content; animation: marqueeRight 150s linear infinite; }
 
-/* ─── Category ticker — full category browser overlay ───────────────────────── */
-@keyframes tickerLeft  { from { transform: translateX(0); }        to { transform: translateX(-50%); } }
-@keyframes tickerRight { from { transform: translateX(-50%); }     to { transform: translateX(0); } }
-.ticker-track          { animation: tickerLeft 40s linear infinite; }
-.ticker-track-reverse  { animation: tickerRight 40s linear infinite; }
-.ticker-row-mask {
-  overflow: hidden;
-  mask-image: linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent);
+/* ─── Category wheel — fixed-slot left-edge rail, full category browser ─────── */
+.wheel-rail {
+  mask-image: linear-gradient(to bottom, transparent, black 4%, black 96%, transparent);
 }
-/* Fade harder on the edge nearest the fixed search box so pills never overlap it */
-.ticker-row-mask-left  { mask-image: linear-gradient(to right, transparent, black 24px, black 60%, transparent); }
-.ticker-row-mask-right { mask-image: linear-gradient(to right, transparent, black 40%, black calc(100% - 24px), transparent); }
+@keyframes wheelPillIn { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: translateX(0); } }
+.wheel-pill-fade-left { animation: wheelPillIn 0.28s ease both; }
+.wheel-pill-pop:hover { transform: translateX(4px); }
+.wheel-pill { background: var(--surface); }
+.wheel-search {
+  background: var(--surface-2);
+  border: 1px solid var(--purple-light);
+  box-shadow: 0 0 0 4px var(--purple-soft);
+}
 
 /* ─── Glass ──────────────────────────────────────────────────────────────────── */
 .glass {
@@ -434,6 +435,8 @@ html.light .brand-logo {
 @keyframes blink    { 0%,100%{opacity:1} 50%{opacity:0} }
 @keyframes spin     { to{transform:rotate(360deg)} }
 @keyframes glowPulse{ 0%,100%{box-shadow: 0 0 20px var(--purple-glow)} 50%{box-shadow: 0 0 40px var(--purple-glow), 0 0 80px rgba(139,92,246,0.2)} }
+@keyframes glowPulseGold{ 0%,100%{box-shadow: 0 0 10px rgba(245,158,11,0.35)} 50%{box-shadow: 0 0 22px rgba(245,158,11,0.6), 0 0 40px rgba(245,158,11,0.25)} }
+@keyframes twinkle  { 0%,100%{transform:scale(1) rotate(0deg)} 50%{transform:scale(1.18) rotate(8deg)} }
 
 .anim-fade-up   { animation: fadeUp  0.55s cubic-bezier(0.16,1,0.3,1) both; }
 .anim-fade-in   { animation: fadeIn  0.35s ease both; }

@@ -13,7 +13,7 @@ const PILLARS = [
     color: "var(--purple-light)",
     bg: "var(--purple-soft)",
     title: "Conversational Commerce",
-    body: "Forget rigid search filters and endless category browsing. Just tell Kiyo what you need — in English, Sinhala, or Tanglish — and get curated results in seconds.",
+    body: "Forget rigid search filters and endless category browsing. Just tell Kiyo what you need — in English, Sinhala, Tamil, or Tanglish — and get curated results in seconds.",
   },
   {
     icon: MapPin,
@@ -129,10 +129,11 @@ export default function AboutPage() {
       {/* Language */}
       <div className="mb-10">
         <p className="text-[14px] font-semibold text-foreground mb-3">Speak your language</p>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           {[
             { lang: "English", example: "Send birthday cake to Colombo", color: "var(--ink-2)", bg: "var(--surface-2)" },
             { lang: "සිංහල", example: "අම්මාගේ උපන්දිනයට ලස්සන කේක් එකක් හොයලා දෙන්න", color: "var(--purple-light)", bg: "var(--purple-soft)" },
+            { lang: "தமிழ்", example: "கொழும்புக்கு பிறந்தநாள் கேக் அனுப்பவும்", color: "#34d399", bg: "rgba(52,211,153,0.12)" },
             { lang: "Tanglish", example: "Colombo deliver karanawada?", color: "var(--accent)", bg: "var(--accent-soft)" },
           ].map(({ lang, example, color, bg }) => (
             <div
