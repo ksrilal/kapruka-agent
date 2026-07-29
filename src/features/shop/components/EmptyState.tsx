@@ -92,6 +92,7 @@ const ALL_CATEGORIES: Category[] = [
 const RAIL_LEFT_OFFSET = 40; // shifts the whole rail in from the viewport's left edge
 const SLOT_GAP = 42; // vertical distance between slot centers, px
 const CURVE_MAX_PX = 50; // how far the middle slots bow toward the page — subtle
+const SEARCH_EXTRA_OFFSET = 24; // extra rightward nudge for the search pill, beyond the curve
 // Anchors the rail's top just below the fixed header (4rem/64px) instead of
 // vertically centering on the input, which left a large empty band between
 // the header and the first visible pill on common viewport heights.
@@ -135,7 +136,7 @@ function WheelCategoryPill({ cat, onSelect, width }: { cat: Category; onSelect: 
   return (
     <button
       onClick={() => onSelect(cat.query)}
-      className="wheel-pill wheel-pill-pop wheel-pill-fade-left flex items-center justify-end gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 shadow-lg transition-all duration-200 hover:border-(--border-2) hover:bg-(--surface-2) active:scale-95"
+      className="wheel-pill wheel-pill-pop wheel-pill-fade-left flex items-center justify-end gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 shadow-lg transition-all duration-200 hover:border-(--purple-light) hover:bg-(--surface-2) hover:shadow-[0_0_0_4px_var(--purple-soft)] active:scale-95"
       style={{ width }}
     >
       <span className="min-w-0 truncate text-right text-[12px] font-medium text-muted-foreground">{cat.label}</span>
@@ -162,14 +163,6 @@ function WheelSearchBox({
 }) {
   return (
     <div className="wheel-search wheel-pill-fade-left flex items-center gap-2 rounded-full px-3.5 py-2 shrink-0" style={{ width }}>
-      <input
-        type="text"
-        value={search}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="Search categories…"
-        className="flex-1 min-w-0 bg-transparent text-right text-[12px] font-medium outline-none placeholder:text-muted-foreground placeholder:font-normal"
-        style={{ color: "var(--ink)" }}
-      />
       {search ? (
         <button onClick={onClear} aria-label="Clear search" className="shrink-0">
           <X className="h-3.5 w-3.5" style={{ color: "var(--purple-light)" }} />
@@ -177,6 +170,14 @@ function WheelSearchBox({
       ) : (
         <Search className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--purple-light)" }} />
       )}
+      <input
+        type="text"
+        value={search}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Search categories…"
+        className="flex-1 min-w-0 bg-transparent text-left text-[12px] font-medium outline-none placeholder:text-muted-foreground placeholder:font-normal"
+        style={{ color: "var(--ink)" }}
+      />
     </div>
   );
 }
@@ -299,10 +300,12 @@ function CategoryWheel({ onSelect }: { onSelect: (query: string) => void }) {
             )}
 
             {/* Search box occupies the middle slot inline with the pills, at
-                the same vertical rhythm and curve offset — not off to the side. */}
+                the same vertical rhythm and curve offset — nudged further
+                right than the category pills so it reads as a distinct,
+                highlighted control rather than just another pill in the stack. */}
             <div
               className="absolute left-0"
-              style={{ top: searchSlot * SLOT_GAP, transform: `translateX(${curveFor(searchSlot)}px)` }}
+              style={{ top: searchSlot * SLOT_GAP, transform: `translateX(${curveFor(searchSlot) + SEARCH_EXTRA_OFFSET}px)` }}
             >
               <WheelSearchBox search={search} onChange={setSearch} onClear={() => setSearch("")} width={pillWidth} />
             </div>
@@ -1104,7 +1107,7 @@ export function EmptyState() {
       </div>
 
       {/* Try asking — horizontal card carousel, mockup-style. Desktop only. */}
-      <div className="mt-12 pt-12 w-full hidden sm:block">
+      <div className="mt-12 pt-6 w-full hidden sm:block">
         <div className="flex items-center justify-between mb-3 px-1">
           <p className="text-[11px] font-bold tracking-widest uppercase" style={{ color: "var(--ink-3)" }}>
             Try asking
