@@ -19,7 +19,7 @@ export default function PrivacyPage() {
         style={{ color: "var(--ink-3)" }}
       >
         <ArrowLeft className="h-3.5 w-3.5" />
-        Back to Kiyo
+        Back to <span className="font-kiyo">KI<span className="gradient-text">YO</span></span>
       </Link>
 
       <div className="mb-10">
@@ -38,19 +38,19 @@ export default function PrivacyPage() {
 
         <Section title="1. Overview">
           <p>
-            Kiyo (&ldquo;we&rdquo;, &ldquo;our&rdquo;, &ldquo;the assistant&rdquo;) is an AI shopping interface operated
+            <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> (&ldquo;we&rdquo;, &ldquo;our&rdquo;, &ldquo;the assistant&rdquo;) is an AI shopping interface operated
             by Kapruka Holdings (Pvt) Ltd (&ldquo;Kapruka&rdquo;). This policy explains what data we collect
-            when you use Kiyo, how we use it, and your rights. By using Kiyo you agree to the
+            when you use <span className="font-kiyo">KI<span className="gradient-text">YO</span></span>, how we use it, and your rights. By using <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> you agree to the
             practices described here.
           </p>
         </Section>
 
         <Section title="2. Data We Collect">
           <ul className="flex flex-col gap-2 list-none">
-            <Li><strong className="text-foreground">Conversation content</strong> — the messages you type into Kiyo's chat interface, including product queries, delivery locations, and order preferences.</Li>
+            <Li><strong className="text-foreground">Conversation content</strong> — the messages you type into <span className="font-kiyo">KI<span className="gradient-text">YO</span></span>&apos;s chat interface, including product queries, delivery locations, and order preferences.</Li>
             <Li><strong className="text-foreground">Order information</strong> — name, delivery address, phone number, and email address you provide when placing an order.</Li>
             <Li><strong className="text-foreground">Device and usage data</strong> — browser type, operating system, IP address, and interaction logs collected automatically for security and performance monitoring.</Li>
-            <Li><strong className="text-foreground">Cookies and local storage</strong> — session identifiers, cart state, and chat history stored locally in your browser to maintain continuity between visits.</Li>
+            <Li><strong className="text-foreground">Cookies and local storage</strong> — cart contents are kept in your browser's session storage for your current tab session (cleared when you close the tab); chat history (your last few conversations) and preferences are kept in local storage so they persist across visits.</Li>
           </ul>
           <p className="mt-3">
             We do <strong className="text-foreground">not</strong> collect payment card details. All payment processing
@@ -60,10 +60,10 @@ export default function PrivacyPage() {
 
         <Section title="3. How We Use Your Data">
           <ul className="flex flex-col gap-2 list-none">
-            <Li>To process and fulfil orders placed through Kiyo.</Li>
+            <Li>To process and fulfil orders placed through <span className="font-kiyo">KI<span className="gradient-text">YO</span></span>.</Li>
             <Li>To provide personalised product recommendations during your session.</Li>
             <Li>To detect and prevent fraud or abuse.</Li>
-            <Li>To improve the accuracy and relevance of Kiyo's AI responses.</Li>
+            <Li>To improve the accuracy and relevance of <span className="font-kiyo">KI<span className="gradient-text">YO</span></span>&apos;s AI responses.</Li>
             <Li>To send order confirmation and delivery updates (using the contact details you provide).</Li>
           </ul>
           <p className="mt-3">
@@ -74,7 +74,7 @@ export default function PrivacyPage() {
 
         <Section title="4. AI Processing">
           <p>
-            Kiyo is powered by a third-party large language model (such as Anthropic Claude,
+            <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> is powered by a third-party large language model (such as Anthropic Claude,
             OpenAI GPT, or Google Gemini, depending on configuration). Messages you send may be processed by the
             respective AI provider's infrastructure, subject to their privacy policies. We do not
             pass personally identifiable information to the AI model unless you include it in a
@@ -85,9 +85,9 @@ export default function PrivacyPage() {
         <Section title="5. Data Retention">
           <p>
             Chat history, cart contents, and session state live entirely in your browser's local
-            storage — Kiyo does not operate a backend database and does not persist your
+            storage — <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> does not operate a backend database and does not persist your
             conversations on its own servers. During an active session, your messages pass through
-            Kiyo's server only momentarily, to be relayed to the AI provider and to Kapruka's order
+            <span className="font-kiyo">KI<span className="gradient-text">YO</span></span>&apos;s server only momentarily, to be relayed to the AI provider and to Kapruka&apos;s order
             systems. Order records themselves are retained by Kapruka as required by Sri Lankan
             commercial law.
           </p>
@@ -95,9 +95,9 @@ export default function PrivacyPage() {
 
         <Section title="6. Cookies">
           <p>
-            Kiyo uses essential browser storage (localStorage and sessionStorage) to maintain
+            <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> uses essential browser storage (localStorage and sessionStorage) to maintain
             your cart, chat history, and session state. No third-party advertising or tracking
-            cookies are set by Kiyo. You can clear your browser storage at any time through your
+            cookies are set by <span className="font-kiyo">KI<span className="gradient-text">YO</span></span>. You can clear your browser storage at any time through your
             browser settings, which will reset your cart and history.
           </p>
         </Section>
@@ -134,7 +134,7 @@ export default function PrivacyPage() {
 
         <Section title="9. Third-Party Services">
           <p>
-            Kiyo integrates with the following third-party services, each governed by their own
+            <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> integrates with the following third-party services, each governed by their own
             privacy policies:
           </p>
           <ul className="flex flex-col gap-2 list-none mt-2">
@@ -147,7 +147,7 @@ export default function PrivacyPage() {
         <Section title="10. Changes to This Policy">
           <p>
             We may update this policy from time to time. Material changes will be indicated by
-            an updated &ldquo;Last updated&rdquo; date at the top of this page. Continued use of Kiyo after
+            an updated &ldquo;Last updated&rdquo; date at the top of this page. Continued use of <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> after
             changes constitutes acceptance of the revised policy.
           </p>
         </Section>

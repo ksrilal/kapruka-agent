@@ -260,7 +260,7 @@ export function CartPanel() {
               <div>
                 <p className="t-body font-semibold" style={{ color: "var(--ink)" }}>Cart is empty</p>
                 <p className="t-small mt-1" style={{ color: "var(--ink-2)" }}>
-                  Ask Kiyo to find something special.
+                  Ask <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> to find something special.
                 </p>
               </div>
               <button
@@ -304,10 +304,10 @@ export function CartPanel() {
               className="btn-purple flex w-full items-center justify-center gap-2 py-3.5 text-[14px] font-semibold rounded-2xl"
             >
               <Sparkles className="h-4 w-4" />
-              Checkout with Kiyo
+              Checkout with <span className="font-kiyo">KI<span className="gradient-text">YO</span></span>
             </button>
             <p className="text-center t-micro" style={{ color: "var(--ink-3)" }}>
-              Kiyo will guide you through delivery & payment
+              <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> will guide you through delivery & payment
             </p>
           </div>
         )}

@@ -181,7 +181,7 @@ export function CommandBar() {
                   <span className="h-1.5 w-1.5 rounded-full bg-primary animate-[pulse_1s_ease_infinite]" style={{ animationDelay: "0ms" }} />
                   <span className="h-1.5 w-1.5 rounded-full bg-primary animate-[pulse_1s_ease_infinite]" style={{ animationDelay: "150ms" }} />
                   <span className="h-1.5 w-1.5 rounded-full bg-primary animate-[pulse_1s_ease_infinite]" style={{ animationDelay: "300ms" }} />
-                  <span className="t-small text-muted-foreground ml-1">Kiyo is thinking&hellip;</span>
+                  <span className="t-small text-muted-foreground ml-1"><span className="font-kiyo">KI<span className="gradient-text">YO</span></span> is thinking&hellip;</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
@@ -285,7 +285,7 @@ export function CommandBar() {
                   {i < arr.length - 1 && <span className="text-[11px]" style={{ color: "var(--ink-3)" }}>, </span>}
                 </span>
               ))}
-              <span className="hidden sm:inline text-[11px]" style={{ color: "var(--ink-3)" }}>— Kiyo understands all three</span>
+              <span className="hidden sm:inline text-[11px]" style={{ color: "var(--ink-3)" }}>— <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> understands all three</span>
             </div>
             </div>
           )}

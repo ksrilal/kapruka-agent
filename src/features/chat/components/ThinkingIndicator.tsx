@@ -147,7 +147,7 @@ export function ThinkingIndicator({ toolSteps, isStreaming }: Props) {
       {!hasSteps && (
         <div className="flex items-center gap-2">
           <span className="text-[13px] font-medium" style={{ color: "var(--ink-2)" }}>
-            Kiyo is working<AnimatedDots />
+            <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> is working<AnimatedDots />
           </span>
         </div>
       )}

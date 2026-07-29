@@ -948,12 +948,12 @@ export function EmptyState() {
             lineHeight: 1.08,
             letterSpacing: '-0.5px',
           }}>          
-          Just tell Kiyo<br />
+          Just tell <span className="font-kiyo">KI<span className="gradient-text">YO</span></span><br />
           what you <span className="gradient-text">need.</span>
         </h1>
 
         <p className="text-[16px] leading-relaxed font-medium mb-2" style={{ color: "var(--ink-2)" }}>
-          <b className="text-foreground font-bold">Stop searching, start talking.</b>{" "} Kiyo {" "}
+          <b className="text-foreground font-bold">Stop searching, start talking.</b>{" "} <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> {" "}
           <b className="text-foreground font-bold">listens, understands,</b>{" "} and {" "}
           <b className="text-foreground font-bold">gets things done</b> {" "}
           — finding, comparing, and helping you buy almost anything you need.
@@ -1048,7 +1048,7 @@ export function EmptyState() {
                 {label}
               </span>
             ))}
-            <span className="text-[11px]" style={{ color: "var(--ink-2)" }}>— Kiyo gets all</span>
+            <span className="text-[11px]" style={{ color: "var(--ink-2)" }}>— <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> gets all</span>
           </div>
         </div>
       </div>
@@ -1141,7 +1141,7 @@ export function EmptyState() {
                 />
               </button>
             </TooltipTrigger>
-            <TooltipContent>{kiyoBubbleOpen ? "Close suggestions" : "Show Kiyo suggestions"}</TooltipContent>
+            <TooltipContent>{kiyoBubbleOpen ? "Close suggestions" : <>Show <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> suggestions</>}</TooltipContent>
           </Tooltip>
           <div
             ref={examplesRailRef}

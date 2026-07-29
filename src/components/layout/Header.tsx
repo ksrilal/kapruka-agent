@@ -59,7 +59,7 @@ export function Header() {
           <KiyoAvatar size={36} />
           <div className="flex flex-col justify-center">
             <span className="text-[15px] font-bold leading-tight tracking-tight text-foreground">
-              KI<span className="gradient-text">YO</span>
+              <span className="font-kiyo">KI<span className="gradient-text">YO</span></span>
             </span>
             <span className="text-[11px] leading-tight text-muted-foreground">
               Your AI shopping assistant

@@ -91,6 +91,7 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-ring:               var(--ring);
   --font-sans: var(--font-geist-sans, system-ui, sans-serif);
+  --font-kiyo: "Gilroy", var(--font-geist-sans, system-ui, sans-serif);
 }
 
 /* ─── Light theme ────────────────────────────────────────────────────────────── */
@@ -286,6 +287,12 @@ html.light .gradient-text {
   background: linear-gradient(135deg, #6d28d9 0%, #a21caf 60%, #be185d 100%);
   -webkit-background-clip: text;
   background-clip: text;
+}
+
+/* ─── Brand wordmark font ────────────────────────────────────────────────────── */
+.font-kiyo {
+  font-family: var(--font-kiyo);
+  font-weight: 700;
 }
 
 /* ─── Brand logo badge ───────────────────────────────────────────────────────── */

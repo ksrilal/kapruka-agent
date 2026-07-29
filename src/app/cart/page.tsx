@@ -37,7 +37,7 @@ export default function CartPage() {
         </div>
         <div className="text-center">
           <p className="text-[17px] font-semibold text-(--text-primary)">Your cart is empty</p>
-          <p className="mt-1 text-[14px] text-muted-foreground">Start a conversation with Kiyo to discover products.</p>
+          <p className="mt-1 text-[14px] text-muted-foreground">Start a conversation with <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> to discover products.</p>
         </div>
         <Link
           href="/"
@@ -150,10 +150,10 @@ export default function CartPage() {
           href="/"
           className="flex w-full items-center justify-center rounded-xl bg-primary py-3 text-[14px] font-semibold text-white shadow-(--shadow-sm) transition-all hover:bg-(--primary-hover) active:scale-[0.98]"
         >
-          Checkout via Kiyo
+          Checkout via <span className="font-kiyo">KI<span className="gradient-text">YO</span></span>
         </Link>
         <p className="mt-2.5 text-center text-[11px] text-muted-foreground">
-          Tell Kiyo you&apos;re ready — she&apos;ll collect delivery details and create your order.
+          Tell <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> you&apos;re ready — she&apos;ll collect delivery details and create your order.
         </p>
       </div>
     </div>
