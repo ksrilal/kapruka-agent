@@ -239,6 +239,19 @@ summary {
 .marquee-track       { display: flex; width: max-content; animation: marquee 35s linear infinite; }
 .marquee-track-right { display: flex; width: max-content; animation: marqueeRight 60s linear infinite; }
 
+/* ─── Category ticker — full category browser overlay ───────────────────────── */
+@keyframes tickerLeft  { from { transform: translateX(0); }        to { transform: translateX(-50%); } }
+@keyframes tickerRight { from { transform: translateX(-50%); }     to { transform: translateX(0); } }
+.ticker-track          { animation: tickerLeft 40s linear infinite; }
+.ticker-track-reverse  { animation: tickerRight 40s linear infinite; }
+.ticker-row-mask {
+  overflow: hidden;
+  mask-image: linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent);
+}
+/* Fade harder on the edge nearest the fixed search box so pills never overlap it */
+.ticker-row-mask-left  { mask-image: linear-gradient(to right, transparent, black 24px, black 60%, transparent); }
+.ticker-row-mask-right { mask-image: linear-gradient(to right, transparent, black 40%, black calc(100% - 24px), transparent); }
+
 /* ─── Glass ──────────────────────────────────────────────────────────────────── */
 .glass {
   background: var(--glass);
