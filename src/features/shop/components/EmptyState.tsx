@@ -15,6 +15,12 @@ import { useChat } from "@/features/chat/hooks/useChat";
 import { Footer } from "@/components/layout/Footer";
 import { KiyoAvatar } from "@/components/ui/KiyoAvatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useCartStore } from "@/features/cart/store";
+import { useOrdersStore } from "@/features/orders/store";
+import { useHistoryStore } from "@/features/history/store";
+import type { CartLineItem } from "@/features/cart/store";
+import type { SavedOrder } from "@/features/orders/store";
+import type { SavedSession } from "@/features/history/store";
 
 interface Category {
   icon: LucideIcon;
@@ -507,12 +513,14 @@ function BubbleSlot({
   startIdx,
   reducedMotion,
   onSend,
+  messages,
   gridStyle,
   maxWidth,
 }: {
   startIdx: number;
   reducedMotion: boolean;
   onSend: (text: string) => void;
+  messages: KiyoMessage[];
   gridStyle?: CSSProperties;
   maxWidth?: number;
 }) {
@@ -536,16 +544,16 @@ function BubbleSlot({
         const gap = randRange(BUBBLE_MIN_GAP_MS, BUBBLE_MAX_GAP_MS);
         timer = setTimeout(() => {
           if (cancelled) return;
-          setMsgIdx((i) => (i + 1) % KIYO_MESSAGES.length);
+          setMsgIdx((i) => (i + 1) % messages.length);
         }, gap + BUBBLE_TRANSITION_MS);
       }, showFor);
     }, initialDelay);
 
     return () => { cancelled = true; clearTimeout(timer); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [msgIdx]);
+  }, [msgIdx, messages.length]);
 
-  const message = KIYO_MESSAGES[msgIdx % KIYO_MESSAGES.length];
+  const message = messages[msgIdx % messages.length];
   const shown = reducedMotion || visible;
 
   return (
@@ -564,12 +572,74 @@ function BubbleSlot({
   );
 }
 
+// Builds ambient suggestions from the visitor's own cart/orders/chat history
+// so the bubbles feel like Kiyo remembers them, instead of generic prompts.
+// Falls back to KIYO_MESSAGES piece by piece wherever personal data is thin.
+function buildPersonalizedMessages({
+  cartItems,
+  pendingOrder,
+  lastSession,
+}: {
+  cartItems: CartLineItem[];
+  pendingOrder: SavedOrder | undefined;
+  lastSession: SavedSession | undefined;
+}): KiyoMessage[] {
+  const messages: KiyoMessage[] = [];
+
+  if (cartItems.length > 0) {
+    const first = cartItems[0].product.name;
+    messages.push(
+      cartItems.length === 1
+        ? { displayText: `Ready to check out ${first}?`, promptText: "I want to checkout my cart." }
+        : { displayText: `You still have ${cartItems.length} items waiting in your cart.`, promptText: "I want to checkout my cart." }
+    );
+    const category = cartItems[0].product.category?.name;
+    if (category) {
+      messages.push({ displayText: `Want more ${category.toLowerCase()} like what's in your cart?`, promptText: `Show me more ${category}.` });
+    }
+  }
+
+  if (pendingOrder) {
+    messages.push({ displayText: "Want an update on your recent order?", promptText: `What's the status of my order ${pendingOrder.order.order_ref}?` });
+    if (pendingOrder.itemNames[0]) {
+      messages.push({ displayText: `Loved ${pendingOrder.itemNames[0]}? I can find something similar.`, promptText: `Show me something similar to ${pendingOrder.itemNames[0]}.` });
+    }
+  }
+
+  if (lastSession) {
+    messages.push({ displayText: "Want to pick up where we left off?", promptText: `Let's continue from: ${lastSession.title}` });
+  }
+
+  return messages.length > 0 ? messages : KIYO_MESSAGES;
+}
+
+// Reads cart/orders/history stores so suggestions reflect what the visitor
+// already has going on. Stores hydrate from storage after mount, so we show
+// the hardcoded KIYO_MESSAGES until then rather than flashing an empty state.
+function usePersonalizedKiyoMessages(): KiyoMessage[] {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
+
+  const cartItems = useCartStore((s) => s.items);
+  const pendingOrder = useOrdersStore((s) => s.pending[0]);
+  const lastSession = useHistoryStore((s) => s.sessions[0]);
+
+  return useMemo(() => {
+    if (!mounted) return KIYO_MESSAGES;
+    return buildPersonalizedMessages({ cartItems, pendingOrder, lastSession });
+  }, [mounted, cartItems, pendingOrder, lastSession]);
+}
+
 // Desktop: fixed single column stacked down the right edge of the viewport,
 // toggled open/closed by the "Try asking" arrow button (mirrors CategoryWheel
 // on the left). Mobile: centered flex-wrap row.
 function KiyoBubbleColumn({ onSend }: { onSend: (text: string) => void }) {
   const reducedMotion = useReducedMotion();
   const viewportSize = useViewportSize();
+  const messages = usePersonalizedKiyoMessages();
 
   const availableHeight = viewportSize
     ? Math.max(viewportSize.height - BUBBLE_HEADER_CLEARANCE - BUBBLE_FOOTER_CLEARANCE - BUBBLE_HEIGHT_ESTIMATE, BUBBLE_ROW_GAP * (BUBBLE_MIN_ROWS - 1))
@@ -579,8 +649,8 @@ function KiyoBubbleColumn({ onSend }: { onSend: (text: string) => void }) {
   const isDesktop = viewportSize ? viewportSize.width >= 640 : true;
   const visibleCount = isDesktop ? desktopRows : 3;
   const startIndexes = useMemo(
-    () => Array.from({ length: visibleCount }, (_, i) => Math.floor((i * KIYO_MESSAGES.length) / visibleCount)),
-    [visibleCount]
+    () => Array.from({ length: visibleCount }, (_, i) => Math.floor((i * messages.length) / visibleCount)),
+    [visibleCount, messages.length]
   );
 
   const colWidth = viewportSize
@@ -593,7 +663,7 @@ function KiyoBubbleColumn({ onSend }: { onSend: (text: string) => void }) {
       {!isDesktop && (
         <div className="fixed inset-x-4 top-24 z-40 flex flex-wrap items-start justify-center gap-4 sm:hidden">
           {startIndexes.map((startIdx, i) => (
-            <BubbleSlot key={i} startIdx={startIdx} reducedMotion={reducedMotion} onSend={onSend} />
+            <BubbleSlot key={i} startIdx={startIdx} reducedMotion={reducedMotion} onSend={onSend} messages={messages} />
           ))}
         </div>
       )}
@@ -614,6 +684,7 @@ function KiyoBubbleColumn({ onSend }: { onSend: (text: string) => void }) {
               startIdx={startIdx}
               reducedMotion={reducedMotion}
               onSend={onSend}
+              messages={messages}
               maxWidth={colWidth}
               gridStyle={{ top: i * BUBBLE_ROW_GAP, right: i % 2 === 0 ? 0 : BUBBLE_ZIGZAG_PX }}
             />
