@@ -157,6 +157,10 @@ export function CommandBar() {
     : currentPrompt?.text ?? "Ask anything";
   const langMeta = hasMessages ? LANG_META[locale] ?? LANG_META.en : null;
 
+  // On the empty/landing state, EmptyState renders its own inline input (mockup-style)
+  // directly in the hero flow — skip the fixed bottom bar to avoid a duplicate input.
+  if (!hasMessages) return null;
+
   return (
     <div className="fixed bottom-0 inset-x-0 z-50 flex flex-col items-center px-3 sm:px-4 pb-3 sm:pb-4 pointer-events-none">
       <div className="w-full max-w-3xl pointer-events-auto">

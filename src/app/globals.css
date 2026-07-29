@@ -233,6 +233,12 @@ summary {
 .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
+/* ─── Marquee — slow, continuous auto-scroll rail (never pauses) ────────────── */
+@keyframes marquee      { from { transform: translateX(0); }        to { transform: translateX(-50%); } }
+@keyframes marqueeRight { from { transform: translateX(-66.667%); } to { transform: translateX(0); } }
+.marquee-track       { display: flex; width: max-content; animation: marquee 35s linear infinite; }
+.marquee-track-right { display: flex; width: max-content; animation: marqueeRight 60s linear infinite; }
+
 /* ─── Glass ──────────────────────────────────────────────────────────────────── */
 .glass {
   background: var(--glass);

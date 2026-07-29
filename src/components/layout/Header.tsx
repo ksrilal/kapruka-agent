@@ -62,7 +62,7 @@ export function Header() {
               KI<span className="gradient-text">YO</span>
             </span>
             <span className="text-[11px] leading-tight text-muted-foreground">
-              Your shopping assistant
+              Your AI shopping assistant
             </span>
           </div>
         </button>

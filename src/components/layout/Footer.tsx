@@ -10,7 +10,7 @@ const LINKS = [
 export function Footer() {
   return (
     <footer
-      className="relative z-10 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 px-6 py-5 pb-35 text-[12px]"
+      className="relative z-10 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 px-6 py-5 text-[12px]"
       style={{ color: "var(--ink-3)" }}
     >
       {LINKS.map(({ label, href }) => (

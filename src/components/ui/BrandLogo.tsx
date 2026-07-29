@@ -21,7 +21,7 @@ export function BrandLogo({ size = 400 }: { size?: number }) {
   return (
     <Image
       src={isLight ? "/logo-white.png" : "/logo.png"}
-      alt="Kiyo — Your Shopping Assistant"
+      alt="Kiyo — Your AI Shopping Assistant"
       width={size}
       height={size}
       className="brand-logo"

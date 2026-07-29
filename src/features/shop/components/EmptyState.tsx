@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Cake, Flower2, Gift, Candy, Gem, Baby, ShoppingBag, Smartphone } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { ArrowUp, ArrowRight, ArrowLeft, Cake, Flower2, Gift, Candy, Gem, Baby, ShoppingBag, Smartphone, Mic, MicOff } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useChat } from "@/features/chat/hooks/useChat";
 import { Footer } from "@/components/layout/Footer";
+import { KiyoAvatar } from "@/components/ui/KiyoAvatar";
 
 interface Category {
   icon: LucideIcon;
@@ -14,9 +15,10 @@ interface Category {
 }
 
 const SUBTITLES = [
-  { lang: "English",  text: "Tell me what you're looking for.",  color: "var(--ink-2)",        bg: "var(--surface-2)" },
+  { lang: "English",  text: "Tell me what you're looking for.",  color: "var(--ink)",          bg: "var(--surface-2)" },
   { lang: "සිංහල",   text: "ඔබට අවශ්‍ය දේ කියන්න.",            color: "var(--purple-light)", bg: "var(--purple-soft)" },
-  { lang: "Tanglish", text: "Oyata ona de kiyanna.",             color: "var(--accent)",       bg: "var(--accent-soft)" },
+  { lang: "Singlish", text: "Oyata ona de kiyanna.",             color: "var(--gold)",         bg: "rgba(240,185,94,0.12)" },
+  { lang: "Tanglish", text: "Unakku enna venumnu sollu.",        color: "var(--green)",        bg: "var(--green-soft)" },
 ];
 
 const CATEGORIES: Category[] = [
@@ -33,17 +35,66 @@ const CATEGORIES: Category[] = [
 // Mix of English, Sinhala, and Tanglish — judges will see all three
 const EXAMPLES = [
   { text: "Birthday cake for Kandy under LKR 10,000", lang: "EN" },
-  { text: "අම්මාගේ උපන්දිනයට ලස්සන කේක් එකක් හොයලා දෙන්න", lang: "සිං" },           // "Send flowers to my mum in Colombo"
-  { text: "Flowers for my mum in Colombo",            lang: "EN" },
-  { text: "Anna gift pack onnum iruka?",              lang: "TGL" }, // "Any gift packs available?" — Tanglish
-  { text: "Best gifts for a 5-year-old",              lang: "EN" },
-  { text: "Colombo deliver karanawada?",              lang: "TGL" }, // "Can you deliver to Colombo?"
+  { text: "අම්මාගේ උපන්දිනයට ලස්සන කේක් එකක් හොයලා දෙන්න", lang: "සිං" }, // "Find a nice cake for mum's birthday"
+  { text: "Enakku gift pack edhavadhu irukka?",       lang: "TGL" }, // "Do you have any gift packs?" — Tanglish
+  { text: "Colombo deliver karanawada?",              lang: "SIN" }, // "Can you deliver to Colombo?" — Singlish
 ];
 
+const EXAMPLE_LANG_STYLE: Record<string, { color: string; bg: string }> = {
+  "සිං": { color: "var(--purple-light)", bg: "var(--purple-soft)" },
+  SIN:   { color: "var(--gold)",         bg: "rgba(240,185,94,0.12)" },
+  TGL:   { color: "var(--green)",        bg: "var(--green-soft)" },
+};
+
 export function EmptyState() {
-  const { sendMessage } = useChat();
+  const { sendMessage, locale } = useChat();
   const [subtitleIdx, setSubtitleIdx] = useState(0);
   const [visible, setVisible] = useState(true);
+  const [inputValue, setInputValue] = useState("");
+  const [isListening, setIsListening] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const categoryRailRef = useRef<HTMLDivElement>(null);
+  const examplesRailRef = useRef<HTMLDivElement>(null);
+
+  function scrollRail(ref: React.RefObject<HTMLDivElement | null>, distance = 240) {
+    ref.current?.scrollBy({ left: distance, behavior: "smooth" });
+  }
+
+  function submitInput() {
+    const text = inputValue.trim();
+    if (!text) return;
+    sendMessage(text);
+    setInputValue("");
+  }
+
+  function startListening() {
+    const Ctor = window.SpeechRecognition ?? window.webkitSpeechRecognition;
+    if (!Ctor) return;
+    const r = new Ctor();
+    r.continuous = false;
+    r.interimResults = false;
+    r.lang = locale === "si" ? "si-LK" : locale === "ta-Latn" ? "ta-LK" : "en-US";
+    r.onstart = () => setIsListening(true);
+    r.onend = () => setIsListening(false);
+    r.onerror = () => setIsListening(false);
+    r.onresult = (ev: SpeechRecognitionEvent) => {
+      const t = ev.results[0]?.[0]?.transcript;
+      if (t) setInputValue((v) => (v ? `${v} ${t}` : t));
+    };
+    recognitionRef.current = r;
+    r.start();
+  }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSpeechSupported(
+      typeof window !== "undefined" &&
+      (window.SpeechRecognition !== undefined || window.webkitSpeechRecognition !== undefined)
+    );
+  }, []);
+
   useEffect(() => {
     const interval = setInterval(() => {
       setVisible(false);
@@ -58,7 +109,7 @@ export function EmptyState() {
   const subtitle = SUBTITLES[subtitleIdx];
 
   return (
-    <div className="relative flex h-full flex-col items-center overflow-y-auto px-4 sm:px-6 pt-4 sm:pt-6">
+    <div className="relative flex h-full flex-col items-center">
 
       {/* Orbs — static ambient glows */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -67,21 +118,34 @@ export function EmptyState() {
         <div className="orb orb-accent"    style={{ top: "60px", right: "-80px" }} />
       </div>
 
-      {/* Main content — grows to fill space, keeping footer at bottom */}
-      <div className="relative z-10 flex flex-col items-center flex-1 justify-center w-full max-w-2xl">
+      {/* Scrollable content — hero, input, category rail, try asking */}
+      <div className="relative z-10 flex flex-1 min-h-0 w-full flex-col items-center overflow-y-auto px-4 sm:px-6 pt-4 sm:pt-6">
+      <div className="flex flex-col items-center flex-1 justify-center w-full max-w-3xl">
 
       {/* Hero */}
       <div className="text-center max-w-2xl">
-        <p className="text-[13px] font-semibold tracking-widest uppercase pb-2 mb-5" style={{ color: "var(--purple-light)" }}>
-          Kiyo · Powered by Kapruka
-        </p>
+        <span
+          className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[11px] font-bold tracking-widest uppercase mb-6"
+          style={{ background: "var(--purple-soft)", border: "1px solid var(--border-2)", color: "var(--purple-light)" }}
+        >
+          <span
+            className="h-1.5 w-1.5 rounded-full"
+            style={{ background: "var(--gold)", animation: "pulse 1.8s ease-in-out infinite" }}
+          />
+          AI-powered · by Kapruka
+        </span>
         <h1 className="t-display text-foreground mb-6 pb-3">
-          Shopping that starts<br />
-          <span className="gradient-text">with a conversation.</span>
+          Just tell Kiyo<br />
+          what you <span className="gradient-text">need.</span>
         </h1>
 
+        <p className="text-[16px] leading-relaxed font-medium mb-2" style={{ color: "var(--ink-2)" }}>
+          Kiyo understands <b className="text-foreground font-bold">English, සිංහල &amp; Tanglish</b>{" "}
+          — talk to it like you would a friend, and it&apos;ll find, compare, and order almost anything.
+        </p>
+
         {/* Rotating subtitle */}
-        <div className="flex flex-col items-center gap-2 pb-5">
+        <div className="flex flex-col items-center gap-2 pb-1 pt-2">
           <span
             className="rounded-full px-3 py-1 text-[11px] font-bold tracking-wide uppercase"
             style={{
@@ -95,7 +159,7 @@ export function EmptyState() {
             {subtitle.lang}
           </span>
           <p
-            className="text-[18px] font-medium leading-snug"
+            className="text-[15px] font-medium leading-snug"
             style={{
               color: subtitle.color,
               transition: "opacity 0.35s ease, transform 0.35s ease",
@@ -109,53 +173,157 @@ export function EmptyState() {
         </div>
       </div>
 
-      {/* Category chips */}
-      <div className="mt-8 flex flex-wrap items-center justify-center gap-2.5">
-        {CATEGORIES.map(({ icon: Icon, label, query, color }) => (
-          <button
-            key={label}
-            onClick={() => sendMessage(query)}
-            className="group flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2.5 transition-all duration-200 hover:border-(--border-2) hover:bg-(--surface-2) hover:-translate-y-0.5 hover:shadow-lg active:scale-95"
-          >
-            <span
-              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
-              style={{ background: `${color}22` }}
+      {/* Inline input zone — mockup-style, sits directly under the hero */}
+      <div className="mt-2 pt-4 w-full max-w-xl">
+        <div className="command-bar flex items-center gap-3 rounded-2xl px-4 sm:px-5 py-3.5">
+          <KiyoAvatar size={32} className="shrink-0" />
+          <input
+            ref={inputRef}
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") submitInput(); }}
+            placeholder="Ask Kiyo anything..."
+            className="flex-1 min-w-0 bg-transparent text-[15px] font-medium text-foreground outline-none placeholder:text-muted-foreground"
+          />
+          {speechSupported && (
+            <button
+              onClick={isListening ? () => recognitionRef.current?.stop() : startListening}
+              aria-label={isListening ? "Stop recording" : "Voice input"}
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all ${
+                isListening
+                  ? "bg-primary text-white shadow-[0_0_0_4px_var(--purple-soft)]"
+                  : "text-muted-foreground hover:text-foreground hover:bg-(--surface-2)"
+              }`}
             >
-              <Icon className="h-3 w-3" style={{ color }} strokeWidth={2} />
-            </span>
-            <span className="text-[13px] font-medium text-foreground whitespace-nowrap">{label}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Example prompts — 2-column grid */}
-      <div className="mt-8 w-full pt-7">
-        <p className="text-center text-[11px] tracking-widest uppercase font-medium mb-3 pb-3" style={{ color: "var(--ink-3)" }}>
-          Try asking...
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        {EXAMPLES.map(({ text, lang }) => (
+              {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+            </button>
+          )}
           <button
-            key={text}
-            onClick={() => sendMessage(text)}
-            className="text-left rounded-xl border border-border bg-card px-4 py-2.5 text-[13px] transition-all hover:border-(--border-2) hover:bg-(--surface-2) hover:-translate-y-0.5 active:scale-[0.98] flex items-start justify-between gap-2"
-            style={{ color: "var(--ink-2)" }}
+            onClick={submitInput}
+            disabled={!inputValue.trim()}
+            aria-label="Send"
+            className="btn-purple flex h-9 w-9 shrink-0 items-center justify-center rounded-xl disabled:cursor-default disabled:opacity-30 disabled:shadow-none active:scale-95"
           >
-            <span className="flex-1 leading-snug">&ldquo;{text}&rdquo;</span>
-            <span
-              className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold mt-0.5"
-              style={{
-                background: lang === "සිං" ? "var(--purple-soft)" : lang === "TGL" ? "var(--accent-soft)" : "var(--surface-2)",
-                color: lang === "සිං" ? "var(--purple-light)" : lang === "TGL" ? "var(--accent)" : "var(--ink-3)",
-              }}
-            >
-              {lang}
-            </span>
+            <ArrowUp className="h-4 w-4" />
           </button>
-        ))}
+        </div>
+        <div className="mt-3.5 pt-1.5 flex justify-center">
+          <div
+            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 flex-wrap justify-center"
+            style={{ background: "transparent" }}
+          >
+            <span className="text-[11px]" style={{ color: "var(--ink-2)" }}>Type in</span>
+            {["EN", "සිං", "SIN", "TGL"].map((label) => (
+              <span
+                key={label}
+                className="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                style={{ border: "1px solid var(--border-2)", color: "var(--purple-light)" }}
+              >
+                {label}
+              </span>
+            ))}
+            <span className="text-[11px]" style={{ color: "var(--ink-2)" }}>— Kiyo gets all three</span>
+          </div>
         </div>
       </div>
 
+      {/* Category rail — horizontal scroll, mockup-style */}
+      <div className="mt-14 pt-14 w-full">
+        <p className="text-[11px] font-bold tracking-widest uppercase mb-3 px-1 text-right" style={{ color: "var(--ink-3)" }}>
+          Shop by category
+        </p>
+        <div className="relative">
+          <button
+            onClick={() => scrollRail(categoryRailRef, -240)}
+            aria-label="Scroll categories left"
+            className="absolute left-0 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border shadow-lg transition-all hover:-translate-x-0.5 active:scale-95"
+            style={{ background: "var(--surface-2)", borderColor: "var(--accent)", color: "var(--accent)" }}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <div
+            ref={categoryRailRef}
+            className="no-scrollbar overflow-hidden pl-11 pr-1 pb-1"
+            style={{ maskImage: "linear-gradient(to right, transparent, black 44px, black calc(100% - 20px), transparent)" }}
+          >
+            <div className="marquee-track" style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
+              {[...CATEGORIES, ...CATEGORIES].map(({ icon: Icon, label, query, color }, i) => (
+                <button
+                  key={`${label}-${i}`}
+                  onClick={() => sendMessage(query)}
+                  className="group flex shrink-0 items-center gap-2.5 rounded-full border border-border bg-card px-4 py-3 transition-all duration-200 hover:border-(--border-2) hover:bg-(--surface-2) hover:-translate-y-0.5 hover:shadow-lg active:scale-95"
+                >
+                  <span
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg"
+                    style={{ background: `${color}22` }}
+                  >
+                    <Icon className="h-3.5 w-3.5" style={{ color }} strokeWidth={2} />
+                  </span>
+                  <span className="text-[14px] font-semibold text-foreground whitespace-nowrap">{label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Try asking — horizontal card carousel, mockup-style */}
+      <div className="mt-12 pt-12 w-full">
+        <div className="flex items-center justify-between mb-3 px-1">
+          <p className="text-[11px] font-bold tracking-widest uppercase" style={{ color: "var(--ink-3)" }}>
+            Try asking
+          </p>
+          <span className="flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: "var(--ink-3)" }}>
+            <span className="h-1.5 w-1.5 rounded-full" style={{ background: "var(--green)", animation: "pulse 1.6s ease-in-out infinite" }} />
+            Real conversations, live
+          </span>
+        </div>
+        <div className="relative">
+          <button
+            onClick={() => scrollRail(examplesRailRef)}
+            aria-label="Scroll examples right"
+            className="absolute right-0 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border shadow-lg transition-all hover:translate-x-0.5 active:scale-95"
+            style={{ background: "var(--surface-2)", borderColor: "var(--accent)", color: "var(--accent)" }}
+          >
+            <ArrowRight className="h-4 w-4" />
+          </button>
+          <div
+            ref={examplesRailRef}
+            className="no-scrollbar overflow-hidden pl-1 pr-11 pb-1"
+            style={{ maskImage: "linear-gradient(to right, transparent, black 20px, black calc(100% - 44px), transparent)" }}
+          >
+            <div className="marquee-track-right" style={{ display: "flex", alignItems: "stretch", gap: "0.875rem" }}>
+              {[...EXAMPLES, ...EXAMPLES, ...EXAMPLES].map(({ text, lang }, i) => (
+                <button
+                  key={`${text}-${i}`}
+                  onClick={() => sendMessage(text)}
+                  className="text-left rounded-2xl border border-border bg-card px-4.5 py-4 text-[13px] w-60 shrink-0 transition-all hover:border-(--border-2) hover:bg-(--surface-2) hover:-translate-y-0.5 active:scale-[0.98] flex flex-col justify-between gap-3"
+                  style={{ color: "var(--ink-2)" }}
+                >
+                  <span className="flex items-start justify-between gap-2">
+                    <span className="flex-1 leading-snug font-medium text-foreground">&ldquo;{text}&rdquo;</span>
+                    <span
+                      className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold mt-0.5"
+                      style={{
+                        background: EXAMPLE_LANG_STYLE[lang]?.bg ?? "var(--surface-2)",
+                        color: EXAMPLE_LANG_STYLE[lang]?.color ?? "var(--ink-3)",
+                      }}
+                    >
+                      {lang}
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+      </div>
+      </div>
+
+      {/* Footer — fixed to the bottom of the page, separate from scrollable content */}
+      <div className="relative z-10 shrink-0 w-full max-w-3xl">
         <Footer />
       </div>
     </div>
