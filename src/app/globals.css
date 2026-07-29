@@ -444,12 +444,19 @@ html.light .brand-logo {
 @keyframes glowPulse{ 0%,100%{box-shadow: 0 0 20px var(--purple-glow)} 50%{box-shadow: 0 0 40px var(--purple-glow), 0 0 80px rgba(139,92,246,0.2)} }
 @keyframes glowPulseGold{ 0%,100%{box-shadow: 0 0 10px rgba(245,158,11,0.35)} 50%{box-shadow: 0 0 22px rgba(245,158,11,0.6), 0 0 40px rgba(245,158,11,0.25)} }
 @keyframes twinkle  { 0%,100%{transform:scale(1) rotate(0deg)} 50%{transform:scale(1.18) rotate(8deg)} }
+@keyframes bubbleDrop{
+  0%   { opacity:0; transform:translateY(-36px) scale(0.85) rotate(-3deg); }
+  55%  { opacity:1; transform:translateY(6px) scale(1.04) rotate(1deg); }
+  75%  { transform:translateY(-2px) scale(0.99) rotate(-0.5deg); }
+  100% { opacity:1; transform:translateY(0) scale(1) rotate(0deg); }
+}
 
 .anim-fade-up   { animation: fadeUp  0.55s cubic-bezier(0.16,1,0.3,1) both; }
 .anim-fade-in   { animation: fadeIn  0.35s ease both; }
 .anim-scale-up  { animation: scaleUp 0.45s cubic-bezier(0.16,1,0.3,1) both; }
 .anim-slide-left{ animation: slideLeft 0.4s cubic-bezier(0.16,1,0.3,1) both; }
 .anim-slide-up  { animation: slideUp  0.45s cubic-bezier(0.16,1,0.3,1) both; }
+.anim-bubble-drop{ animation: bubbleDrop 0.65s cubic-bezier(0.34,1.56,0.64,1) both; }
 
 /* Stagger delays */
 .delay-0  { animation-delay:   0ms; }
@@ -460,7 +467,7 @@ html.light .brand-logo {
 .delay-5  { animation-delay: 400ms; }
 
 @media (prefers-reduced-motion: reduce) {
-  .anim-fade-up,.anim-fade-in,.anim-scale-up,.anim-slide-left,.anim-slide-up,
+  .anim-fade-up,.anim-fade-in,.anim-scale-up,.anim-slide-left,.anim-slide-up,.anim-bubble-drop,
   .orb-primary,.orb-secondary,.orb-accent { animation: none; }
 }
 

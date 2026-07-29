@@ -325,6 +325,81 @@ function CategoryWheel({ onSelect }: { onSelect: (query: string) => void }) {
   );
 }
 
+// Mobile-only category browser — same data as CategoryWheel, but laid out as
+// a slide-in panel (mirrors CartPanel/RecipientsPanel) instead of the fixed
+// left-edge curve rail, which doesn't fit small viewports.
+function MobileCategoryPanel({ onSelect, onClose }: { onSelect: (query: string) => void; onClose: () => void }) {
+  const [search, setSearch] = useState("");
+  const filtered = search.trim()
+    ? ALL_CATEGORIES.filter((c) => c.label.toLowerCase().includes(search.trim().toLowerCase()))
+    : ALL_CATEGORIES;
+
+  return (
+    <>
+      <div className="backdrop" onClick={onClose} style={{ zIndex: 70 }} />
+      <aside className="cart-panel glass-dark anim-slide-left flex flex-col" style={{ zIndex: 80 }}>
+        <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: "1px solid var(--border-2)" }}>
+          <h2 className="t-title" style={{ color: "var(--ink)" }}>Browse Categories</h2>
+          <button
+            onClick={onClose}
+            aria-label="Close categories"
+            className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors active:scale-95"
+            style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="px-6 pt-4">
+          <div className="flex items-center gap-2 rounded-full px-3.5 py-2.5" style={{ background: "var(--surface-2)", border: "1px solid var(--border-2)" }}>
+            <Search className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--purple-light)" }} />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search categories…"
+              className="flex-1 min-w-0 bg-transparent text-[13px] font-medium outline-none placeholder:text-muted-foreground placeholder:font-normal"
+              style={{ color: "var(--ink)" }}
+            />
+            {search && (
+              <button onClick={() => setSearch("")} aria-label="Clear search" className="shrink-0">
+                <X className="h-3.5 w-3.5" style={{ color: "var(--purple-light)" }} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-6 py-4 no-scrollbar">
+          {filtered.length === 0 ? (
+            <p className="text-center t-small py-10" style={{ color: "var(--ink-3)" }}>
+              No categories match &ldquo;{search}&rdquo;
+            </p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {filtered.map((cat) => {
+                const Icon = cat.icon;
+                return (
+                  <button
+                    key={cat.label}
+                    onClick={() => onSelect(cat.query)}
+                    className="flex items-center gap-3 rounded-2xl px-3.5 py-3 text-left transition-all active:scale-[0.98]"
+                    style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+                  >
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ background: `${cat.color}22` }}>
+                      <Icon className="h-4 w-4" style={{ color: cat.color }} strokeWidth={2} />
+                    </span>
+                    <span className="text-[14px] font-semibold text-foreground">{cat.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </aside>
+    </>
+  );
+}
+
 // Ambient conversational offers — not example queries to copy, but Kiyo
 // casually speaking to the visitor. displayText reads naturally as something
 // Kiyo herself would say (second person); promptText is what actually gets
@@ -822,7 +897,49 @@ function KiyoBubbleColumn({ onSend }: { onSend: (message: KiyoMessage) => void }
   );
 }
 
-// Mix of English, Sinhala, and Tanglish — judges will see all 
+// Mobile-only suggestions browser — same personalized messages as
+// KiyoBubbleColumn, laid out as a slide-in panel instead of the fixed
+// right-edge column, which doesn't fit small viewports.
+function MobileSuggestionsPanel({ onSend, onClose }: { onSend: (message: KiyoMessage) => void; onClose: () => void }) {
+  const messages = usePersonalizedKiyoMessages();
+
+  return (
+    <>
+      <div className="backdrop" onClick={onClose} style={{ zIndex: 70 }} />
+      <aside className="cart-panel glass-dark anim-slide-left flex flex-col" style={{ zIndex: 80 }}>
+        <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: "1px solid var(--border-2)" }}>
+          <h2 className="t-title" style={{ color: "var(--ink)" }}>
+            <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> Suggestions
+          </h2>
+          <button
+            onClick={onClose}
+            aria-label="Close suggestions"
+            className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors active:scale-95"
+            style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-6 py-4 no-scrollbar">
+          <div className="flex flex-col items-start gap-4">
+            {messages.map((msg, i) => (
+              <div
+                key={i}
+                className="anim-bubble-drop"
+                style={{ animationDelay: `${i * 90}ms` }}
+              >
+                <BubbleShape displayText={msg.displayText} seed={i} onClick={() => onSend(msg)} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </aside>
+    </>
+  );
+}
+
+// Mix of English, Sinhala, and Tanglish — judges will see all
 const EXAMPLES = [
   { text: "Birthday cake for Kandy under LKR 10,000", lang: "EN" },
   { text: "අම්මාගේ උපන්දිනයට ලස්සන කේක් එකක් හොයලා දෙන්න", lang: "සිං" }, // "Find a nice cake for mum's birthday"
@@ -850,6 +967,8 @@ export function EmptyState() {
   const examplesRailRef = useRef<HTMLDivElement>(null);
   const [categoryBrowserOpen, setCategoryBrowserOpen] = useState(false);
   const [kiyoBubbleOpen, setKiyoBubbleOpen] = useState(false);
+  const viewportSize = useViewportSize();
+  const isDesktop = viewportSize ? viewportSize.width >= 640 : true;
 
   function submitInput() {
     const text = inputValue.trim();
@@ -958,8 +1077,8 @@ export function EmptyState() {
         <p className="text-[16px] leading-relaxed font-medium mb-2" style={{ color: "var(--ink-2)" }}>
           <b className="text-foreground font-bold">Stop searching, start talking.</b>{" "} <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> {" "}
           <b className="text-foreground font-bold">listens, understands,</b>{" "} and {" "}
-          <b className="text-foreground font-bold">gets things done</b> {" "}
-          — finding, comparing, and helping you buy almost anything you need.
+          <b className="text-foreground font-bold">gets things done</b>
+          <span className="hidden sm:inline"> — finding, comparing, and helping you buy almost anything you need.</span>
         </p>
 
         {/* Rotating subtitle */}
@@ -992,7 +1111,7 @@ export function EmptyState() {
       </div>
 
       {/* Inline input zone — mockup-style, sits directly under the hero */}
-      <div className="mt-2 pt-4 w-full max-w-xl">
+      <div className="mt-2 pt-10 sm:pt-4 w-full max-w-xl">
         <div className="command-bar flex items-center gap-3 rounded-2xl px-4 sm:px-5 py-3.5">
           <KiyoAvatar size={32} className="shrink-0" />
           <input
@@ -1053,6 +1172,28 @@ export function EmptyState() {
             ))}
             <span className="text-[11px]" style={{ color: "var(--ink-2)" }}>— <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> gets all</span>
           </div>
+        </div>
+
+        {/* Category browser + suggestions triggers — mobile only, sit right under the input, each opening a slide-in panel. */}
+        <div className="pt-10 flex items-center justify-center gap-3 sm:hidden">
+          <button
+            onClick={() => setCategoryBrowserOpen(true)}
+            aria-label="Browse all categories"
+            className="flex items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-semibold transition-all active:scale-95"
+            style={{ background: "var(--surface-2)", border: "1px solid var(--gold)", color: "var(--gold)" }}
+          >
+            <Grid3x3 className="h-4 w-4" />
+            Categories
+          </button>
+          <button
+            onClick={() => setKiyoBubbleOpen(true)}
+            aria-label="Show Kiyo suggestions"
+            className="flex items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-semibold transition-all active:scale-95"
+            style={{ background: "var(--surface-2)", border: "1px solid var(--gold)", color: "var(--gold)", animation: "glowPulseGold 2.2s ease-in-out infinite" }}
+          >
+            <Sparkles className="h-4 w-4" />
+            Suggestions
+          </button>
         </div>
       </div>
 
@@ -1186,13 +1327,24 @@ export function EmptyState() {
       </div>
 
       {categoryBrowserOpen && (
-        <CategoryWheel
-          onSelect={(query) => { setCategoryBrowserOpen(false); sendMessage(query); }}
-        />
+        isDesktop ? (
+          <CategoryWheel
+            onSelect={(query) => { setCategoryBrowserOpen(false); sendMessage(query); }}
+          />
+        ) : (
+          <MobileCategoryPanel
+            onSelect={(query) => { setCategoryBrowserOpen(false); sendMessage(query); }}
+            onClose={() => setCategoryBrowserOpen(false)}
+          />
+        )
       )}
 
       {kiyoBubbleOpen && (
-        <KiyoBubbleColumn onSend={handleKiyoBubbleSend} />
+        isDesktop ? (
+          <KiyoBubbleColumn onSend={handleKiyoBubbleSend} />
+        ) : (
+          <MobileSuggestionsPanel onSend={handleKiyoBubbleSend} onClose={() => setKiyoBubbleOpen(false)} />
+        )
       )}
     </div>
   );

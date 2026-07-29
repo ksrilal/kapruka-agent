@@ -67,7 +67,7 @@ export function Header() {
             <span className="text-[15px] font-bold leading-tight tracking-tight text-foreground">
               <span className="font-kiyo">KI<span className="gradient-text">YO</span></span>
             </span>
-            <span className="text-[11px] leading-tight text-muted-foreground">
+            <span className="hidden sm:block text-[11px] leading-tight text-muted-foreground">
               Your AI shopping assistant
             </span>
           </div>
