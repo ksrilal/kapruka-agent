@@ -1,6 +1,6 @@
 "use client";
 
-import { ShoppingCart, Package, History, SquarePen, Sun, Moon } from "lucide-react";
+import { ShoppingCart, Package, History, SquarePen, Sun, Moon, Users } from "lucide-react";
 import { KiyoAvatar } from "@/components/ui/KiyoAvatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useRouter } from "next/navigation";
@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { useCartStore } from "@/features/cart/store";
 import { useOrdersStore } from "@/features/orders/store";
 import { useHistoryStore } from "@/features/history/store";
+import { useRecipientsStore } from "@/features/recipients/store";
 import { useChatStore } from "@/features/chat/store";
 import { useChat } from "@/features/chat/hooks/useChat";
 import { useThemeStore, syncThemeFromDom } from "@/features/theme/store";
@@ -22,6 +23,9 @@ export function Header() {
 
   const toggleHistory = useHistoryStore((s) => s.toggle);
   const historySessions = useHistoryStore((s) => s.sessions);
+
+  const toggleRecipients = useRecipientsStore((s) => s.toggle);
+  const recipients = useRecipientsStore((s) => s.recipients);
 
   const hasMessages = useChatStore((s) => s.messages.length > 0);
   const { newChat, isStreaming } = useChat();
@@ -45,6 +49,7 @@ export function Header() {
   const cartCount = mounted ? cartItems.reduce((sum, i) => sum + i.quantity, 0) : 0;
   const ordersCount = mounted ? pendingOrders.length + trackedOrders.length : 0;
   const historyCount = mounted ? historySessions.length : 0;
+  const recipientsCount = mounted ? recipients.length : 0;
 
   return (
     <header
@@ -121,6 +126,28 @@ export function Header() {
             {historyCount > 0 && (
               <span className="badge-count" style={{ background: "var(--purple)" }}>
                 {historyCount}
+              </span>
+            )}
+          </div>
+
+          {/* Recipients button */}
+          <div className="relative">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={toggleRecipients}
+                  aria-label="Saved recipients"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:text-foreground active:scale-95"
+                  style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
+                >
+                  <Users className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Saved recipients</TooltipContent>
+            </Tooltip>
+            {recipientsCount > 0 && (
+              <span className="badge-count" style={{ background: "var(--purple)" }}>
+                {recipientsCount}
               </span>
             )}
           </div>

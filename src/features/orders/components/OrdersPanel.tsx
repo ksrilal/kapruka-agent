@@ -3,11 +3,12 @@
 import { useState } from "react";
 import Image from "next/image";
 import {
-  X, Package, ExternalLink, Clock, Trash2, RefreshCw, CheckCircle2, XCircle, Loader2,
+  X, Package, ExternalLink, Clock, Trash2, RefreshCw, CheckCircle2, XCircle, Loader2, UserPlus, UserCheck,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useOrdersStore, isTerminal } from "@/features/orders/store";
 import { useOrderPolling } from "@/features/orders/hooks/useOrderPolling";
+import { useRecipientsStore } from "@/features/recipients/store";
 import type { SavedOrder, SavedTracking } from "@/features/orders/store";
 import type { OrderStatus } from "@/types/domain";
 
@@ -231,6 +232,8 @@ function TrackingRow({ saved, onRemove }: { saved: SavedTracking; onRemove: () =
   const color = statusColor(status.status);
   const terminal = isTerminal(status.status);
   const updateTracking = useOrdersStore((s) => s.updateTracking);
+  const saveRecipient = useRecipientsStore((s) => s.saveRecipient);
+  const recipientSaved = useRecipientsStore((s) => s.isSaved(status.recipient));
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -315,6 +318,21 @@ function TrackingRow({ saved, onRemove }: { saved: SavedTracking; onRemove: () =
         <span style={{ color: "var(--ink-3)" }}>Amount</span>
         <span style={{ color: "var(--gold)" }}>{status.amount.currency} {status.amount.value}</span>
       </div>
+
+      {/* Save recipient for next time */}
+      {recipientSaved ? (
+        <p className="flex items-center gap-1.5 text-[11px]" style={{ color: "var(--ink-3)" }}>
+          <UserCheck className="h-3.5 w-3.5" /> Recipient saved
+        </p>
+      ) : (
+        <button
+          onClick={() => saveRecipient(status.recipient)}
+          className="flex items-center gap-1.5 text-[11px] font-medium underline-offset-2 hover:underline transition-colors text-left self-start"
+          style={{ color: "var(--purple-light)" }}
+        >
+          <UserPlus className="h-3.5 w-3.5" /> Save {status.recipient.name} for next time
+        </button>
+      )}
 
       {/* Progress timeline */}
       {status.progress.length > 0 && (

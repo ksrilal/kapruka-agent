@@ -210,6 +210,12 @@ export function useChat() {
                 ),
               }));
               saveTracking(event.orderStatus);
+            } else if (event.type === "giftProfile") {
+              useChatStore.setState((s) => ({
+                messages: s.messages.map((m) =>
+                  m.id === assistantId ? { ...m, giftProfile: event.giftProfile } : m
+                ),
+              }));
             } else if (event.type === "error") {
               setMessageError(assistantId, event.retryable ?? false, event.message);
             }
@@ -238,6 +244,7 @@ export function useChat() {
             !finalMsg.products?.length &&
             !finalMsg.order &&
             !finalMsg.orderStatus &&
+            !finalMsg.giftProfile &&
             !finalMsg.isError &&
             !finalMsg.toolSteps?.length
           ) {

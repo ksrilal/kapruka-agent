@@ -1,6 +1,6 @@
 import type { Locale } from "./domain";
 import type { ProductSummary } from "./domain";
-import type { Order, OrderStatus } from "./domain";
+import type { Order, OrderStatus, GiftProfile } from "./domain";
 
 export type { Locale };
 
@@ -41,6 +41,11 @@ export interface ChatOrderStatusEvent {
   orderStatus: OrderStatus;
 }
 
+export interface ChatGiftProfileEvent {
+  type: "giftProfile";
+  giftProfile: GiftProfile;
+}
+
 export interface ChatTextEvent {
   type: "text";
   text: string;
@@ -66,4 +71,5 @@ export type ChatSSEEvent =
   | ChatOrderEvent
   | ChatOrderStatusEvent
   | ChatToolCallEvent
-  | ChatCartActionEvent;
+  | ChatCartActionEvent
+  | ChatGiftProfileEvent;

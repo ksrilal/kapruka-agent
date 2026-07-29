@@ -229,6 +229,13 @@ async function* chatGenerator(
           console.error({ event: "order_status_schema_fail", issues: statusResult.error.issues });
           emittedTypes.delete(parsed.__type);
         }
+      } else if (parsed.__type === "giftProfile" && parsed.data && typeof parsed.data === "object") {
+        const data = parsed.data as { occasion?: unknown };
+        if (typeof data.occasion === "string" && data.occasion) {
+          yield { type: "giftProfile" as const, giftProfile: parsed.data as import("@/types/domain").GiftProfile };
+        } else {
+          emittedTypes.delete(parsed.__type);
+        }
       }
     } catch { /* malformed — skip */ }
   }

@@ -142,6 +142,7 @@ export interface ConversationMessage {
   products?: ProductSummary[];
   order?: Order;
   orderStatus?: OrderStatus;
+  giftProfile?: GiftProfile;
   isError?: boolean;
   retryable?: boolean;
   errorMessage?: string;
