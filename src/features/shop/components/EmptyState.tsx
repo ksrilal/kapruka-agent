@@ -908,12 +908,14 @@ export function EmptyState() {
         </h1>
 
         <p className="text-[16px] leading-relaxed font-medium mb-2" style={{ color: "var(--ink-2)" }}>
-          Kiyo understands <b className="text-foreground font-bold">English, සිංහල &amp; Tanglish</b>{" "}
-          — talk to it like you would a friend, and it&apos;ll find, compare, and order almost anything.
+          <b className="text-foreground font-bold">Stop searching, start talking.</b>{" "} Kiyo {" "}
+          <b className="text-foreground font-bold">listens, understands,</b>{" "} and {" "}
+          <b className="text-foreground font-bold">gets things done</b> {" "}
+          — finding, comparing, and helping you buy almost anything you need.
         </p>
 
         {/* Rotating subtitle */}
-        <div className="flex flex-col items-center gap-2 pb-1 pt-2">
+        <div className="flex flex-col items-center gap-2 pb-1 pt-3">
           <span
             className="rounded-full px-3 py-1 text-[11px] font-bold tracking-wide uppercase"
             style={{
