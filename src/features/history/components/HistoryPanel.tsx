@@ -228,7 +228,7 @@ export function HistoryPanel() {
         >
           <Sparkles className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--purple-light)" }} />
           <p className="text-[11px]" style={{ color: "var(--ink-3)" }}>
-            <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> saves up to 5 recent sessions automatically
+            <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> saves up to 20 recent sessions automatically
           </p>
         </div>
       </aside>

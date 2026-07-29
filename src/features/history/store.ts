@@ -19,7 +19,7 @@ export interface SavedSession {
   messages: ConversationMessage[];
 }
 
-const MAX_SESSIONS = 5;
+const MAX_SESSIONS = 20;
 // Keep products/order/orderStatus for card restoration.
 // Cap products at 8 items and text at 500 chars to stay within localStorage budget.
 function trimMessages(msgs: ConversationMessage[]): ConversationMessage[] {

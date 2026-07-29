@@ -114,7 +114,7 @@ const SECTIONS = [
     items: [
       {
         q: "Does KIYO remember my past conversations?",
-        a: <><span className="font-kiyo">KI<span className="gradient-text">YO</span></span> keeps your recent chat sessions saved in your browser (the last few), so you can reopen the history panel and pick up a previous conversation where you left off.</>,
+        a: <><span className="font-kiyo">KI<span className="gradient-text">YO</span></span> keeps your recent chat sessions saved in your browser (the last 20), so you can reopen the history panel and pick up a previous conversation where you left off.</>,
       },
       {
         q: "What are the suggestion bubbles on the home screen?",

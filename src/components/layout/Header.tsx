@@ -14,10 +14,11 @@ import { useThemeStore, syncThemeFromDom } from "@/features/theme/store";
 
 export function Header() {
   const toggleCart = useCartStore((s) => s.toggle);
-  const cartItemCount = useCartStore((s) => s.itemCount);
+  const cartItems = useCartStore((s) => s.items);
 
   const toggleOrders = useOrdersStore((s) => s.toggle);
   const pendingOrders = useOrdersStore((s) => s.pending);
+  const trackedOrders = useOrdersStore((s) => s.tracked);
 
   const toggleHistory = useHistoryStore((s) => s.toggle);
   const historySessions = useHistoryStore((s) => s.sessions);
@@ -41,8 +42,8 @@ export function Header() {
     setMounted(true);
   }, []);
 
-  const cartCount = mounted ? cartItemCount() : 0;
-  const ordersCount = mounted ? pendingOrders.length : 0;
+  const cartCount = mounted ? cartItems.reduce((sum, i) => sum + i.quantity, 0) : 0;
+  const ordersCount = mounted ? pendingOrders.length + trackedOrders.length : 0;
   const historyCount = mounted ? historySessions.length : 0;
 
   return (
@@ -130,14 +131,14 @@ export function Header() {
               <TooltipTrigger asChild>
                 <button
                   onClick={toggleOrders}
-                  aria-label="My orders"
+                  aria-label="Your orders"
                   className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:text-foreground active:scale-95"
                   style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
                 >
                   <Package className="h-4 w-4" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent>My orders</TooltipContent>
+              <TooltipContent>Your orders</TooltipContent>
             </Tooltip>
             {ordersCount > 0 && (
               <span className="badge-count" style={{ background: "var(--gold)" }}>

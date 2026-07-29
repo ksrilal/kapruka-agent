@@ -373,7 +373,7 @@ function OrdersPanelContent({ onClose }: { onClose: () => void }) {
           style={{ borderBottom: "1px solid var(--border-2)" }}
         >
           <div>
-            <h2 className="t-title" style={{ color: "var(--ink)" }}>My Orders</h2>
+            <h2 className="t-title" style={{ color: "var(--ink)" }}>Your Orders</h2>
             <p className="t-small mt-0.5" style={{ color: "var(--ink-2)" }}>
               {totalCount === 0 ? "No saved orders" : `${totalCount} order${totalCount !== 1 ? "s" : ""}`}
             </p>
