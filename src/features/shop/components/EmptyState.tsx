@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef, useMemo } from "react";
 import {
   ArrowUp, Grid3x3, Cake, Flower2, Gift, Candy, Gem, Baby, ShoppingBag, Smartphone, Mic, MicOff,
@@ -18,6 +19,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useCartStore } from "@/features/cart/store";
 import { useOrdersStore } from "@/features/orders/store";
 import { useHistoryStore } from "@/features/history/store";
+import { useChatStore } from "@/features/chat/store";
+import { useShopStore } from "@/features/shop/store";
 import type { CartLineItem } from "@/features/cart/store";
 import type { SavedOrder } from "@/features/orders/store";
 import type { SavedSession } from "@/features/history/store";
@@ -326,25 +329,29 @@ function CategoryWheel({ onSelect }: { onSelect: (query: string) => void }) {
 interface KiyoMessage {
   displayText: string;
   promptText: string;
+  // "resume" bubbles restore a specific past chat session instead of sending
+  // a new message — sessionId is required when kind is "resume".
+  kind: "new" | "resume";
+  sessionId?: string;
 }
 
 const KIYO_MESSAGES: KiyoMessage[] = [
-  { displayText: "I can help you find a thoughtful gift for your mum.", promptText: "Help me find a thoughtful gift for my mum." },
-  { displayText: "Tell me your budget and I'll find the best options.", promptText: "Help me find the best options within my budget." },
-  { displayText: "Need help comparing two products?", promptText: "Help me compare two products." },
-  { displayText: "Looking for something that can be delivered today?", promptText: "Show me products that can be delivered today." },
-  { displayText: "Ammata lassana gift ekak hoyamu da?", promptText: "Mage ammata lassana gift ekak hoyala denna." },
-  { displayText: "Oyage budget eka kiyanna, mama hondama options hoyannam.", promptText: "Mage budget ekata hondama options hoyala denna." },
-  { displayText: "Products dekak compare karala dennam da?", promptText: "Me products deka compare karala denna." },
-  { displayText: "Ada delivery karanna puluwan item ekak hoyanawada?", promptText: "Ada delivery karanna puluwan items pennanna." },
-  { displayText: "අම්මට ලස්සන තෑග්ගක් හොයමුද?", promptText: "මගේ අම්මට ලස්සන තෑග්ගක් හොයලා දෙන්න." },
-  { displayText: "ඔයාගේ බජට් එක කියන්න, මම හොඳම විකල්ප හොයලා දෙන්නම්.", promptText: "මගේ බජට් එකට හොඳම විකල්ප හොයලා දෙන්න." },
-  { displayText: "ප්‍රොඩක්ට් දෙකක් compare කරලා දෙන්නද?", promptText: "මේ ප්‍රොඩක්ට් දෙක compare කරලා දෙන්න." },
-  { displayText: "අදම delivery කරන්න පුළුවන් දෙයක් හොයනවද?", promptText: "අදම delivery කරන්න පුළුවන් items පෙන්නන්න." },
-  { displayText: "Amma-ku oru nalla gift kandupidikkalama?", promptText: "En amma-ku oru nalla gift kandupidichu thanga." },
-  { displayText: "Ungal budget sollunga, best options naan find pannuren.", promptText: "En budget-ku best options find panni thanga." },
-  { displayText: "Rendu products compare pannava?", promptText: "Indha rendu products compare panni thanga." },
-  { displayText: "Innikku delivery irukkura item venuma?", promptText: "Innikku delivery irukkura items kaattunga." },
+  { displayText: "I can help you find a thoughtful gift for your mum.", promptText: "Help me find a thoughtful gift for my mum.", kind: "new" },
+  { displayText: "Tell me your budget and I'll find the best options.", promptText: "Help me find the best options within my budget.", kind: "new" },
+  { displayText: "Need help comparing two products?", promptText: "Help me compare two products.", kind: "new" },
+  { displayText: "Looking for something that can be delivered today?", promptText: "Show me products that can be delivered today.", kind: "new" },
+  { displayText: "Ammata lassana gift ekak hoyamu da?", promptText: "Mage ammata lassana gift ekak hoyala denna.", kind: "new" },
+  { displayText: "Oyage budget eka kiyanna, mama hondama options hoyannam.", promptText: "Mage budget ekata hondama options hoyala denna.", kind: "new" },
+  { displayText: "Products dekak compare karala dennam da?", promptText: "Me products deka compare karala denna.", kind: "new" },
+  { displayText: "Ada delivery karanna puluwan item ekak hoyanawada?", promptText: "Ada delivery karanna puluwan items pennanna.", kind: "new" },
+  { displayText: "අම්මට ලස්සන තෑග්ගක් හොයමුද?", promptText: "මගේ අම්මට ලස්සන තෑග්ගක් හොයලා දෙන්න.", kind: "new" },
+  { displayText: "ඔයාගේ බජට් එක කියන්න, මම හොඳම විකල්ප හොයලා දෙන්නම්.", promptText: "මගේ බජට් එකට හොඳම විකල්ප හොයලා දෙන්න.", kind: "new" },
+  { displayText: "ප්‍රොඩක්ට් දෙකක් compare කරලා දෙන්නද?", promptText: "මේ ප්‍රොඩක්ට් දෙක compare කරලා දෙන්න.", kind: "new" },
+  { displayText: "අදම delivery කරන්න පුළුවන් දෙයක් හොයනවද?", promptText: "අදම delivery කරන්න පුළුවන් items පෙන්නන්න.", kind: "new" },
+  { displayText: "Amma-ku oru nalla gift kandupidikkalama?", promptText: "En amma-ku oru nalla gift kandupidichu thanga.", kind: "new" },
+  { displayText: "Ungal budget sollunga, best options naan find pannuren.", promptText: "En budget-ku best options find panni thanga.", kind: "new" },
+  { displayText: "Rendu products compare pannava?", promptText: "Indha rendu products compare panni thanga.", kind: "new" },
+  { displayText: "Innikku delivery irukkura item venuma?", promptText: "Innikku delivery irukkura items kaattunga.", kind: "new" },
 ];
 
 // Fixed single column of ambient bubble slots stacked down the right edge of
@@ -519,7 +526,7 @@ function BubbleSlot({
 }: {
   startIdx: number;
   reducedMotion: boolean;
-  onSend: (text: string) => void;
+  onSend: (message: KiyoMessage) => void;
   messages: KiyoMessage[];
   gridStyle?: CSSProperties;
   maxWidth?: number;
@@ -567,7 +574,7 @@ function BubbleSlot({
         pointerEvents: shown ? "auto" : "none",
       }}
     >
-      <BubbleShape displayText={message.displayText} seed={msgIdx} onClick={() => onSend(message.promptText)} maxWidth={maxWidth} />
+      <BubbleShape displayText={message.displayText} seed={msgIdx} onClick={() => onSend(message)} maxWidth={maxWidth} />
     </div>
   );
 }
@@ -592,33 +599,35 @@ function buildLocalPersonalizedMessages({
     const first = cartItems[0].product.name;
     messages.push(
       cartItems.length === 1
-        ? { displayText: `Ready to check out ${first}?`, promptText: "I want to checkout my cart." }
-        : { displayText: `You still have ${cartItems.length} items waiting in your cart.`, promptText: "I want to checkout my cart." }
+        ? { displayText: `Ready to check out ${first}?`, promptText: "I want to checkout my cart.", kind: "new" }
+        : { displayText: `You still have ${cartItems.length} items waiting in your cart.`, promptText: "I want to checkout my cart.", kind: "new" }
     );
     const category = cartItems[0].product.category?.name;
     if (category) {
-      messages.push({ displayText: `Want more ${category.toLowerCase()} like what's in your cart?`, promptText: `Show me more ${category}.` });
+      messages.push({ displayText: `Want more ${category.toLowerCase()} like what's in your cart?`, promptText: `Show me more ${category}.`, kind: "new" });
     }
   }
 
   if (pendingOrder) {
-    messages.push({ displayText: "Want an update on your recent order?", promptText: `What's the status of my order ${pendingOrder.order.order_ref}?` });
+    messages.push({ displayText: "Want an update on your recent order?", promptText: `What's the status of my order ${pendingOrder.order.order_ref}?`, kind: "new" });
     if (pendingOrder.itemNames[0]) {
-      messages.push({ displayText: `Loved ${pendingOrder.itemNames[0]}? I can find something similar.`, promptText: `Show me something similar to ${pendingOrder.itemNames[0]}.` });
+      messages.push({ displayText: `Loved ${pendingOrder.itemNames[0]}? I can find something similar.`, promptText: `Show me something similar to ${pendingOrder.itemNames[0]}.`, kind: "new" });
     }
   }
 
   if (lastSession) {
-    messages.push({ displayText: "Want to pick up where we left off?", promptText: `Let's continue from: ${lastSession.title}` });
+    messages.push({
+      displayText: "Want to pick up where we left off?",
+      promptText: `Let's continue from: ${lastSession.title}`,
+      kind: "resume",
+      sessionId: lastSession.id,
+    });
   }
 
   return messages;
 }
 
 const AI_SUGGESTIONS_CACHE_KEY = "kiyo-ai-suggestions-v1";
-// How many times each AI suggestion is repeated in the pool relative to a
-// single hardcoded/local entry — this is the "show them often" weighting.
-const AI_SUGGESTION_WEIGHT = 3;
 
 function readCachedAiSuggestions(): KiyoMessage[] {
   if (typeof window === "undefined") return [];
@@ -627,12 +636,15 @@ function readCachedAiSuggestions(): KiyoMessage[] {
     if (!raw) return [];
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter(
-      (m): m is KiyoMessage =>
-        typeof m === "object" && m !== null &&
-        typeof (m as KiyoMessage).displayText === "string" &&
-        typeof (m as KiyoMessage).promptText === "string"
-    );
+    return parsed
+      .filter(
+        (m): m is KiyoMessage =>
+          typeof m === "object" && m !== null &&
+          typeof (m as KiyoMessage).displayText === "string" &&
+          typeof (m as KiyoMessage).promptText === "string"
+      )
+      // Stale cache entries from before "kind" existed — treat as "new".
+      .map((m) => (m.kind === "resume" ? m : { ...m, kind: "new" as const }));
   } catch {
     return [];
   }
@@ -681,7 +693,13 @@ function useAiKiyoSuggestions({
         pendingOrder: pendingOrder
           ? { orderRef: pendingOrder.order.order_ref, itemName: pendingOrder.itemNames[0] }
           : undefined,
-        lastSession: lastSession ? { title: lastSession.title } : undefined,
+        lastSession: lastSession
+          ? {
+              id: lastSession.id,
+              title: lastSession.title,
+              messages: lastSession.messages.slice(-12).map((m) => ({ role: m.role, content: m.content })),
+            }
+          : undefined,
       }),
     })
       .then((res) => (res.ok ? res.json() : null))
@@ -724,8 +742,17 @@ function usePersonalizedKiyoMessages(): KiyoMessage[] {
   return useMemo(() => {
     if (!mounted) return KIYO_MESSAGES;
     const local = buildLocalPersonalizedMessages({ cartItems, pendingOrder, lastSession });
-    const weightedAi = Array.from({ length: AI_SUGGESTION_WEIGHT }, () => aiMessages).flat();
-    const pool = [...weightedAi, ...local, ...KIYO_MESSAGES];
+    // AI suggestions lead the pool (so they're favored by the even-spacing
+    // start-index math downstream) but each distinct message appears only
+    // once — literal duplicates are what caused two slots to show identical
+    // bubbles at once. KIYO_MESSAGES pads the tail so the pool never runs dry.
+    const seen = new Set<string>();
+    const pool: KiyoMessage[] = [];
+    for (const m of [...aiMessages, ...local, ...KIYO_MESSAGES]) {
+      if (seen.has(m.displayText)) continue;
+      seen.add(m.displayText);
+      pool.push(m);
+    }
     return pool.length > 0 ? pool : KIYO_MESSAGES;
   }, [mounted, cartItems, pendingOrder, lastSession, aiMessages]);
 }
@@ -733,7 +760,7 @@ function usePersonalizedKiyoMessages(): KiyoMessage[] {
 // Desktop: fixed single column stacked down the right edge of the viewport,
 // toggled open/closed by the "Try asking" arrow button (mirrors CategoryWheel
 // on the left). Mobile: centered flex-wrap row.
-function KiyoBubbleColumn({ onSend }: { onSend: (text: string) => void }) {
+function KiyoBubbleColumn({ onSend }: { onSend: (message: KiyoMessage) => void }) {
   const reducedMotion = useReducedMotion();
   const viewportSize = useViewportSize();
   const messages = usePersonalizedKiyoMessages();
@@ -758,7 +785,7 @@ function KiyoBubbleColumn({ onSend }: { onSend: (text: string) => void }) {
   return (
     <>
       {!isDesktop && (
-        <div className="fixed inset-x-4 top-24 z-40 flex flex-wrap items-start justify-center gap-4 sm:hidden">
+        <div className="fixed inset-x-4 top-24 z-60 flex flex-wrap items-start justify-center gap-4 sm:hidden">
           {startIndexes.map((startIdx, i) => (
             <BubbleSlot key={i} startIdx={startIdx} reducedMotion={reducedMotion} onSend={onSend} messages={messages} />
           ))}
@@ -767,7 +794,7 @@ function KiyoBubbleColumn({ onSend }: { onSend: (text: string) => void }) {
 
       {isDesktop && viewportSize && (
         <div
-          className="pointer-events-none fixed hidden z-40 sm:block"
+          className="pointer-events-none fixed hidden z-60 sm:block"
           style={{
             right: BUBBLE_RIGHT_EDGE_MARGIN,
             top: BUBBLE_HEADER_CLEARANCE,
@@ -808,6 +835,7 @@ const EXAMPLE_LANG_STYLE: Record<string, { color: string; bg: string }> = {
 
 export function EmptyState() {
   const { sendMessage, locale } = useChat();
+  const router = useRouter();
   const [subtitleIdx, setSubtitleIdx] = useState(0);
   const [visible, setVisible] = useState(true);
   const [inputValue, setInputValue] = useState("");
@@ -825,6 +853,23 @@ export function EmptyState() {
     if (!text) return;
     sendMessage(text);
     setInputValue("");
+  }
+
+  // "resume" bubbles reference a specific past chat session — restore it into
+  // the chat store instead of sending a new message (mirrors HistoryPanel's
+  // handleRestore). "new" bubbles just send their promptText as usual.
+  function handleKiyoBubbleSend(message: KiyoMessage) {
+    setKiyoBubbleOpen(false);
+    if (message.kind === "resume" && message.sessionId) {
+      const session = useHistoryStore.getState().sessions.find((s) => s.id === message.sessionId);
+      if (session) {
+        useChatStore.setState({ messages: session.messages, isStreaming: false });
+        useShopStore.getState().focusSearch();
+        router.push("/");
+        return;
+      }
+    }
+    sendMessage(message.promptText);
   }
 
   function startListening() {
@@ -1144,9 +1189,7 @@ export function EmptyState() {
       )}
 
       {kiyoBubbleOpen && (
-        <KiyoBubbleColumn
-          onSend={(text) => { setKiyoBubbleOpen(false); sendMessage(text); }}
-        />
+        <KiyoBubbleColumn onSend={handleKiyoBubbleSend} />
       )}
     </div>
   );

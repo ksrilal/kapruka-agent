@@ -7,12 +7,31 @@ const SuggestionsRequestSchema = z.object({
   locale: z.enum(["en", "si", "ta-Latn"]).optional(),
   cartItems: z.array(z.object({ name: z.string(), category: z.string().optional() })).max(5).default([]),
   pendingOrder: z.object({ orderRef: z.string(), itemName: z.string().optional() }).optional(),
-  lastSession: z.object({ title: z.string() }).optional(),
+  lastSession: z
+    .object({
+      id: z.string(),
+      title: z.string(),
+      // Tail of the actual conversation, oldest first — lets the model detect
+      // topic drift (e.g. a chat that opened about "electronics" but the
+      // visitor's real interest turned out to be "earbuds" mid-conversation)
+      // instead of only ever seeing the stale opening title.
+      messages: z.array(z.object({ role: z.enum(["user", "assistant"]), content: z.string() })).max(12),
+    })
+    .optional(),
 });
 
 const SuggestionSchema = z.object({
   displayText: z.string().describe("What Kiyo says out loud, second person, short and warm."),
   promptText: z.string().describe("What gets sent as the visitor's own message when they tap the bubble, first person."),
+  kind: z
+    .enum(["new", "resume"])
+    .describe(
+      "'resume' only when this suggestion is directly continuing the specific past chat session provided (topic actually discussed there, e.g. the earbuds sub-topic of an 'electronics' chat). 'new' for anything else, including cart/order-based ideas or fresh suggestions."
+    ),
+  sessionId: z
+    .string()
+    .optional()
+    .describe("Required and must equal the provided session id when kind is 'resume'; omit otherwise."),
 });
 
 const SuggestionsSchema = z.object({
@@ -57,7 +76,10 @@ function buildPrompt(body: z.infer<typeof SuggestionsRequestSchema>): string {
     lines.push(`Pending order ${body.pendingOrder.orderRef}${body.pendingOrder.itemName ? ` for ${body.pendingOrder.itemName}` : ""}.`);
   }
   if (body.lastSession) {
-    lines.push(`Last chat session was about: "${body.lastSession.title}".`);
+    lines.push(`Last chat session (id: ${body.lastSession.id}), opened as "${body.lastSession.title}". Transcript, oldest first:`);
+    for (const m of body.lastSession.messages) {
+      lines.push(`  ${m.role}: ${m.content}`);
+    }
   }
   if (lines.length === 0) {
     lines.push("No history available for this visitor yet — keep suggestions general and inviting.");
@@ -70,6 +92,8 @@ const SYSTEM_PROMPT = `You are Kiyo, Kapruka's shopping assistant. Generate up t
 Rules:
 - Each suggestion has displayText (Kiyo speaking, second person, one short sentence, warm and casual) and promptText (first person, what the visitor would say if they tapped it).
 - Ground suggestions in the specific history given — reference actual item/category/order names, don't be generic.
+- If a chat transcript is provided, read the whole thing, not just the opening title — conversations drift (e.g. it may open about "electronics" but the visitor's real ask by the end is "earbuds"). Ground any session-based suggestion in what was ACTUALLY discussed, especially toward the end of the transcript.
+- Set kind to "resume" only for a suggestion that continues the specific chat session provided — set sessionId to that session's id in that case. Everything else (cart, orders, fresh ideas) is kind "new" with no sessionId.
 - Vary language naturally across the set: mix English, Sinhala, and Singlish/Tanglish transliteration where it fits Kapruka's Sri Lankan audience — don't force all three in every response.
 - Keep each line under 90 characters.
 - Return only the structured suggestions, nothing else.`;
