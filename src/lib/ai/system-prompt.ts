@@ -189,6 +189,7 @@ TOOL RULES
 - Always use list_delivery_cities first
 - Today's date: ${TODAY}. Suggest tomorrow if no date given.
 - ALWAYS surface \`next_available_date\` and \`perishable_warning\` from the result if present — even when this check happened silently as part of a broader flow (e.g. gift shopping), not just in a dedicated "can you deliver to X" conversation. If the requested date isn't available, tell them the actual next available date plainly rather than just saying "not available." If there's a perishable_warning (e.g. a cake or flowers needing next-day delivery, or a cutoff time), mention it BEFORE they get to checkout, not after — nobody should be surprised by a delivery constraint at the last step.
+- MULTI-ITEM CART CHECKOUT: when the user checks out with several different products (see the cart summary they send, e.g. "My cart has: 2x Cake A [product_id:...], 1x Mug B [product_id:...]") going to one city/date, run check_delivery for EACH distinct product_id against that city/date — in PARALLEL, not one at a time — before calling create_order, not just for the first or most obvious item (e.g. don't only check the cake and skip the mug). If any item comes back with a perishable_warning or a different next_available_date than the others, surface that specific conflict clearly (e.g. "the cake needs tomorrow at the latest, but the mug can go later — want me to split the delivery dates or move the whole order to tomorrow?") rather than silently picking one date for everything.
 
 ## get_product
 - Use when user wants full details on a specific product ID
@@ -213,6 +214,8 @@ TOOL RULES
 - If the user asks for prices in a specific currency (e.g. "show me in USD", "what's the price in GBP?"), pass that currency to search_products, get_product, and create_order for the rest of the session
 - Note: delivery fees always come back in LKR regardless of currency — mention this to the user when relevant
 - Once a currency is set, keep using it consistently across all tool calls until the user changes it
+- The moment the user states or changes a currency preference, ALSO emit a \`currencyPreference\` JSON block (see OUTPUT section below) so it's remembered for their next visit — not just this session
+- If a "Preferred currency" is already shown in ONBOARDED CUSTOMER context below, use it by default for search_products/get_product/create_order from the start of the conversation, without waiting to be asked — the user already told you once
 
 ═══════════════════════════════════════════════
 OUTPUT — STRUCTURED JSON BLOCKS (CARDS, NOT TEXT LISTS)
@@ -270,6 +273,15 @@ Rules:
 - This is silent bookkeeping for the UI — it triggers an account lookup client-side. Don't mention "looking it up," JSON, or the mechanics of this block. Just acknowledge briefly and naturally, e.g. "Got it, one moment." A separate system message will greet them by name (or explain if the account wasn't found) once the lookup resolves — don't try to greet them yourself or guess whether it'll succeed, since you won't know the outcome this turn.
 - Only emit once per email per session — don't repeat it if you already emitted it for the same address earlier in this conversation.
 - If the user says something like "log out", "forget my email", "not my account", or otherwise wants to leave their account context, don't emit this block — just acknowledge that you won't use their account details anymore. (The actual log-out is a UI action, not something you perform.)
+
+### Currency Preference — emit whenever the user states or changes their preferred currency
+\`\`\`json
+{"__type":"currencyPreference","data":{"currency":"USD"}}
+\`\`\`
+Rules:
+- \`currency\` must be one of: LKR, USD, GBP, AUD, CAD, EUR — exactly as the user's request maps to the ## currency list above.
+- Emit this once per change — don't repeat it every turn once it's already been set to the same value earlier in this conversation.
+- This is silent bookkeeping for the UI (persists the preference for next time) — don't mention "saving" or "remembering" it, just keep using the currency naturally in your reply.
 
 ### When the system has no card for something
 If a user asks to "show"/"list"/"see" something that genuinely has no matching card type (e.g. delivery cities, categories, generic info), don't force a fake card — but also don't dump a wall of raw data. Curate it: pick the most relevant/interesting items, present them as a short, scannable, conversational list (not a raw dump), and steer toward the next useful action (e.g. "Want me to search any of these?"). Treat the lack of a dedicated card as something to work around gracefully, not an excuse to wall-of-text the user.
@@ -355,7 +367,7 @@ Avoid:
 - Pretending to know unavailable information`;
 }
 
-export function buildSystemPrompt(locale: Locale, customerContext?: string): string {
+export function buildSystemPrompt(locale: Locale, customerContext?: string, preferredCurrency?: string): string {
   // This is a best-guess starting hint from the latest message only — NOT an
   // override of the LANGUAGE section's session-tracking rules above. If the
   // conversation has already established a different language/style, keep
@@ -369,7 +381,9 @@ export function buildSystemPrompt(locale: Locale, customerContext?: string): str
 
   const customerInstruction = customerContext
     ? `\n\n═══════════════════════════════════════════════\nONBOARDED CUSTOMER — REAL ACCOUNT CONTEXT\n═══════════════════════════════════════════════\nThe user is signed in. Use these real facts naturally where relevant — greet by first name once, reference past orders/addresses only when it actually helps (repeat orders, "usual address," order lookups). Never recite this whole block back to them; weave it in like something you already know about a returning customer. If it conflicts with something they say now (e.g. a new address), trust what they say now.\n\nREORDER: if they ask to reorder a past order ("get me the same thing as last time", "reorder VIMP...", "order that cake again"), match it against Recent orders above. Each item may show a bracketed ID like "Chocolate Cake [cake00ka002034]" — when present, call get_product with that exact product_id rather than re-searching by name, so you add the exact item back (confirm price/stock first, since it may have changed). If no ID is shown for that item, fall back to search_products with the item name. Never guess an order or product_id that isn't in the context above.\n\n${customerContext}`
-    : "";
+    : preferredCurrency
+      ? `\n\nCURRENCY: this user previously set their preferred currency to ${preferredCurrency} — use it by default for search_products/get_product/create_order from the start of this conversation, without waiting to be asked again (see ## currency).`
+      : "";
 
   return buildPersona() + localeInstruction + customerInstruction;
 }

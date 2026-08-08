@@ -57,9 +57,10 @@ function buildRecipientsFromAddresses(account: CustomerAccount): SavedRecipient[
 
 // Compact, model-friendly summary of an onboarded account — folded into the
 // system prompt server-side (see buildSystemPrompt's customerContext param).
-function buildCustomerContext(account: CustomerAccount): string {
+function buildCustomerContext(account: CustomerAccount, preferredCurrency?: string | null): string {
   const lines: string[] = [`Name: ${account.profile.name}`, `Email: ${account.email}`];
   if (account.profile.phone) lines.push(`Phone: ${account.profile.phone}`);
+  if (preferredCurrency) lines.push(`Preferred currency: ${preferredCurrency}`);
   if (account.orders.length > 0) {
     lines.push("Recent orders:");
     for (const o of account.orders.slice(0, 5)) {
@@ -149,7 +150,10 @@ export function useChat() {
       history.push({ role: "user", content: text });
 
       const onboardedAccount = useCustomerStore.getState().account;
-      const customerContext = onboardedAccount ? buildCustomerContext(onboardedAccount) : undefined;
+      const preferredCurrency = useShopStore.getState().preferredCurrency ?? undefined;
+      const customerContext = onboardedAccount
+        ? buildCustomerContext(onboardedAccount, preferredCurrency)
+        : undefined;
       const customerEmail = onboardedAccount?.email;
 
       abortRef.current = new AbortController();
@@ -157,7 +161,7 @@ export function useChat() {
         const res = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: history, locale: detectedLocale, customerContext, customerEmail }),
+          body: JSON.stringify({ messages: history, locale: detectedLocale, customerContext, customerEmail, preferredCurrency }),
           signal: abortRef.current.signal,
         });
 
@@ -356,6 +360,8 @@ export function useChat() {
                     });
                   });
               }
+            } else if (event.type === "currencyPreference") {
+              useShopStore.getState().setPreferredCurrency(event.currency);
             } else if (event.type === "error") {
               setMessageError(assistantId, event.retryable ?? false, event.message);
             }

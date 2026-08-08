@@ -20,6 +20,7 @@ import {
 } from "@/lib/mcp";
 import { getOrderHistory } from "@/lib/mcp/tools/order-history";
 import { getCustomerAddresses } from "@/lib/mcp/tools/customer-addresses";
+import { getCustomerDetails } from "@/lib/mcp/tools/customer-details";
 import type { Locale } from "@/types/domain";
 
 // ─── Provider factory ─────────────────────────────────────────────────────────
@@ -95,6 +96,9 @@ async function executeTool(name: string, args: Record<string, unknown>, customer
     case "get_customer_addresses":
       if (!customerEmail) return "TOOL_ERROR: No signed-in customer for this session.";
       return getCustomerAddresses({ email: customerEmail });
+    case "get_customer_details":
+      if (!customerEmail) return "TOOL_ERROR: No signed-in customer for this session.";
+      return getCustomerDetails({ email: customerEmail });
     default: throw new Error(`Unknown tool: ${name}`);
   }
 }
@@ -148,10 +152,14 @@ export async function runOrchestrator(
   locale: Locale,
   onToolCall?: (tool: string, status: "running" | "done") => void,
   customerContext?: string,
-  customerEmail?: string
+  customerEmail?: string,
+  preferredCurrency?: string
 ): Promise<OrchestratorResult> {
   const model = buildModel();
-  const systemPrompt = buildSystemPrompt(locale, customerContext);
+  // preferredCurrency is only passed standalone for guests — onboarded accounts
+  // already carry it inside customerContext (see useChat's buildCustomerContext),
+  // so don't double-inject it there.
+  const systemPrompt = buildSystemPrompt(locale, customerContext, customerContext ? undefined : preferredCurrency);
   const embedded: unknown[] = [];
   // Account-scoped tools are only offered to the model once a customer is
   // actually signed in — otherwise it has no way to call them anyway (no

@@ -69,6 +69,11 @@ export interface ChatCustomerLookupEvent {
   email: string;
 }
 
+export interface ChatCurrencyPreferenceEvent {
+  type: "currencyPreference";
+  currency: string;
+}
+
 export type ChatSSEEvent =
   | ChatTextEvent
   | ChatErrorEvent
@@ -78,4 +83,5 @@ export type ChatSSEEvent =
   | ChatToolCallEvent
   | ChatCartActionEvent
   | ChatGiftProfileEvent
-  | ChatCustomerLookupEvent;
+  | ChatCustomerLookupEvent
+  | ChatCurrencyPreferenceEvent;

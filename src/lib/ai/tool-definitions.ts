@@ -104,12 +104,18 @@ export const aiTools = {
     "Get the signed-in customer's full saved address book — beyond what's already summarized in your account context. Use when you need more than the 5 addresses already shown to you, or to double-check an exact saved address before checkout. Always looks up the current signed-in customer, nobody else.",
     z.object({})
   ),
+
+  get_customer_details: def(
+    "Refresh or double-check the signed-in customer's own profile details (name, phone, email) — beyond what's already summarized in your account context. Use for questions like 'what's my phone number on file' or if the account context looks stale. No parameters take an email — this always looks up the current signed-in customer, nobody else.",
+    z.object({})
+  ),
 };
 
-// Subset offered when nobody is signed in — get_order_history/get_customer_addresses
-// have no email parameter (by design, so the model can never guess/loop through
-// emails), so they're useless without a session and are left out entirely rather
-// than exposed to fail every time.
+// Subset offered when nobody is signed in — these account-scoped tools have no
+// email parameter (by design, so the model can never guess/loop through
+// emails), so they're useless without a session and are left out entirely
+// rather than exposed to fail every time.
+const ACCOUNT_SCOPED_TOOLS = new Set(["get_order_history", "get_customer_addresses", "get_customer_details"]);
 export const guestTools = Object.fromEntries(
-  Object.entries(aiTools).filter(([name]) => name !== "get_order_history" && name !== "get_customer_addresses")
+  Object.entries(aiTools).filter(([name]) => !ACCOUNT_SCOPED_TOOLS.has(name))
 ) as typeof aiTools;

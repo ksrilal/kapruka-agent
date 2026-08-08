@@ -23,6 +23,7 @@ const ChatRequestSchema = z.object({
   locale: z.enum(["en", "si", "ta-Latn"]).optional(),
   customerContext: z.string().max(4000).optional(),
   customerEmail: z.string().email().optional(),
+  preferredCurrency: z.enum(["LKR", "USD", "GBP", "AUD", "CAD", "EUR"]).optional(),
 });
 
 const RATE_LIMIT_MAP = new Map<string, { count: number; resetAt: number }>();
@@ -91,7 +92,7 @@ async function* chatGenerator(
   const orchestratorRun = runOrchestrator(body.messages, locale, (tool, status) => {
     toolQueue.push({ tool, status });
     notify();
-  }, body.customerContext, body.customerEmail).then((r) => {
+  }, body.customerContext, body.customerEmail, body.preferredCurrency).then((r) => {
     result = r;
     orchestratorDone = true;
     notify();
@@ -242,6 +243,14 @@ async function* chatGenerator(
         const data = parsed.data as { email?: unknown };
         if (typeof data.email === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
           yield { type: "customerLookup" as const, email: data.email };
+        } else {
+          emittedTypes.delete(parsed.__type);
+        }
+      } else if (parsed.__type === "currencyPreference" && parsed.data && typeof parsed.data === "object") {
+        const data = parsed.data as { currency?: unknown };
+        const SUPPORTED_CURRENCIES = new Set(["LKR", "USD", "GBP", "AUD", "CAD", "EUR"]);
+        if (typeof data.currency === "string" && SUPPORTED_CURRENCIES.has(data.currency)) {
+          yield { type: "currencyPreference" as const, currency: data.currency };
         } else {
           emittedTypes.delete(parsed.__type);
         }

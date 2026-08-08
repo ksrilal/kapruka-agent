@@ -36,6 +36,12 @@ interface ShopStore {
   // Last AI response text — persisted in sessionStorage
   lastAiText: string;
   setLastAiText: (text: string) => void;
+
+  // Currency the user has asked for prices in — persisted in sessionStorage,
+  // fed into customerContext so the model doesn't have to re-infer it every
+  // fresh session/page load (see system-prompt.ts "## currency").
+  preferredCurrency: string | null;
+  setPreferredCurrency: (currency: string) => void;
 }
 
 export const useShopStore = create<ShopStore>()(
@@ -47,6 +53,7 @@ export const useShopStore = create<ShopStore>()(
       sendMessage: null,
       featuredProducts: [],
       lastAiText: "",
+      preferredCurrency: null,
 
       openCart: () => set({ cartOpen: true }),
       closeCart: () => set({ cartOpen: false }),
@@ -69,6 +76,7 @@ export const useShopStore = create<ShopStore>()(
         set({ featuredProducts: [...seen.values()] });
       },
       setLastAiText: (text) => set({ lastAiText: text }),
+      setPreferredCurrency: (currency) => set({ preferredCurrency: currency }),
     }),
     {
       name: "kapruka-shop",
@@ -79,6 +87,7 @@ export const useShopStore = create<ShopStore>()(
       partialize: (s) => ({
         featuredProducts: s.featuredProducts,
         lastAiText: s.lastAiText,
+        preferredCurrency: s.preferredCurrency,
       }),
     }
   )
