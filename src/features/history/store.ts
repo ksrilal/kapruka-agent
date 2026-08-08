@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { registerScopedStore } from "@/lib/utils/scoped-storage";
 import type { ConversationMessage } from "@/types/domain";
 
 const noopStorage = {
@@ -44,6 +45,8 @@ interface HistoryStore {
   deleteSession: (id: string) => void;
   clearAll: () => void;
 }
+
+const HISTORY_STORE_NAME = "kiyo-history-v1";
 
 export const useHistoryStore = create<HistoryStore>()(
   persist(
@@ -96,7 +99,7 @@ export const useHistoryStore = create<HistoryStore>()(
       },
     }),
     {
-      name: "kiyo-history-v1",
+      name: HISTORY_STORE_NAME,
       storage: createJSONStorage(() =>
         typeof window !== "undefined" ? localStorage : noopStorage
       ),
@@ -104,3 +107,5 @@ export const useHistoryStore = create<HistoryStore>()(
     }
   )
 );
+
+registerScopedStore(HISTORY_STORE_NAME, useHistoryStore);

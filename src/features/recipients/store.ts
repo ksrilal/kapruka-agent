@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { registerScopedStore } from "@/lib/utils/scoped-storage";
 import type { OrderTrackingRecipient } from "@/types/domain";
 
 const noopStorage = {
@@ -41,6 +42,8 @@ interface RecipientsStore {
   isSaved: (recipient: OrderTrackingRecipient) => boolean;
 }
 
+const RECIPIENTS_STORE_NAME = "kapruka-recipients-v1";
+
 export const useRecipientsStore = create<RecipientsStore>()(
   persist(
     (set, get) => ({
@@ -77,7 +80,7 @@ export const useRecipientsStore = create<RecipientsStore>()(
       isSaved: (recipient) => get().recipients.some((r) => sameRecipient(r.recipient, recipient)),
     }),
     {
-      name: "kapruka-recipients-v1",
+      name: RECIPIENTS_STORE_NAME,
       storage: createJSONStorage(() =>
         typeof window !== "undefined" ? localStorage : noopStorage
       ),
@@ -85,3 +88,5 @@ export const useRecipientsStore = create<RecipientsStore>()(
     }
   )
 );
+
+registerScopedStore(RECIPIENTS_STORE_NAME, useRecipientsStore);

@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { useOrdersStore, isTerminal } from "@/features/orders/store";
 import type { OrderStatus } from "@/types/domain";
 
-const POLL_INTERVAL_MS = 60_000; // 1 minute
+const POLL_INTERVAL_MS = 15 * 60_000; // 15 minutes
 
 async function fetchOrderStatus(orderNumber: string): Promise<OrderStatus | null> {
   try {
@@ -39,8 +39,8 @@ export function useOrderPolling() {
       const now = Date.now();
       for (const saved of current) {
         if (isTerminal(saved.status.status)) continue;
-        // Skip if polled recently (55s gap avoids double-fire on mount + interval)
-        if (saved.lastPolledAt && now - saved.lastPolledAt < 55_000) continue;
+        // Skip if polled recently (guard avoids double-fire on mount + interval)
+        if (saved.lastPolledAt && now - saved.lastPolledAt < POLL_INTERVAL_MS - 5_000) continue;
         // Stamp before fetch so a slow request doesn't trigger a second concurrent poll
         stampPolled(saved.status.order_number, now);
         const status = await fetchOrderStatus(saved.status.order_number);

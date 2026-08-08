@@ -355,7 +355,7 @@ function TrackingRow({ saved, onRemove }: { saved: SavedTracking; onRemove: () =
       {/* Live poll indicator — only for non-terminal */}
       {!terminal && (
         <p className="text-[10px]" style={{ color: "var(--ink-3)" }}>
-          Auto-updates every minute · Last updated{" "}
+          Auto-updates every 15 minutes · Last updated{" "}
           {saved.lastPolledAt
             ? new Date(saved.lastPolledAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
             : "never"}

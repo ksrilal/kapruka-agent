@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { registerScopedStore } from "@/lib/utils/scoped-storage";
 import { productId, productPrice } from "@/types/domain";
 import type { ProductSummary } from "@/types/domain";
 
@@ -34,6 +35,8 @@ interface CartStore {
   itemCount: () => number;
   subtotal: () => number;
 }
+
+const CART_STORE_NAME = "kapruka-cart-v2";
 
 export const useCartStore = create<CartStore>()(
   persist(
@@ -90,7 +93,7 @@ export const useCartStore = create<CartStore>()(
         get().items.reduce((s, i) => s + productPrice(i.product) * i.quantity, 0),
     }),
     {
-      name: "kapruka-cart-v2",
+      name: CART_STORE_NAME,
       storage: createJSONStorage(() =>
         typeof window !== "undefined" ? sessionStorage : noopStorage
       ),
@@ -98,3 +101,5 @@ export const useCartStore = create<CartStore>()(
     }
   )
 );
+
+registerScopedStore(CART_STORE_NAME, useCartStore);

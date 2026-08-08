@@ -9,8 +9,31 @@ import { useCartStore } from "@/features/cart/store";
 import { useCustomerStore } from "@/features/customer/store";
 import { detectLocale } from "@/lib/utils/unicode";
 import { productId } from "@/types/domain";
-import type { ConversationMessage, CustomerAccount } from "@/types/domain";
+import type { ConversationMessage, CustomerAccount, OrderStatus } from "@/types/domain";
 import type { ChatSSEEvent } from "@/types/ai";
+
+// Resolves an account's order history (thin CustomerOrderSummary entries) into
+// full OrderStatus objects the Orders panel actually renders (status_display,
+// progress steps, etc.) — /api/customer doesn't carry enough detail on its own.
+async function fetchAccountOrderStatuses(account: CustomerAccount): Promise<OrderStatus[]> {
+  const results = await Promise.all(
+    account.orders.map(async (o) => {
+      try {
+        const res = await fetch("/api/orders/track", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ order_number: o.order_ref }),
+        });
+        if (!res.ok) return null;
+        const data = (await res.json()) as { status?: OrderStatus };
+        return data.status ?? null;
+      } catch {
+        return null;
+      }
+    })
+  );
+  return results.filter((s): s is OrderStatus => s !== null);
+}
 
 // Compact, model-friendly summary of an onboarded account — folded into the
 // system prompt server-side (see buildSystemPrompt's customerContext param).
@@ -257,7 +280,10 @@ export function useChat() {
                     }
                     return r.json();
                   })
-                  .then((account: CustomerAccount) => {
+                  .then(async (account: CustomerAccount) => {
+                    // onboard() flips local storage to this account's own scope
+                    // (see scoped-storage.ts) before we populate it below, so
+                    // guest-session cart/orders/recipients never bleed in.
                     useCustomerStore.getState().onboard(account);
                     const firstName = account.profile.name.split(" ")[0];
                     addMessage({
@@ -266,6 +292,13 @@ export function useChat() {
                       content: `Welcome back, ${firstName}! I've pulled up your account — feel free to ask about past orders, saved addresses, or start shopping.`,
                       timestamp: Date.now(),
                     });
+                    if (account.orders.length > 0) {
+                      const statuses = await fetchAccountOrderStatuses(account);
+                      if (statuses.length > 0) {
+                        useOrdersStore.getState().replaceTracked(statuses);
+                        useOrdersStore.getState().open();
+                      }
+                    }
                   })
                   .catch((err) => {
                     const message = (err as Error).message;
