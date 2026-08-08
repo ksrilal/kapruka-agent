@@ -37,22 +37,44 @@ async function fetchAccountOrderStatuses(account: CustomerAccount): Promise<Orde
   return results.filter((s): s is OrderStatus => s !== null);
 }
 
+// The Kapruka API sometimes returns address fields with stray HTML artifacts
+// (e.g. a trailing "<BR" from a rich-text field never closed/stripped) —
+// clean those up before they reach the UI or get used for dedup comparison.
+function cleanAddressField(value: string): string {
+  return value.replace(/<[^>]*>?/g, "").replace(/\s+/g, " ").trim();
+}
+
+// Same physical address can come back from the API more than once with
+// cosmetically different formatting (casing, trailing HTML, punctuation) —
+// compare on a normalized key so those collapse into one recipient instead
+// of showing as separate entries.
+function normalizedAddressKey(name: string, phone: string, address: string, city: string): string {
+  return [name, phone, address, city].map((v) => cleanAddressField(v).toLowerCase()).join("|");
+}
+
 // Turns an account's saved addresses (from /api/customer) into SavedRecipient
 // entries the Recipients panel renders — mirrors fetchAccountOrderStatuses'
 // role for the Orders panel, since /api/customer's shape doesn't match either
 // panel's UI needs directly.
 function buildRecipientsFromAddresses(account: CustomerAccount): SavedRecipient[] {
-  return account.addresses.map((a, i) => ({
-    id: `${account.email}-addr-${i}`,
-    label: a.label?.trim() || a.recipient_name,
-    recipient: {
-      name: a.recipient_name,
-      phone: a.phone ?? account.profile.phone ?? "",
-      address: a.address,
-      city: a.city,
-    },
-    savedAt: Date.now(),
-  }));
+  const seen = new Set<string>();
+  const result: SavedRecipient[] = [];
+  for (const [i, a] of account.addresses.entries()) {
+    const name = cleanAddressField(a.recipient_name);
+    const phone = cleanAddressField(a.phone ?? account.profile.phone ?? "");
+    const address = cleanAddressField(a.address);
+    const city = cleanAddressField(a.city);
+    const key = normalizedAddressKey(name, phone, address, city);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push({
+      id: `${account.email}-addr-${i}`,
+      label: cleanAddressField(a.label ?? "") || name,
+      recipient: { name, phone, address, city },
+      savedAt: Date.now(),
+    });
+  }
+  return result;
 }
 
 // Compact, model-friendly summary of an onboarded account — folded into the

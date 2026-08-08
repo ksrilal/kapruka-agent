@@ -24,8 +24,19 @@ function nanoid() {
   return Math.random().toString(36).slice(2, 10);
 }
 
+// Cosmetic differences (casing, stray HTML, extra whitespace) shouldn't count
+// as a different recipient — normalize before comparing.
+function normalize(value: string): string {
+  return value.replace(/<[^>]*>?/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
 function sameRecipient(a: OrderTrackingRecipient, b: OrderTrackingRecipient): boolean {
-  return a.name === b.name && a.phone === b.phone && a.address === b.address && a.city === b.city;
+  return (
+    normalize(a.name) === normalize(b.name) &&
+    normalize(a.phone) === normalize(b.phone) &&
+    normalize(a.address) === normalize(b.address) &&
+    normalize(a.city) === normalize(b.city)
+  );
 }
 
 interface RecipientsStore {
