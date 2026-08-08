@@ -9,7 +9,10 @@
 // login/logout we flip the namespace and rehydrate — no data is deleted, so
 // a guest's cache is exactly as they left it if they log out again.
 
-type PersistApi = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type PersistApi<T = any> = {
+  getInitialState: () => T;
+  setState: (state: T, replace: true) => void;
   persist: {
     setOptions: (options: { name: string }) => void;
     rehydrate: () => Promise<void> | void;
@@ -18,7 +21,8 @@ type PersistApi = {
 
 const GUEST_SCOPE = "guest";
 let currentScope = GUEST_SCOPE;
-const registered: Array<{ baseName: string; api: PersistApi }> = [];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const registered: Array<{ baseName: string; api: PersistApi<any> }> = [];
 
 function scopedName(baseName: string, scope: string) {
   return scope === GUEST_SCOPE ? baseName : `${baseName}__${scope}`;
@@ -27,7 +31,7 @@ function scopedName(baseName: string, scope: string) {
 // Called once per store, right after `create(persist(...))`, to enroll it in
 // identity switching. The store's own `persist` config should still use
 // `baseName` as its initial `name` — this only affects future rescoping.
-export function registerScopedStore(baseName: string, api: PersistApi): void {
+export function registerScopedStore<T>(baseName: string, api: PersistApi<T>): void {
   registered.push({ baseName, api });
 }
 
@@ -43,6 +47,13 @@ export async function setStorageIdentity(email: string | null): Promise<void> {
   currentScope = scope;
   await Promise.all(
     registered.map(({ baseName, api }) => {
+      // rehydrate() only overwrites state if the target scope's storage key
+      // already has a persisted value — for a scope that's never been
+      // written (a brand-new account, or a guest scope with nothing saved
+      // yet), it's a no-op and the previous identity's in-memory state would
+      // otherwise keep showing through. Reset to the store's own initial
+      // state first so an empty scope actually renders empty.
+      api.setState(api.getInitialState(), true);
       api.persist.setOptions({ name: scopedName(baseName, scope) });
       return api.persist.rehydrate();
     })
