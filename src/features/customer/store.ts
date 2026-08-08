@@ -2,7 +2,13 @@
 
 import { create } from "zustand";
 import { setStorageIdentity } from "@/lib/utils/scoped-storage";
+import { useChatStore } from "@/features/chat/store";
+import { useHistoryStore } from "@/features/history/store";
 import type { CustomerAccount } from "@/types/domain";
+
+function nanoid() {
+  return Math.random().toString(36).slice(2, 10);
+}
 
 type LookupStatus = "idle" | "loading" | "error";
 
@@ -33,6 +39,16 @@ export const useCustomerStore = create<CustomerStore>()((set) => ({
   },
   fail: (error) => set({ status: "error", error, account: null }),
   logout: () => {
+    // Save the account's active conversation to its own (still-current)
+    // history scope before switching back to guest — otherwise it's lost
+    // and won't be there next time this account logs in.
+    const chatState = useChatStore.getState();
+    if (chatState.messages.length > 1 && chatState.sessionId) {
+      useHistoryStore.getState().saveSession(chatState.messages, chatState.sessionId);
+    }
+    useChatStore.getState().reset();
+    useChatStore.setState({ sessionId: nanoid() });
+
     set({ account: null, status: "idle", error: null });
     void setStorageIdentity(null);
   },
