@@ -6,6 +6,8 @@ import { useShopStore } from "@/features/shop/store";
 import { useOrdersStore } from "@/features/orders/store";
 import { useHistoryStore } from "@/features/history/store";
 import { useCartStore } from "@/features/cart/store";
+import { useRecipientsStore } from "@/features/recipients/store";
+import type { SavedRecipient } from "@/features/recipients/store";
 import { useCustomerStore } from "@/features/customer/store";
 import { detectLocale } from "@/lib/utils/unicode";
 import { productId } from "@/types/domain";
@@ -33,6 +35,24 @@ async function fetchAccountOrderStatuses(account: CustomerAccount): Promise<Orde
     })
   );
   return results.filter((s): s is OrderStatus => s !== null);
+}
+
+// Turns an account's saved addresses (from /api/customer) into SavedRecipient
+// entries the Recipients panel renders — mirrors fetchAccountOrderStatuses'
+// role for the Orders panel, since /api/customer's shape doesn't match either
+// panel's UI needs directly.
+function buildRecipientsFromAddresses(account: CustomerAccount): SavedRecipient[] {
+  return account.addresses.map((a, i) => ({
+    id: `${account.email}-addr-${i}`,
+    label: a.label?.trim() || a.recipient_name,
+    recipient: {
+      name: a.recipient_name,
+      phone: a.phone ?? account.profile.phone ?? "",
+      address: a.address,
+      city: a.city,
+    },
+    savedAt: Date.now(),
+  }));
 }
 
 // Compact, model-friendly summary of an onboarded account — folded into the
@@ -281,6 +301,22 @@ export function useChat() {
                     return r.json();
                   })
                   .then(async (account: CustomerAccount) => {
+                    // Signing in mid-conversation starts a fresh session for this
+                    // account rather than continuing the guest thread — save the
+                    // guest conversation to guest-scoped history first (still on
+                    // guest storage at this point), then reset before onboard()
+                    // flips storage to the account's own scope.
+                    const guestState = useChatStore.getState();
+                    if (guestState.messages.length > 1 && guestState.sessionId) {
+                      useHistoryStore.getState().saveSession(guestState.messages, guestState.sessionId);
+                    }
+                    useChatStore.getState().reset();
+                    // reset() clears sessionId, but addMessage() below adds an
+                    // assistant message first — which wouldn't claim a new
+                    // sessionId (only user messages do) — so this account's
+                    // session would never get a stable ID to save history under.
+                    useChatStore.setState({ sessionId: nanoid() });
+
                     // onboard() flips local storage to this account's own scope
                     // (see scoped-storage.ts) before we populate it below, so
                     // guest-session cart/orders/recipients never bleed in.
@@ -298,6 +334,11 @@ export function useChat() {
                         useOrdersStore.getState().replaceTracked(statuses);
                         useOrdersStore.getState().open();
                       }
+                    }
+                    if (account.addresses.length > 0) {
+                      useRecipientsStore
+                        .getState()
+                        .replaceRecipients(buildRecipientsFromAddresses(account));
                     }
                   })
                   .catch((err) => {

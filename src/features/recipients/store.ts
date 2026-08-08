@@ -40,6 +40,7 @@ interface RecipientsStore {
   renameRecipient: (id: string, label: string) => void;
   removeRecipient: (id: string) => void;
   isSaved: (recipient: OrderTrackingRecipient) => boolean;
+  replaceRecipients: (recipients: SavedRecipient[]) => void;
 }
 
 const RECIPIENTS_STORE_NAME = "kapruka-recipients-v1";
@@ -78,6 +79,11 @@ export const useRecipientsStore = create<RecipientsStore>()(
       },
 
       isSaved: (recipient) => get().recipients.some((r) => sameRecipient(r.recipient, recipient)),
+
+      // Used when onboarding a real account: swaps the entire list for the
+      // account's saved addresses (rather than merging with whatever was
+      // saved as a guest).
+      replaceRecipients: (recipients) => set({ recipients }),
     }),
     {
       name: RECIPIENTS_STORE_NAME,
