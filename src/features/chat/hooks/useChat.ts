@@ -257,8 +257,29 @@ export function useChat() {
                     }
                     return r.json();
                   })
-                  .then((account: CustomerAccount) => useCustomerStore.getState().onboard(account))
-                  .catch((err) => useCustomerStore.getState().fail((err as Error).message));
+                  .then((account: CustomerAccount) => {
+                    useCustomerStore.getState().onboard(account);
+                    const firstName = account.profile.name.split(" ")[0];
+                    addMessage({
+                      id: nanoid(),
+                      role: "assistant",
+                      content: `Welcome back, ${firstName}! I've pulled up your account — feel free to ask about past orders, saved addresses, or start shopping.`,
+                      timestamp: Date.now(),
+                    });
+                  })
+                  .catch((err) => {
+                    const message = (err as Error).message;
+                    useCustomerStore.getState().fail(message);
+                    addMessage({
+                      id: nanoid(),
+                      role: "assistant",
+                      content:
+                        message === "No account found for this email"
+                          ? "I couldn't find an account for that email — mind double-checking it, or we can continue as a guest?"
+                          : "I ran into a problem pulling up your account — let's try again in a moment, or I'm happy to help as a guest for now.",
+                      timestamp: Date.now(),
+                    });
+                  });
               }
             } else if (event.type === "error") {
               setMessageError(assistantId, event.retryable ?? false, event.message);

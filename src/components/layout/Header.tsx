@@ -18,6 +18,7 @@ import { useShopStore } from "@/features/shop/store";
 function AccountControl() {
   const account = useCustomerStore((s) => s.account);
   const status = useCustomerStore((s) => s.status);
+  const error = useCustomerStore((s) => s.error);
   const logout = useCustomerStore((s) => s.logout);
   const sendMessage = useShopStore((s) => s.sendMessage);
   const router = useRouter();
@@ -34,13 +35,18 @@ function AccountControl() {
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
 
+  // Reopen the popover automatically when a lookup fails, even if the user
+  // navigated away from it while waiting — otherwise the error is invisible.
+  useEffect(() => {
+    if (status === "error") setOpen(true);
+  }, [status]);
+
   function submitEmail() {
     const trimmed = emailDraft.trim();
     if (!trimmed || !sendMessage) return;
     sendMessage(`My email is ${trimmed} — can you pull up my account?`);
     router.push("/");
     setOpen(false);
-    setEmailDraft("");
   }
 
   const firstName = account?.profile.name?.split(" ")[0];
@@ -104,6 +110,13 @@ function AccountControl() {
                 className="rounded-lg px-2.5 py-1.5 text-[12px] outline-none"
                 style={{ background: "var(--surface-2)", border: "1px solid var(--border-2)", color: "var(--ink)" }}
               />
+              {status === "error" && (
+                <p className="text-[11px]" style={{ color: "var(--ink-2)" }}>
+                  {error === "No account found for this email"
+                    ? "We couldn't find an account for that email — double-check it or try another."
+                    : error ?? "Something went wrong looking up that account. Please try again."}
+                </p>
+              )}
               <button
                 onClick={submitEmail}
                 disabled={!emailDraft.trim()}
