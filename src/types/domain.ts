@@ -103,6 +103,42 @@ export interface OrderStatus {
   items: OrderTrackingItem[];
 }
 
+// ─── Customer account (private-preview MCP tools) ────────────────────────────
+
+export interface CustomerProfile {
+  name: string;
+  email: string;
+  phone?: string;
+  language?: string;
+  billing?: Record<string, unknown>;
+}
+
+export interface CustomerOrderSummary {
+  order_ref: string;
+  status: string;
+  order_date?: string;
+  delivery_date?: string;
+  amount?: { value: string; currency: string };
+  recipient?: { name: string };
+  items?: Array<{ name: string; quantity?: number }>;
+}
+
+export interface CustomerAddress {
+  recipient_name: string;
+  address: string;
+  city: string;
+  phone?: string;
+  label?: string;
+}
+
+export interface CustomerAccount {
+  email: string;
+  profile: CustomerProfile;
+  orders: CustomerOrderSummary[];
+  addresses: CustomerAddress[];
+  fetchedAt: number;
+}
+
 // ─── Gift ─────────────────────────────────────────────────────────────────────
 
 export interface GiftProfile {

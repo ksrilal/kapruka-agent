@@ -21,6 +21,7 @@ const ChatRequestSchema = z.object({
     )
     .min(1),
   locale: z.enum(["en", "si", "ta-Latn"]).optional(),
+  customerContext: z.string().max(4000).optional(),
 });
 
 const RATE_LIMIT_MAP = new Map<string, { count: number; resetAt: number }>();
@@ -89,7 +90,7 @@ async function* chatGenerator(
   const orchestratorRun = runOrchestrator(body.messages, locale, (tool, status) => {
     toolQueue.push({ tool, status });
     notify();
-  }).then((r) => {
+  }, body.customerContext).then((r) => {
     result = r;
     orchestratorDone = true;
     notify();
@@ -233,6 +234,13 @@ async function* chatGenerator(
         const data = parsed.data as { occasion?: unknown };
         if (typeof data.occasion === "string" && data.occasion) {
           yield { type: "giftProfile" as const, giftProfile: parsed.data as import("@/types/domain").GiftProfile };
+        } else {
+          emittedTypes.delete(parsed.__type);
+        }
+      } else if (parsed.__type === "customerLookup" && parsed.data && typeof parsed.data === "object") {
+        const data = parsed.data as { email?: unknown };
+        if (typeof data.email === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+          yield { type: "customerLookup" as const, email: data.email };
         } else {
           emittedTypes.delete(parsed.__type);
         }

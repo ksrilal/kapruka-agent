@@ -21,9 +21,11 @@ import { useOrdersStore } from "@/features/orders/store";
 import { useHistoryStore } from "@/features/history/store";
 import { useChatStore } from "@/features/chat/store";
 import { useShopStore } from "@/features/shop/store";
+import { useCustomerStore } from "@/features/customer/store";
 import type { CartLineItem } from "@/features/cart/store";
 import type { SavedOrder } from "@/features/orders/store";
 import type { SavedSession } from "@/features/history/store";
+import type { CustomerAccount } from "@/types/domain";
 
 interface Category {
   icon: LucideIcon;
@@ -705,6 +707,49 @@ function buildLocalPersonalizedMessages({
   return messages;
 }
 
+// Builds personalized bubbles from a real onboarded account (name, recent
+// orders, saved addresses) — takes over from buildLocalPersonalizedMessages
+// while a customer session is active, since it's grounded in actual account
+// data rather than this browser's local cart/order cache.
+function buildAccountPersonalizedMessages(account: CustomerAccount): KiyoMessage[] {
+  const messages: KiyoMessage[] = [];
+  const firstName = account.profile.name.split(" ")[0];
+
+  const lastOrder = account.orders[0];
+  if (lastOrder) {
+    const itemName = lastOrder.items?.[0]?.name;
+    messages.push({
+      displayText: itemName
+        ? `Welcome back, ${firstName} — want to reorder ${itemName}?`
+        : `Welcome back, ${firstName} — want to reorder your last order ${lastOrder.order_ref}?`,
+      promptText: itemName ? `Order ${itemName} again, same as last time.` : `Reorder my order ${lastOrder.order_ref}.`,
+      kind: "new",
+    });
+    messages.push({
+      displayText: "Want an update on a recent order?",
+      promptText: `What's the status of my order ${lastOrder.order_ref}?`,
+      kind: "new",
+    });
+  } else {
+    messages.push({
+      displayText: `Welcome back, ${firstName} — what are you shopping for today?`,
+      promptText: "What's popular right now?",
+      kind: "new",
+    });
+  }
+
+  const address = account.addresses[0];
+  if (address) {
+    messages.push({
+      displayText: `Send something to ${address.recipient_name} again?`,
+      promptText: `I want to send something to ${address.recipient_name} at their usual address.`,
+      kind: "new",
+    });
+  }
+
+  return messages;
+}
+
 const AI_SUGGESTIONS_CACHE_KEY = "kiyo-ai-suggestions-v1";
 
 function readCachedAiSuggestions(): KiyoMessage[] {
@@ -814,25 +859,38 @@ function usePersonalizedKiyoMessages(): KiyoMessage[] {
   const cartItems = useCartStore((s) => s.items);
   const pendingOrder = useOrdersStore((s) => s.pending[0]);
   const lastSession = useHistoryStore((s) => s.sessions[0]);
+  const account = useCustomerStore((s) => s.account);
 
-  const aiMessages = useAiKiyoSuggestions({ mounted, cartItems, pendingOrder, lastSession });
+  // While an account is onboarded, real account data takes over from the
+  // local-cache-derived tier (cart/orders/history) and the AI-suggestions
+  // fetch — the local cache itself is left untouched underneath so it's
+  // exactly where it was once the visitor logs out.
+  const aiMessages = useAiKiyoSuggestions({
+    mounted: mounted && !account,
+    cartItems,
+    pendingOrder,
+    lastSession,
+  });
 
   return useMemo(() => {
     if (!mounted) return KIYO_MESSAGES;
-    const local = buildLocalPersonalizedMessages({ cartItems, pendingOrder, lastSession });
-    // AI suggestions lead the pool (so they're favored by the even-spacing
-    // start-index math downstream) but each distinct message appears only
-    // once — literal duplicates are what caused two slots to show identical
-    // bubbles at once. KIYO_MESSAGES pads the tail so the pool never runs dry.
+    const primary = account
+      ? buildAccountPersonalizedMessages(account)
+      : [...aiMessages, ...buildLocalPersonalizedMessages({ cartItems, pendingOrder, lastSession })];
+    // Personalized messages lead the pool (so they're favored by the
+    // even-spacing start-index math downstream) but each distinct message
+    // appears only once — literal duplicates are what caused two slots to
+    // show identical bubbles at once. KIYO_MESSAGES pads the tail so the
+    // pool never runs dry.
     const seen = new Set<string>();
     const pool: KiyoMessage[] = [];
-    for (const m of [...aiMessages, ...local, ...KIYO_MESSAGES]) {
+    for (const m of [...primary, ...KIYO_MESSAGES]) {
       if (seen.has(m.displayText)) continue;
       seen.add(m.displayText);
       pool.push(m);
     }
     return pool.length > 0 ? pool : KIYO_MESSAGES;
-  }, [mounted, cartItems, pendingOrder, lastSession, aiMessages]);
+  }, [mounted, cartItems, pendingOrder, lastSession, aiMessages, account]);
 }
 
 // Desktop: fixed single column stacked down the right edge of the viewport,

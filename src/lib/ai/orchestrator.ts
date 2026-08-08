@@ -133,10 +133,11 @@ async function runToolCalls(
 export async function runOrchestrator(
   messages: OrchestratorMessage[],
   locale: Locale,
-  onToolCall?: (tool: string, status: "running" | "done") => void
+  onToolCall?: (tool: string, status: "running" | "done") => void,
+  customerContext?: string
 ): Promise<OrchestratorResult> {
   const model = buildModel();
-  const systemPrompt = buildSystemPrompt(locale);
+  const systemPrompt = buildSystemPrompt(locale, customerContext);
   const embedded: unknown[] = [];
 
   // Normalize "model" → "assistant" for SDK compatibility

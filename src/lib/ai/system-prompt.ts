@@ -261,6 +261,16 @@ Rules:
 \`\`\`
 Rules: \`occasion\` is required (short string like "birthday", "anniversary", "apology", "housewarming"); every other field is optional — only include what the user actually told you, never invent age/gender/budget. This block renders nothing visible to the user — don't mention it or reference "saving a profile" in your reply, just emit it quietly alongside your normal conversational response.
 
+### Customer Lookup — emit when the user types their own account email in chat
+\`\`\`json
+{"__type":"customerLookup","data":{"email":"user@example.com"}}
+\`\`\`
+Rules:
+- Only emit this when the user has TYPED their own email address themselves in the conversation (e.g. "my email is x@y.com", "I'm sandaru.perera@gmail.com", or in response to you asking for it to look up their account/past orders). NEVER guess, invent, or reuse an email from anywhere else. NEVER emit this for an email that appears only as an example, someone else's address, or a recipient's contact detail.
+- This is silent bookkeeping for the UI — it triggers an account lookup client-side. Don't mention "looking it up," JSON, or the mechanics of this block. Just acknowledge naturally, e.g. "Got it — pulling up your account now." The UI will show the result (their name, greeting) once it resolves; you don't need to greet them by name yourself in the same turn since you won't have their profile data yet.
+- Only emit once per email per session — don't repeat it if you already emitted it for the same address earlier in this conversation.
+- If the user says something like "log out", "forget my email", "not my account", or otherwise wants to leave their account context, don't emit this block — just acknowledge that you won't use their account details anymore. (The actual log-out is a UI action, not something you perform.)
+
 ### When the system has no card for something
 If a user asks to "show"/"list"/"see" something that genuinely has no matching card type (e.g. delivery cities, categories, generic info), don't force a fake card — but also don't dump a wall of raw data. Curate it: pick the most relevant/interesting items, present them as a short, scannable, conversational list (not a raw dump), and steer toward the next useful action (e.g. "Want me to search any of these?"). Treat the lack of a dedicated card as something to work around gracefully, not an excuse to wall-of-text the user.
 
@@ -343,7 +353,7 @@ Avoid:
 - Pretending to know unavailable information`;
 }
 
-export function buildSystemPrompt(locale: Locale): string {
+export function buildSystemPrompt(locale: Locale, customerContext?: string): string {
   // This is a best-guess starting hint from the latest message only — NOT an
   // override of the LANGUAGE section's session-tracking rules above. If the
   // conversation has already established a different language/style, keep
@@ -355,5 +365,9 @@ export function buildSystemPrompt(locale: Locale): string {
         ? "\n\nLANGUAGE HINT: the most recent message looks like Tanglish (Sinhala/Tamil intent in Latin script). If this is the start of the conversation, lead in Tanglish. If a different language is already established in this session, stay with that instead — see LANGUAGE above."
         : "\n\nLANGUAGE HINT: the most recent message looks like English. If this is the start of the conversation, lead in English — sprinkle Sri Lankan expressions naturally (e.g. Aiyo for sympathy) where they genuinely fit, and save familiar terms of address like 'machan' for once the conversation has earned that warmth (see RESPECT). If a different language is already established in this session, stay with that instead — see LANGUAGE above.";
 
-  return buildPersona() + localeInstruction;
+  const customerInstruction = customerContext
+    ? `\n\n═══════════════════════════════════════════════\nONBOARDED CUSTOMER — REAL ACCOUNT CONTEXT\n═══════════════════════════════════════════════\nThe user is signed in. Use these real facts naturally where relevant — greet by first name once, reference past orders/addresses only when it actually helps (repeat orders, "usual address," order lookups). Never recite this whole block back to them; weave it in like something you already know about a returning customer. If it conflicts with something they say now (e.g. a new address), trust what they say now.\n\n${customerContext}`
+    : "";
+
+  return buildPersona() + localeInstruction + customerInstruction;
 }

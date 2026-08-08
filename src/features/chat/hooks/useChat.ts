@@ -6,10 +6,32 @@ import { useShopStore } from "@/features/shop/store";
 import { useOrdersStore } from "@/features/orders/store";
 import { useHistoryStore } from "@/features/history/store";
 import { useCartStore } from "@/features/cart/store";
+import { useCustomerStore } from "@/features/customer/store";
 import { detectLocale } from "@/lib/utils/unicode";
 import { productId } from "@/types/domain";
-import type { ConversationMessage } from "@/types/domain";
+import type { ConversationMessage, CustomerAccount } from "@/types/domain";
 import type { ChatSSEEvent } from "@/types/ai";
+
+// Compact, model-friendly summary of an onboarded account — folded into the
+// system prompt server-side (see buildSystemPrompt's customerContext param).
+function buildCustomerContext(account: CustomerAccount): string {
+  const lines: string[] = [`Name: ${account.profile.name}`, `Email: ${account.email}`];
+  if (account.profile.phone) lines.push(`Phone: ${account.profile.phone}`);
+  if (account.orders.length > 0) {
+    lines.push("Recent orders:");
+    for (const o of account.orders.slice(0, 5)) {
+      const items = o.items?.map((i) => i.name).join(", ") ?? "";
+      lines.push(`  - ${o.order_ref} (${o.status})${items ? `: ${items}` : ""}`);
+    }
+  }
+  if (account.addresses.length > 0) {
+    lines.push("Saved addresses:");
+    for (const a of account.addresses.slice(0, 5)) {
+      lines.push(`  - ${a.label ? `${a.label}: ` : ""}${a.recipient_name}, ${a.address}, ${a.city}`);
+    }
+  }
+  return lines.join("\n");
+}
 
 function nanoid() {
   return Math.random().toString(36).slice(2, 10);
@@ -83,12 +105,15 @@ export function useChat() {
         }));
       history.push({ role: "user", content: text });
 
+      const onboardedAccount = useCustomerStore.getState().account;
+      const customerContext = onboardedAccount ? buildCustomerContext(onboardedAccount) : undefined;
+
       abortRef.current = new AbortController();
       try {
         const res = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: history, locale: detectedLocale }),
+          body: JSON.stringify({ messages: history, locale: detectedLocale, customerContext }),
           signal: abortRef.current.signal,
         });
 
@@ -216,6 +241,25 @@ export function useChat() {
                   m.id === assistantId ? { ...m, giftProfile: event.giftProfile } : m
                 ),
               }));
+            } else if (event.type === "customerLookup") {
+              const customerStore = useCustomerStore.getState();
+              if (customerStore.account?.email !== event.email) {
+                customerStore.startLookup();
+                fetch("/api/customer", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ email: event.email }),
+                })
+                  .then(async (r) => {
+                    if (!r.ok) {
+                      const body = await r.json().catch(() => ({}));
+                      throw new Error(body.error ?? `HTTP ${r.status}`);
+                    }
+                    return r.json();
+                  })
+                  .then((account: CustomerAccount) => useCustomerStore.getState().onboard(account))
+                  .catch((err) => useCustomerStore.getState().fail((err as Error).message));
+              }
             } else if (event.type === "error") {
               setMessageError(assistantId, event.retryable ?? false, event.message);
             }

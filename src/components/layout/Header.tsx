@@ -1,10 +1,10 @@
 "use client";
 
-import { ShoppingCart, Package, History, SquarePen, Sun, Moon, Users } from "lucide-react";
+import { ShoppingCart, Package, History, SquarePen, Sun, Moon, Users, UserRound, LogOut, ChevronDown, Loader2 } from "lucide-react";
 import { KiyoAvatar } from "@/components/ui/KiyoAvatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useCartStore } from "@/features/cart/store";
 import { useOrdersStore } from "@/features/orders/store";
 import { useHistoryStore } from "@/features/history/store";
@@ -12,6 +12,113 @@ import { useRecipientsStore } from "@/features/recipients/store";
 import { useChatStore } from "@/features/chat/store";
 import { useChat } from "@/features/chat/hooks/useChat";
 import { useThemeStore, syncThemeFromDom } from "@/features/theme/store";
+import { useCustomerStore } from "@/features/customer/store";
+import { useShopStore } from "@/features/shop/store";
+
+function AccountControl() {
+  const account = useCustomerStore((s) => s.account);
+  const status = useCustomerStore((s) => s.status);
+  const logout = useCustomerStore((s) => s.logout);
+  const sendMessage = useShopStore((s) => s.sendMessage);
+  const router = useRouter();
+
+  const [open, setOpen] = useState(false);
+  const [emailDraft, setEmailDraft] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
+
+  function submitEmail() {
+    const trimmed = emailDraft.trim();
+    if (!trimmed || !sendMessage) return;
+    sendMessage(`My email is ${trimmed} — can you pull up my account?`);
+    router.push("/");
+    setOpen(false);
+    setEmailDraft("");
+  }
+
+  const firstName = account?.profile.name?.split(" ")[0];
+
+  return (
+    <div className="relative" ref={ref}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={() => setOpen((v) => !v)}
+            aria-label={account ? `Signed in as ${account.profile.name}` : "Sign in"}
+            className="flex items-center gap-1.5 rounded-xl px-2.5 sm:px-3 h-9 text-[12px] font-medium transition-all hover:-translate-y-px active:scale-95"
+            style={{ border: "1px solid var(--border-2)", color: account ? "var(--ink)" : "var(--ink-2)" }}
+          >
+            {status === "loading" ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <UserRound className="h-3.5 w-3.5" />
+            )}
+            <span className="hidden sm:inline">
+              {status === "loading" ? "Signing in…" : account ? `Hi, ${firstName}` : "Sign in"}
+            </span>
+            <ChevronDown className="h-3 w-3 hidden sm:inline" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>{account ? `Signed in as ${account.profile.name}` : "Sign in for faster checkout"}</TooltipContent>
+      </Tooltip>
+
+      {open && (
+        <div
+          className="anim-fade-up absolute right-0 top-11 z-50 w-64 rounded-2xl p-4"
+          style={{ background: "var(--surface)", border: "1px solid var(--border-2)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}
+        >
+          {account ? (
+            <div className="flex flex-col gap-3">
+              <div>
+                <p className="t-body font-semibold" style={{ color: "var(--ink)" }}>{account.profile.name}</p>
+                <p className="text-[11px] mt-0.5 truncate" style={{ color: "var(--ink-3)" }}>{account.email}</p>
+              </div>
+              <button
+                onClick={() => { logout(); setOpen(false); }}
+                className="flex items-center gap-1.5 text-[12px] font-medium self-start"
+                style={{ color: "var(--ink-2)" }}
+              >
+                <LogOut className="h-3.5 w-3.5" /> Log out
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <p className="text-[12px] font-medium" style={{ color: "var(--ink)" }}>Sign in with your email</p>
+              <p className="text-[11px]" style={{ color: "var(--ink-3)" }}>
+                We&apos;ll pull up your name, past orders, and saved addresses.
+              </p>
+              <input
+                type="email"
+                value={emailDraft}
+                onChange={(e) => setEmailDraft(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") submitEmail(); }}
+                placeholder="you@example.com"
+                autoFocus
+                className="rounded-lg px-2.5 py-1.5 text-[12px] outline-none"
+                style={{ background: "var(--surface-2)", border: "1px solid var(--border-2)", color: "var(--ink)" }}
+              />
+              <button
+                onClick={submitEmail}
+                disabled={!emailDraft.trim()}
+                className="rounded-lg px-2.5 py-1.5 text-[12px] font-semibold transition-opacity disabled:opacity-40"
+                style={{ background: "var(--gold)", color: "var(--surface)" }}
+              >
+                Continue
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function Header() {
   const toggleCart = useCartStore((s) => s.toggle);
@@ -92,6 +199,9 @@ export function Header() {
               </TooltipContent>
             </Tooltip>
           )}
+
+          {/* Account — sign in / onboarded user indicator */}
+          {mounted && <AccountControl />}
 
           {/* New chat — only visible when a conversation is active */}
           {mounted && hasMessages && (

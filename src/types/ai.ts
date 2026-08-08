@@ -64,6 +64,11 @@ export interface ChatCartActionEvent {
   quantity: number;
 }
 
+export interface ChatCustomerLookupEvent {
+  type: "customerLookup";
+  email: string;
+}
+
 export type ChatSSEEvent =
   | ChatTextEvent
   | ChatErrorEvent
@@ -72,4 +77,5 @@ export type ChatSSEEvent =
   | ChatOrderStatusEvent
   | ChatToolCallEvent
   | ChatCartActionEvent
-  | ChatGiftProfileEvent;
+  | ChatGiftProfileEvent
+  | ChatCustomerLookupEvent;
