@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getCustomerDetails } from "@/lib/mcp/tools/customer-details";
 import { getOrderHistory } from "@/lib/mcp/tools/order-history";
 import { getCustomerAddresses } from "@/lib/mcp/tools/customer-addresses";
+import { extractJson } from "@/lib/utils/mcp-json";
 import type { CustomerProfile, CustomerOrderSummary, CustomerAddress } from "@/types/domain";
 
 const RequestSchema = z.object({
@@ -36,27 +37,6 @@ function checkRateLimit(ip: string): boolean {
   if (entry.count >= RATE_LIMIT_MAX) return false;
   entry.count++;
   return true;
-}
-
-// MCP servers sometimes wrap JSON in markdown fences even when json format is requested.
-function extractJson(raw: string): unknown {
-  const trimmed = raw.trim();
-  try { return JSON.parse(trimmed); } catch { /* fall through */ }
-  const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-  if (fenceMatch) {
-    try { return JSON.parse(fenceMatch[1]); } catch { /* fall through */ }
-  }
-  const braceStart = trimmed.indexOf("{");
-  const braceEnd = trimmed.lastIndexOf("}");
-  if (braceStart !== -1 && braceEnd > braceStart) {
-    try { return JSON.parse(trimmed.slice(braceStart, braceEnd + 1)); } catch { /* fall through */ }
-  }
-  const bracketStart = trimmed.indexOf("[");
-  const bracketEnd = trimmed.lastIndexOf("]");
-  if (bracketStart !== -1 && bracketEnd > bracketStart) {
-    try { return JSON.parse(trimmed.slice(bracketStart, bracketEnd + 1)); } catch { /* fall through */ }
-  }
-  return null;
 }
 
 function firstArray(value: unknown): unknown[] {

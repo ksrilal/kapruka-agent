@@ -4,6 +4,7 @@ import { create } from "zustand";
 import { setStorageIdentity } from "@/lib/utils/scoped-storage";
 import { useChatStore } from "@/features/chat/store";
 import { useHistoryStore } from "@/features/history/store";
+import { useAddressesStore } from "@/features/addresses/store";
 import type { CustomerAccount } from "@/types/domain";
 
 function nanoid() {
@@ -51,5 +52,9 @@ export const useCustomerStore = create<CustomerStore>()((set) => ({
 
     set({ account: null, status: "idle", error: null });
     void setStorageIdentity(null);
+
+    // Addresses are never cached across identities — clear on logout so a
+    // still-open panel doesn't keep showing the previous account's data.
+    useAddressesStore.setState({ isOpen: false, addresses: [], status: "idle", error: null, fetchedAt: null });
   },
 }));

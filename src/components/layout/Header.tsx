@@ -1,6 +1,6 @@
 "use client";
 
-import { ShoppingCart, Package, History, SquarePen, Sun, Moon, Users, UserRound, LogOut, ChevronDown, Loader2 } from "lucide-react";
+import { ShoppingCart, Package, History, SquarePen, Sun, Moon, Users, UserRound, LogOut, ChevronDown, Loader2, MapPin } from "lucide-react";
 import { KiyoAvatar } from "@/components/ui/KiyoAvatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useRouter } from "next/navigation";
@@ -9,6 +9,7 @@ import { useCartStore } from "@/features/cart/store";
 import { useOrdersStore } from "@/features/orders/store";
 import { useHistoryStore } from "@/features/history/store";
 import { useRecipientsStore } from "@/features/recipients/store";
+import { useAddressesStore } from "@/features/addresses/store";
 import { useChatStore } from "@/features/chat/store";
 import { useChat } from "@/features/chat/hooks/useChat";
 import { useThemeStore, syncThemeFromDom } from "@/features/theme/store";
@@ -147,6 +148,9 @@ export function Header() {
   const toggleRecipients = useRecipientsStore((s) => s.toggle);
   const recipients = useRecipientsStore((s) => s.recipients);
 
+  const toggleAddresses = useAddressesStore((s) => s.toggle);
+  const account = useCustomerStore((s) => s.account);
+
   const hasMessages = useChatStore((s) => s.messages.length > 0);
   const { newChat, isStreaming } = useChat();
   const router = useRouter();
@@ -274,6 +278,23 @@ export function Header() {
               </span>
             )}
           </div>
+
+          {/* Addresses button — only shown once a user has onboarded */}
+          {mounted && account && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={toggleAddresses}
+                  aria-label="Saved addresses"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:text-foreground active:scale-95"
+                  style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
+                >
+                  <MapPin className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Saved addresses</TooltipContent>
+            </Tooltip>
+          )}
 
           {/* Orders button */}
           <div className="relative">
