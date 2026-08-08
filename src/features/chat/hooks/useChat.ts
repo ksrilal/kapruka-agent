@@ -63,7 +63,7 @@ function buildCustomerContext(account: CustomerAccount): string {
   if (account.orders.length > 0) {
     lines.push("Recent orders:");
     for (const o of account.orders.slice(0, 5)) {
-      const items = o.items?.map((i) => i.name).join(", ") ?? "";
+      const items = o.items?.map((i) => (i.product_id ? `${i.name} [${i.product_id}]` : i.name)).join(", ") ?? "";
       lines.push(`  - ${o.order_ref} (${o.status})${items ? `: ${items}` : ""}`);
     }
   }

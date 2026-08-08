@@ -3,14 +3,35 @@
 import { useState } from "react";
 import Image from "next/image";
 import {
-  X, Package, ExternalLink, Clock, Trash2, RefreshCw, CheckCircle2, XCircle, Loader2, UserPlus, UserCheck,
+  X, Package, ExternalLink, Clock, Trash2, RefreshCw, CheckCircle2, XCircle, Loader2, UserPlus, UserCheck, RotateCcw,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useOrdersStore, isTerminal } from "@/features/orders/store";
 import { useOrderPolling } from "@/features/orders/hooks/useOrderPolling";
 import { useRecipientsStore } from "@/features/recipients/store";
+import { useCartStore } from "@/features/cart/store";
 import type { SavedOrder, SavedTracking } from "@/features/orders/store";
-import type { OrderStatus } from "@/types/domain";
+import type { OrderStatus, ProductSummary } from "@/types/domain";
+
+// Resolves product_ids from a tracked order's items back into cart-ready
+// ProductSummary data via the lookup route, then adds each to the cart.
+async function reorderItems(items: { product_id: string; quantity: number }[], addItem: (p: ProductSummary, qty?: number) => void) {
+  const uniqueIds = Array.from(new Set(items.map((i) => i.product_id)));
+  const res = await fetch("/api/products/lookup", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ product_ids: uniqueIds }),
+  });
+  if (!res.ok) throw new Error("Failed to look up products");
+  const data = await res.json() as { products: ProductSummary[]; missing: string[] };
+  const byId = new Map(data.products.map((p) => [p.id, p]));
+  for (const item of items) {
+    const product = byId.get(item.product_id);
+    if (product) addItem(product, item.quantity);
+  }
+  return data.missing;
+}
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -234,8 +255,33 @@ function TrackingRow({ saved, onRemove }: { saved: SavedTracking; onRemove: () =
   const updateTracking = useOrdersStore((s) => s.updateTracking);
   const saveRecipient = useRecipientsStore((s) => s.saveRecipient);
   const recipientSaved = useRecipientsStore((s) => s.isSaved(status.recipient));
+  const addCartItem = useCartStore((s) => s.addItem);
+  const openCart = useCartStore((s) => s.open);
 
   const [refreshing, setRefreshing] = useState(false);
+  const [reordering, setReordering] = useState(false);
+
+  async function handleReorder() {
+    if (reordering || status.items.length === 0) return;
+    setReordering(true);
+    try {
+      const missing = await reorderItems(status.items, addCartItem);
+      if (missing.length === status.items.length) {
+        toast.error("Couldn't find any of these items anymore.");
+        return;
+      }
+      openCart();
+      toast.success(
+        missing.length > 0
+          ? "Added what's still available to your cart."
+          : "Added to your cart."
+      );
+    } catch {
+      toast.error("Couldn't reorder — please try again.");
+    } finally {
+      setReordering(false);
+    }
+  }
 
   async function handleManualRefresh() {
     if (refreshing || terminal) return;
@@ -296,6 +342,19 @@ function TrackingRow({ saved, onRemove }: { saved: SavedTracking; onRemove: () =
               <TooltipContent>Refresh tracking</TooltipContent>
             </Tooltip>
           )}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => void handleReorder()}
+                disabled={reordering || status.items.length === 0}
+                style={{ color: "var(--ink-3)" }}
+                aria-label="Reorder"
+              >
+                {reordering ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5" />}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>Reorder</TooltipContent>
+          </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
               <button onClick={onRemove} style={{ color: "var(--ink-3)" }} aria-label="Remove order">

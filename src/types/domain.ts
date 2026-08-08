@@ -120,7 +120,7 @@ export interface CustomerOrderSummary {
   delivery_date?: string;
   amount?: { value: string; currency: string };
   recipient?: { name: string };
-  items?: Array<{ name: string; quantity?: number }>;
+  items?: Array<{ name: string; quantity?: number; product_id?: string }>;
 }
 
 export interface CustomerAddress {

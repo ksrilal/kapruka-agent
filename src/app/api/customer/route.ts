@@ -79,7 +79,11 @@ function mapOrders(raw: unknown): CustomerOrderSummary[] {
       delivery_date: o["delivery date"] as string | undefined,
       amount: o.amount as { value: string; currency: string } | undefined,
       recipient: recipient ? { name: recipient.name as string } : undefined,
-      items: items?.map((i) => ({ name: i.name as string, quantity: i.quantity as number | undefined })),
+      items: items?.map((i) => ({
+        name: i.name as string,
+        quantity: i.quantity as number | undefined,
+        product_id: (i.product_id ?? i["product id"] ?? i.id) as string | undefined,
+      })),
     };
   });
 }
