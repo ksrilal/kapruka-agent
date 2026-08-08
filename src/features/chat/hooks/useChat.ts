@@ -132,7 +132,15 @@ export function useChat() {
     async (text: string) => {
       if (isStreaming || !text.trim()) return;
 
-      const detectedLocale = detectLocale(text);
+      // A locale explicitly picked from the header dropdown is a stronger
+      // signal than word-sniffing this one message — only let auto-detection
+      // override it when the message clearly isn't English (e.g. the user
+      // switches to typing Sinhala mid-conversation despite having picked
+      // English), so a manual "English" pick doesn't get silently flipped by
+      // a stray Tanglish word in an otherwise English sentence.
+      const preferredLocale = useShopStore.getState().preferredLocale;
+      const autoDetected = detectLocale(text);
+      const detectedLocale = preferredLocale && autoDetected === "en" ? preferredLocale : autoDetected;
       setLocale(detectedLocale);
 
       const userMsg: ConversationMessage = {

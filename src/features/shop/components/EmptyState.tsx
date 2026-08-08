@@ -25,7 +25,7 @@ import { useCustomerStore } from "@/features/customer/store";
 import type { CartLineItem } from "@/features/cart/store";
 import type { SavedOrder } from "@/features/orders/store";
 import type { SavedSession } from "@/features/history/store";
-import type { CustomerAccount } from "@/types/domain";
+import type { CustomerAccount, Locale } from "@/types/domain";
 
 interface Category {
   icon: LucideIcon;
@@ -711,37 +711,97 @@ function buildLocalPersonalizedMessages({
 // orders, saved addresses) — takes over from buildLocalPersonalizedMessages
 // while a customer session is active, since it's grounded in actual account
 // data rather than this browser's local cart/order cache.
-function buildAccountPersonalizedMessages(account: CustomerAccount): KiyoMessage[] {
+// displayText templates per supported locale — promptText (the actual
+// message sent to Kiyo) stays in English regardless, since Kiyo reads
+// English input fine and replies in whatever locale it's told to use.
+const ACCOUNT_MESSAGE_TEXT: Record<Locale, {
+  welcomeBackReorder: (name: string, item: string) => string;
+  welcomeBackReorderRef: (name: string, ref: string) => string;
+  orderStatus: string;
+  sendAgainTo: (name: string) => string;
+  welcomeBackNoOrders: (name: string) => string;
+  lovedItReorder: (item: string) => string;
+  reorderRef: (ref: string) => string;
+}> = {
+  en: {
+    welcomeBackReorder: (name, item) => `Welcome back, ${name} — want to reorder ${item}?`,
+    welcomeBackReorderRef: (name, ref) => `Welcome back, ${name} — want to reorder your last order ${ref}?`,
+    orderStatus: "Want an update on a recent order?",
+    sendAgainTo: (name) => `Send something new to ${name} this time?`,
+    welcomeBackNoOrders: (name) => `Welcome back, ${name} — what are you shopping for today?`,
+    lovedItReorder: (item) => `Loved ${item}? Want it again?`,
+    reorderRef: (ref) => `Want to reorder ${ref}?`,
+  },
+  si: {
+    welcomeBackReorder: (name, item) => `ආයුබෝවන් ${name} — ${item} ආයෙත් ඕඩර් කරන්නද?`,
+    welcomeBackReorderRef: (name, ref) => `ආයුබෝවන් ${name} — ඔයාගේ අන්තිම ඕඩරය ${ref} ආයෙත් කරන්නද?`,
+    orderStatus: "මෑතක ඕඩරයක් ගැන අප්ඩේට් එකක් ඕනද?",
+    sendAgainTo: (name) => `${name}ට මේ පාරත් යමක් එවන්නද?`,
+    welcomeBackNoOrders: (name) => `ආයුබෝවන් ${name} — අද මොනවද හොයන්නේ?`,
+    lovedItReorder: (item) => `${item} අගේද? ආයෙත් ගන්නද?`,
+    reorderRef: (ref) => `${ref} ආයෙත් ඕඩර් කරන්නද?`,
+  },
+  "ta-Latn": {
+    welcomeBackReorder: (name, item) => `Vanakkam ${name} — ${item} thirumba order pannava?`,
+    welcomeBackReorderRef: (name, ref) => `Vanakkam ${name} — unga last order ${ref} thirumba pannava?`,
+    orderStatus: "Recent order status venuma?",
+    sendAgainTo: (name) => `${name} kitta indha murai vera onnu anupanuma?`,
+    welcomeBackNoOrders: (name) => `Vanakkam ${name} — innaiku enna venum?`,
+    lovedItReorder: (item) => `${item} pudichirundhicha? Thirumba venuma?`,
+    reorderRef: (ref) => `${ref} thirumba order pannava?`,
+  },
+};
+
+function buildAccountPersonalizedMessages(account: CustomerAccount, locale: Locale): KiyoMessage[] {
   const messages: KiyoMessage[] = [];
   const firstName = account.profile.name.split(" ")[0];
+  const t = ACCOUNT_MESSAGE_TEXT[locale];
 
   const lastOrder = account.orders[0];
   if (lastOrder) {
     const itemName = lastOrder.items?.[0]?.name;
     messages.push({
       displayText: itemName
-        ? `Welcome back, ${firstName} — want to reorder ${itemName}?`
-        : `Welcome back, ${firstName} — want to reorder your last order ${lastOrder.order_ref}?`,
+        ? t.welcomeBackReorder(firstName, itemName)
+        : t.welcomeBackReorderRef(firstName, lastOrder.order_ref),
       promptText: itemName ? `Order ${itemName} again, same as last time.` : `Reorder my order ${lastOrder.order_ref}.`,
       kind: "new",
     });
     messages.push({
-      displayText: "Want an update on a recent order?",
+      displayText: t.orderStatus,
       promptText: `What's the status of my order ${lastOrder.order_ref}?`,
       kind: "new",
     });
+    if (lastOrder.recipient?.name) {
+      messages.push({
+        displayText: t.sendAgainTo(lastOrder.recipient.name),
+        promptText: `I want to send a gift to ${lastOrder.recipient.name}, same as my last order.`,
+        kind: "new",
+      });
+    }
   } else {
     messages.push({
-      displayText: `Welcome back, ${firstName} — what are you shopping for today?`,
+      displayText: t.welcomeBackNoOrders(firstName),
       promptText: "What's popular right now?",
       kind: "new",
     });
   }
 
-  const address = account.addresses[0];
-  if (address) {
+  // A second, distinct recent order (not the same one already covered above)
+  // gives account holders with real history more than one thing to reorder.
+  const secondOrder = account.orders.find((o) => o.order_ref !== lastOrder?.order_ref);
+  if (secondOrder) {
+    const itemName = secondOrder.items?.[0]?.name;
     messages.push({
-      displayText: `Send something to ${address.recipient_name} again?`,
+      displayText: itemName ? t.lovedItReorder(itemName) : t.reorderRef(secondOrder.order_ref),
+      promptText: itemName ? `Order ${itemName} again, same as before.` : `Reorder my order ${secondOrder.order_ref}.`,
+      kind: "new",
+    });
+  }
+
+  for (const address of account.addresses.slice(0, 2)) {
+    messages.push({
+      displayText: t.sendAgainTo(address.recipient_name),
       promptText: `I want to send something to ${address.recipient_name} at their usual address.`,
       kind: "new",
     });
@@ -860,6 +920,11 @@ function usePersonalizedKiyoMessages(): KiyoMessage[] {
   const pendingOrder = useOrdersStore((s) => s.pending[0]);
   const lastSession = useHistoryStore((s) => s.sessions[0]);
   const account = useCustomerStore((s) => s.account);
+  // Manually-picked language wins; otherwise fall back to whatever locale
+  // was last detected from the visitor's own typed messages this session.
+  const preferredLocale = useShopStore((s) => s.preferredLocale);
+  const detectedLocale = useChatStore((s) => s.locale);
+  const locale = preferredLocale ?? detectedLocale;
 
   // While an account is onboarded, real account data takes over from the
   // local-cache-derived tier (cart/orders/history) and the AI-suggestions
@@ -874,8 +939,26 @@ function usePersonalizedKiyoMessages(): KiyoMessage[] {
 
   return useMemo(() => {
     if (!mounted) return KIYO_MESSAGES;
+
+    // A signed-in customer with real order history gets bubbles grounded
+    // entirely in their own account — no generic hardcoded padding mixed in,
+    // so nothing irrelevant to them ever shows up here.
+    if (account && account.orders.length > 0) {
+      const seen = new Set<string>();
+      const pool: KiyoMessage[] = [];
+      for (const m of buildAccountPersonalizedMessages(account, locale)) {
+        if (seen.has(m.displayText)) continue;
+        seen.add(m.displayText);
+        pool.push(m);
+      }
+      return pool;
+    }
+
+    // Guests, and onboarded accounts with no order history yet (nothing to
+    // personalize from), fall back to the blended pool — real signals first,
+    // hardcoded set padding the tail so it never runs dry.
     const primary = account
-      ? buildAccountPersonalizedMessages(account)
+      ? buildAccountPersonalizedMessages(account, locale)
       : [...aiMessages, ...buildLocalPersonalizedMessages({ cartItems, pendingOrder, lastSession })];
     // Personalized messages lead the pool (so they're favored by the
     // even-spacing start-index math downstream) but each distinct message
@@ -890,7 +973,7 @@ function usePersonalizedKiyoMessages(): KiyoMessage[] {
       pool.push(m);
     }
     return pool.length > 0 ? pool : KIYO_MESSAGES;
-  }, [mounted, cartItems, pendingOrder, lastSession, aiMessages, account]);
+  }, [mounted, cartItems, pendingOrder, lastSession, aiMessages, account, locale]);
 }
 
 // Desktop: fixed single column stacked down the right edge of the viewport,

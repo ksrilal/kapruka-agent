@@ -1,10 +1,10 @@
 "use client";
 
-import { ShoppingCart, Package, History, SquarePen, Sun, Moon, Users, UserRound, LogOut, ChevronDown, Loader2, MapPin } from "lucide-react";
+import { ShoppingCart, Package, History, SquarePen, Sun, Moon, Users, UserRound, LogOut, ChevronDown, Loader2, MapPin, Languages, Coins } from "lucide-react";
 import { KiyoAvatar } from "@/components/ui/KiyoAvatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useRouter } from "next/navigation";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import { useCartStore } from "@/features/cart/store";
 import { useOrdersStore } from "@/features/orders/store";
 import { useHistoryStore } from "@/features/history/store";
@@ -15,6 +15,133 @@ import { useChat } from "@/features/chat/hooks/useChat";
 import { useThemeStore, syncThemeFromDom } from "@/features/theme/store";
 import { useCustomerStore } from "@/features/customer/store";
 import { useShopStore } from "@/features/shop/store";
+import type { Locale } from "@/types/domain";
+
+const LANGUAGE_OPTIONS: Array<{ value: Locale; label: string; native: string }> = [
+  { value: "en", label: "English", native: "English" },
+  { value: "si", label: "Sinhala", native: "සිංහල" },
+  { value: "ta-Latn", label: "Tamil (Latin)", native: "Tanglish" },
+];
+
+const CURRENCY_OPTIONS = ["LKR", "USD", "GBP", "AUD", "CAD", "EUR"] as const;
+
+// Generic small dropdown popover — mirrors AccountControl's open/close +
+// click-outside behavior, reused for language and currency pickers.
+function HeaderDropdown<T extends string>({
+  icon,
+  label,
+  value,
+  triggerLabel,
+  options,
+  renderOption,
+  onSelect,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: T | null;
+  triggerLabel: string;
+  options: readonly T[];
+  renderOption: (option: T) => ReactNode;
+  onSelect: (option: T) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
+
+  return (
+    <div className="relative" ref={ref}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={() => setOpen((v) => !v)}
+            aria-label={label}
+            className="flex items-center gap-1.5 rounded-xl px-2.5 h-9 text-[12px] font-medium transition-all hover:-translate-y-px active:scale-95"
+            style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
+          >
+            {icon}
+            <span className="hidden sm:inline">{triggerLabel}</span>
+            <ChevronDown className="h-3 w-3 hidden sm:inline" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>{label}</TooltipContent>
+      </Tooltip>
+
+      {open && (
+        <div
+          className="anim-fade-up absolute right-0 top-11 z-50 w-44 rounded-2xl p-1.5"
+          style={{ background: "var(--surface)", border: "1px solid var(--border-2)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}
+        >
+          {options.map((option) => (
+            <button
+              key={option}
+              onClick={() => { onSelect(option); setOpen(false); }}
+              className="flex w-full items-center justify-between rounded-xl px-2.5 py-1.5 text-[12px] text-left transition-colors"
+              style={{
+                color: option === value ? "var(--ink)" : "var(--ink-2)",
+                background: option === value ? "var(--surface-2)" : "transparent",
+                fontWeight: option === value ? 600 : 500,
+              }}
+            >
+              {renderOption(option)}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LanguageControl() {
+  const preferredLocale = useShopStore((s) => s.preferredLocale);
+  const setPreferredLocale = useShopStore((s) => s.setPreferredLocale);
+  const current = LANGUAGE_OPTIONS.find((o) => o.value === preferredLocale);
+
+  return (
+    <HeaderDropdown
+      icon={<Languages className="h-3.5 w-3.5" />}
+      label="Language"
+      value={preferredLocale}
+      triggerLabel={current?.native ?? "Language"}
+      options={LANGUAGE_OPTIONS.map((o) => o.value)}
+      renderOption={(value) => {
+        const option = LANGUAGE_OPTIONS.find((o) => o.value === value)!;
+        return (
+          <>
+            <span>{option.native}</span>
+            {option.native !== option.label && (
+              <span style={{ color: "var(--ink-3)" }}>{option.label}</span>
+            )}
+          </>
+        );
+      }}
+      onSelect={setPreferredLocale}
+    />
+  );
+}
+
+function CurrencyControl() {
+  const preferredCurrency = useShopStore((s) => s.preferredCurrency);
+  const setPreferredCurrency = useShopStore((s) => s.setPreferredCurrency);
+
+  return (
+    <HeaderDropdown
+      icon={<Coins className="h-3.5 w-3.5" />}
+      label="Currency"
+      value={preferredCurrency}
+      triggerLabel={preferredCurrency ?? "Currency"}
+      options={CURRENCY_OPTIONS}
+      renderOption={(value) => <span>{value}</span>}
+      onSelect={setPreferredCurrency}
+    />
+  );
+}
 
 function AccountControl() {
   const account = useCustomerStore((s) => s.account);
@@ -216,6 +343,10 @@ export function Header() {
               </TooltipContent>
             </Tooltip>
           )}
+
+          {/* Language + currency preference — session-scoped, available to guests too */}
+          {mounted && <LanguageControl />}
+          {mounted && <CurrencyControl />}
 
           {/* Account — sign in / onboarded user indicator */}
           {mounted && <AccountControl />}
