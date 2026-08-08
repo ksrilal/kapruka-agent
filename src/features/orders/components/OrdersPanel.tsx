@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import {
-  X, Package, ExternalLink, Clock, Trash2, RefreshCw, CheckCircle2, XCircle, Loader2, UserPlus, UserCheck, RotateCcw,
+  X, Package, ExternalLink, Clock, Trash2, RefreshCw, CheckCircle2, XCircle, Loader2, UserPlus, UserCheck, RotateCcw, Send,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -11,6 +12,7 @@ import { useOrdersStore, isTerminal } from "@/features/orders/store";
 import { useOrderPolling } from "@/features/orders/hooks/useOrderPolling";
 import { useRecipientsStore } from "@/features/recipients/store";
 import { useCartStore } from "@/features/cart/store";
+import { useShopStore } from "@/features/shop/store";
 import type { SavedOrder, SavedTracking } from "@/features/orders/store";
 import type { OrderStatus, ProductSummary } from "@/types/domain";
 
@@ -31,6 +33,24 @@ async function reorderItems(items: { product_id: string; quantity: number }[], a
     if (product) addItem(product, item.quantity);
   }
   return data.missing;
+}
+
+// Pre-checks whether the recipient's city can still be delivered to today —
+// non-blocking: reorder still adds items to cart either way, this only
+// informs the toast so the user isn't surprised at checkout.
+async function checkCityDeliverableToday(city: string): Promise<{ available: boolean; reason?: string | null } | null> {
+  try {
+    const res = await fetch("/api/delivery/check", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ city }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json() as { delivery: { available: boolean; reason: string | null } };
+    return data.delivery;
+  } catch {
+    return null;
+  }
 }
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -248,7 +268,7 @@ function PendingOrderRow({ saved, onRemove }: { saved: SavedOrder; onRemove: () 
 
 // ─── TrackingRow ──────────────────────────────────────────────────────────────
 
-function TrackingRow({ saved, onRemove }: { saved: SavedTracking; onRemove: () => void }) {
+function TrackingRow({ saved, onRemove, onCloseAll }: { saved: SavedTracking; onRemove: () => void; onCloseAll: () => void }) {
   const { status } = saved;
   const color = statusColor(status.status);
   const terminal = isTerminal(status.status);
@@ -257,25 +277,50 @@ function TrackingRow({ saved, onRemove }: { saved: SavedTracking; onRemove: () =
   const recipientSaved = useRecipientsStore((s) => s.isSaved(status.recipient));
   const addCartItem = useCartStore((s) => s.addItem);
   const openCart = useCartStore((s) => s.open);
+  const sendMessage = useShopStore((s) => s.sendMessage);
+  const router = useRouter();
 
   const [refreshing, setRefreshing] = useState(false);
   const [reordering, setReordering] = useState(false);
+
+  // Chat-driven variant of reorder — lets the AI re-search/confirm price and
+  // stock rather than blindly re-adding, since this is a "send this to them
+  // again" request rather than a quick self-checkout re-add.
+  function handleReorderForRecipient() {
+    if (!sendMessage) return;
+    const { recipient } = status;
+    const itemNames = status.items.map((i) => i.name).join(", ");
+    onCloseAll();
+    sendMessage(
+      `I want to send ${itemNames || "the same order"} to ${recipient.name} again [recipient:${recipient.name}|${recipient.phone}|${recipient.address}|${recipient.city}]. Please use these details for delivery.`
+    );
+    router.push("/");
+  }
 
   async function handleReorder() {
     if (reordering || status.items.length === 0) return;
     setReordering(true);
     try {
-      const missing = await reorderItems(status.items, addCartItem);
+      const [missing, delivery] = await Promise.all([
+        reorderItems(status.items, addCartItem),
+        checkCityDeliverableToday(status.recipient.city),
+      ]);
       if (missing.length === status.items.length) {
         toast.error("Couldn't find any of these items anymore.");
         return;
       }
       openCart();
-      toast.success(
-        missing.length > 0
-          ? "Added what's still available to your cart."
-          : "Added to your cart."
-      );
+      if (delivery && !delivery.available) {
+        toast.warning(
+          `Added to cart — but delivery to ${status.recipient.city} isn't available today${delivery.reason ? ` (${delivery.reason})` : ""}. You'll need to pick a different date at checkout.`
+        );
+      } else {
+        toast.success(
+          missing.length > 0
+            ? "Added what's still available to your cart."
+            : "Added to your cart."
+        );
+      }
     } catch {
       toast.error("Couldn't reorder — please try again.");
     } finally {
@@ -355,6 +400,16 @@ function TrackingRow({ saved, onRemove }: { saved: SavedTracking; onRemove: () =
             </TooltipTrigger>
             <TooltipContent>Reorder</TooltipContent>
           </Tooltip>
+          {sendMessage && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button onClick={handleReorderForRecipient} style={{ color: "var(--ink-3)" }} aria-label="Send to recipient again">
+                  <Send className="h-3.5 w-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Send to {status.recipient.name} again</TooltipContent>
+            </Tooltip>
+          )}
           <Tooltip>
             <TooltipTrigger asChild>
               <button onClick={onRemove} style={{ color: "var(--ink-3)" }} aria-label="Remove order">
@@ -510,6 +565,7 @@ function OrdersPanelContent({ onClose }: { onClose: () => void }) {
                   key={saved.status.order_number}
                   saved={saved}
                   onRemove={() => removeTracking(saved.status.order_number)}
+                  onCloseAll={onClose}
                 />
               ))}
             </div>

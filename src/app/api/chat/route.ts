@@ -22,6 +22,7 @@ const ChatRequestSchema = z.object({
     .min(1),
   locale: z.enum(["en", "si", "ta-Latn"]).optional(),
   customerContext: z.string().max(4000).optional(),
+  customerEmail: z.string().email().optional(),
 });
 
 const RATE_LIMIT_MAP = new Map<string, { count: number; resetAt: number }>();
@@ -90,7 +91,7 @@ async function* chatGenerator(
   const orchestratorRun = runOrchestrator(body.messages, locale, (tool, status) => {
     toolQueue.push({ tool, status });
     notify();
-  }, body.customerContext).then((r) => {
+  }, body.customerContext, body.customerEmail).then((r) => {
     result = r;
     orchestratorDone = true;
     notify();

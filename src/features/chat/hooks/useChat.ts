@@ -150,13 +150,14 @@ export function useChat() {
 
       const onboardedAccount = useCustomerStore.getState().account;
       const customerContext = onboardedAccount ? buildCustomerContext(onboardedAccount) : undefined;
+      const customerEmail = onboardedAccount?.email;
 
       abortRef.current = new AbortController();
       try {
         const res = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: history, locale: detectedLocale, customerContext }),
+          body: JSON.stringify({ messages: history, locale: detectedLocale, customerContext, customerEmail }),
           signal: abortRef.current.signal,
         });
 
