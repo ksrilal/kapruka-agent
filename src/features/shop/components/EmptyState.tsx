@@ -1107,7 +1107,7 @@ export function EmptyState() {
   const [inputValue, setInputValue] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const categoryRailRef = useRef<HTMLDivElement>(null);
   const examplesRailRef = useRef<HTMLDivElement>(null);
@@ -1121,6 +1121,7 @@ export function EmptyState() {
     if (!text) return;
     sendMessage(text);
     setInputValue("");
+    if (inputRef.current) inputRef.current.style.height = "auto";
   }
 
   // "resume" bubbles reference a specific past chat session — restore it into
@@ -1272,14 +1273,18 @@ export function EmptyState() {
         </svg>
         <div className="command-bar flex items-center gap-3 rounded-2xl px-4 sm:px-5 py-3.5">
           <KiyoAvatar size={32} className="shrink-0" />
-          <input
+          <textarea
             ref={inputRef}
-            type="text"
+            rows={1}
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") submitInput(); }}
+            onChange={(e) => {
+              setInputValue(e.target.value);
+              e.target.style.height = "auto";
+              e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+            }}
+            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitInput(); } }}
             placeholder="Ask Kiyo anything..."
-            className="flex-1 min-w-0 bg-transparent text-[15px] font-medium text-foreground outline-none placeholder:text-muted-foreground"
+            className="flex-1 min-w-0 resize-none bg-transparent text-[15px] font-medium text-foreground outline-none placeholder:text-muted-foreground"
           />
           {speechSupported && (
             <Tooltip>

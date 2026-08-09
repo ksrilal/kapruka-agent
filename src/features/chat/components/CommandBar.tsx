@@ -56,6 +56,7 @@ export function CommandBar() {
   const commandOpen = useShopStore((s) => s.commandOpen);
   const openCommand = useShopStore((s) => s.openCommand);
   const setSearchRef = useShopStore((s) => s.setSearchRef);
+  const preferredLocale = useShopStore((s) => s.preferredLocale);
   const { isStreaming, sendMessage, stop, locale } = useChat();
   const hasMessages = useChatStore((s) => s.messages.length > 0);
 
@@ -155,7 +156,11 @@ export function CommandBar() {
   const placeholderText = hasMessages
     ? ACTIVE_PLACEHOLDERS[activePlaceholderIdx % ACTIVE_PLACEHOLDERS.length]
     : currentPrompt?.text ?? "Ask anything";
-  const langMeta = hasMessages ? LANG_META[locale] ?? LANG_META.en : null;
+  // A language explicitly picked from the header dropdown always wins over
+  // the last auto-detected locale, so the pill reflects it immediately
+  // instead of waiting for the next message to be sent.
+  const displayLocale = preferredLocale ?? locale;
+  const langMeta = hasMessages ? LANG_META[displayLocale] ?? LANG_META.en : null;
 
   // On the empty/landing state, EmptyState renders its own inline input (mockup-style)
   // directly in the hero flow — skip the fixed bottom bar to avoid a duplicate input.

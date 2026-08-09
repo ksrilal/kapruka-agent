@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { Footer } from "@/components/layout/Footer";
 
 export const metadata = {
   title: "Terms of Service — Kiyo",
   description: "Terms governing your use of the Kiyo AI shopping assistant and Kapruka order services.",
 };
 
-const LAST_UPDATED = "1 June 2025";
+const LAST_UPDATED = "9 August 2026";
 
 export default function TermsPage() {
   return (
@@ -61,7 +62,16 @@ export default function TermsPage() {
           </ul>
         </Section>
 
-        <Section title="4. Orders and Payments">
+        <Section title="4. Account & Sign-In">
+          <ul className="flex flex-col gap-2 list-none">
+            <Li>Creating an account is never required — guest checkout is fully supported.</Li>
+            <Li>Signing in is optional and does not use a password. You sign in by providing an email address, which <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> uses to look up an existing Kapruka customer record.</Li>
+            <Li>Only provide an email address that belongs to you or that you are otherwise authorized to use. Account lookup may not yet be available for every existing Kapruka customer.</Li>
+            <Li>You are responsible for signing out of a shared or public device after use.</Li>
+          </ul>
+        </Section>
+
+        <Section title="5. Orders and Payments">
           <ul className="flex flex-col gap-2 list-none">
             <Li>All prices are displayed in Sri Lankan Rupees (LKR) and are inclusive of applicable taxes unless stated otherwise.</Li>
             <Li>Placing an order through <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> constitutes an offer to purchase; the contract is formed upon Kapruka&apos;s order confirmation.</Li>
@@ -71,7 +81,7 @@ export default function TermsPage() {
           </ul>
         </Section>
 
-        <Section title="5. Delivery">
+        <Section title="6. Delivery">
           <ul className="flex flex-col gap-2 list-none">
             <Li>Delivery availability, timelines, and charges are determined by Kapruka and may vary by product and location.</Li>
             <Li>Estimated delivery windows shown by <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> are indicative. Kapruka is not liable for delays caused by circumstances beyond its reasonable control.</Li>
@@ -79,7 +89,7 @@ export default function TermsPage() {
           </ul>
         </Section>
 
-        <Section title="6. Returns and Refunds">
+        <Section title="7. Returns and Refunds">
           <p>
             Returns and refunds are governed by{" "}
             <a
@@ -97,7 +107,7 @@ export default function TermsPage() {
           </p>
         </Section>
 
-        <Section title="7. AI-Generated Content">
+        <Section title="8. AI-Generated Content">
           <p>
             <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> uses a large language model (such as Anthropic Claude, OpenAI GPT, or Google Gemini, depending on configuration) to generate responses. While we strive for accuracy:
           </p>
@@ -108,7 +118,7 @@ export default function TermsPage() {
           </ul>
         </Section>
 
-        <Section title="8. Acceptable Use">
+        <Section title="9. Acceptable Use">
           <p>You agree not to:</p>
           <ul className="flex flex-col gap-2 list-none mt-2">
             <Li>Use <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> for any unlawful purpose or in violation of Sri Lankan law.</Li>
@@ -122,7 +132,7 @@ export default function TermsPage() {
           </p>
         </Section>
 
-        <Section title="9. Intellectual Property">
+        <Section title="10. Intellectual Property">
           <p>
             All content, branding, and software comprising <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> are owned by Kapruka Holdings
             (Pvt) Ltd or its licensors. You may not reproduce, distribute, or create derivative
@@ -131,7 +141,7 @@ export default function TermsPage() {
           </p>
         </Section>
 
-        <Section title="10. Fair Use">
+        <Section title="11. Fair Use">
           <p>
             <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> is provided for personal shopping use. To keep the Service available and
             responsive for everyone, we may apply reasonable technical safeguards — such as
@@ -141,7 +151,7 @@ export default function TermsPage() {
           </p>
         </Section>
 
-        <Section title="11. Disclaimer of Warranties">
+        <Section title="12. Disclaimer of Warranties">
           <p>
             The Service is provided &ldquo;as is&rdquo; and &ldquo;as available&rdquo; without warranties of any kind,
             express or implied. Kapruka does not warrant that the Service will be uninterrupted,
@@ -149,7 +159,7 @@ export default function TermsPage() {
           </p>
         </Section>
 
-        <Section title="12. Limitation of Liability">
+        <Section title="13. Limitation of Liability">
           <p>
             To the maximum extent permitted by Sri Lankan law, Kapruka's total liability for
             any claim arising from use of <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> is limited to the value of the order in dispute.
@@ -157,7 +167,7 @@ export default function TermsPage() {
           </p>
         </Section>
 
-        <Section title="13. Governing Law">
+        <Section title="14. Governing Law">
           <p>
             These Terms are governed by the laws of the Democratic Socialist Republic of Sri Lanka.
             Disputes shall be subject to the exclusive jurisdiction of the courts of Colombo,
@@ -165,7 +175,7 @@ export default function TermsPage() {
           </p>
         </Section>
 
-        <Section title="14. Changes to Terms">
+        <Section title="15. Changes to Terms">
           <p>
             We may revise these Terms at any time. Continued use of <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> after changes are posted
             constitutes acceptance of the updated Terms. Material changes will be reflected in
@@ -173,7 +183,7 @@ export default function TermsPage() {
           </p>
         </Section>
 
-        <Section title="15. Contact">
+        <Section title="16. Contact">
           <p>
             For legal enquiries, contact Kapruka Holdings (Pvt) Ltd:<br />
             <a
@@ -189,6 +199,9 @@ export default function TermsPage() {
         </Section>
 
       </div>
+
+      <Footer />
+
     </div>
     </div>
   );

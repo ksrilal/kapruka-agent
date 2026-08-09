@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { Footer } from "@/components/layout/Footer";
 
 export const metadata = {
   title: "Privacy Policy — Kiyo",
   description: "How Kiyo and Kapruka collect, use, and protect your personal data.",
 };
 
-const LAST_UPDATED = "1 June 2025";
+const LAST_UPDATED = "9 August 2026";
 
 export default function PrivacyPage() {
   return (
@@ -49,6 +50,7 @@ export default function PrivacyPage() {
           <ul className="flex flex-col gap-2 list-none">
             <Li><strong className="text-foreground">Conversation content</strong> — the messages you type into <span className="font-kiyo">KI<span className="gradient-text">YO</span></span>&apos;s chat interface, including product queries, delivery locations, and order preferences.</Li>
             <Li><strong className="text-foreground">Order information</strong> — name, delivery address, phone number, and email address you provide when placing an order.</Li>
+            <Li><strong className="text-foreground">Account sign-in (optional)</strong> — if you choose to sign in, the email address you provide is used to look up your existing Kapruka order and address history. No password is collected or stored.</Li>
             <Li><strong className="text-foreground">Device and usage data</strong> — browser type, operating system, IP address, and interaction logs collected automatically for security and performance monitoring.</Li>
             <Li><strong className="text-foreground">Cookies and local storage</strong> — cart contents are kept in your browser's session storage for your current tab session (cleared when you close the tab); chat history (your last few conversations) and preferences are kept in local storage so they persist across visits.</Li>
           </ul>
@@ -168,6 +170,9 @@ export default function PrivacyPage() {
         </Section>
 
       </div>
+
+      <Footer />
+
     </div>
     </div>
   );

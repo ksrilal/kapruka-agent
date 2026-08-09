@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Sparkles, MapPin, Heart, Zap, Shield, Globe } from "lucide-react";
 import { BrandLogo } from "@/components/ui/BrandLogo";
+import { Footer } from "@/components/layout/Footer";
 
 export const metadata = {
   title: "About Kiyo — Sri Lanka's Smartest Shopping Assistant",
@@ -49,6 +50,13 @@ const PILLARS = [
     bg: "var(--accent-soft)",
     title: "Trusted & Transparent",
     body: <>Real-time inventory, honest pricing in LKR, and live order tracking — <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> never shows you a product that isn&apos;t available or a price that can change at checkout.</>,
+  },
+  {
+    icon: Sparkles,
+    color: "#38bdf8",
+    bg: "rgba(56,189,248,0.12)",
+    title: "Personalized, If You Want It",
+    body: <>Shop entirely as a guest, or sign in with just your email — no password — to get a personalized experience: your past orders, saved addresses, and saved recipients pulled in automatically so reordering and sending to the same person again takes seconds.</>,
   },
 ];
 
@@ -168,6 +176,8 @@ export default function AboutPage() {
           colombo.office@kapruka.com
         </a>
       </div>
+
+      <Footer />
 
     </div>
     </div>

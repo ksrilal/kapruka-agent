@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { BrandLogo } from "@/components/ui/BrandLogo";
+import { Footer } from "@/components/layout/Footer";
 
 export const metadata = {
   title: "Q&A — Kiyo Help",
@@ -21,7 +22,7 @@ const SECTIONS = [
       },
       {
         q: "Do I need to create an account?",
-        a: <>No. <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> and Kapruka both support guest checkout. Just provide a delivery address and your contact details when placing an order — no registration required.</>,
+        a: <>No. <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> and Kapruka both support guest checkout. Just provide a delivery address and your contact details when placing an order — no registration required. If you&apos;d like a more personalized experience, you can optionally sign in with just your email — no password needed.</>,
       },
       {
         q: "Why does KIYO ask me questions instead of just showing products?",
@@ -46,7 +47,15 @@ const SECTIONS = [
       },
       {
         q: "Can I track my order?",
-        a: <>Yes. Once your order is placed, you can ask <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> to track it using your order ID. <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> will return the current status directly in the chat.</>,
+        a: <>Yes. Once your order is placed, you can ask <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> to track it using your order ID, or open the Orders panel from the header. Tracked orders show a live status badge and a short progress timeline, and refresh automatically every 15 minutes while the panel is open (or tap refresh to check now).</>,
+      },
+      {
+        q: "I already paid — how do I confirm it?",
+        a: <>Open the Orders panel, find your order under &ldquo;Pending Payment&rdquo;, expand &ldquo;Already paid? Enter your order number&rdquo;, and paste in the order number from your confirmation email. It&apos;ll move into &ldquo;Tracked Orders&rdquo; once confirmed.</>,
+      },
+      {
+        q: "Can I reorder something I've bought before?",
+        a: <>Yes. From a tracked order, tap &ldquo;Reorder&rdquo; to add the same items back to your cart (<span className="font-kiyo">KI<span className="gradient-text">YO</span></span> re-checks that delivery to that city is still available), or tap &ldquo;Send again&rdquo; to have <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> confirm price and stock in chat before creating a fresh order to the same recipient.</>,
       },
     ],
   },
@@ -122,6 +131,31 @@ const SECTIONS = [
       },
     ],
   },
+  {
+    heading: "Your Account",
+    items: [
+      {
+        q: "How do I sign in?",
+        a: <>Tap &ldquo;Sign in&rdquo; in the top-right of the header, or just tell <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> your email in chat. There&apos;s no password — <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> looks up your existing Kapruka account by email. If it&apos;s found, your past orders and saved addresses are pulled in automatically.</>,
+      },
+      {
+        q: "What if KIYO can't find my account?",
+        a: <>You&apos;ll see a message that an account couldn&apos;t be found for that email. Double-check what you typed, or simply continue shopping as a guest — signing in is always optional. Account sign-in is currently in limited rollout, so not every existing Kapruka customer will be recognized yet.</>,
+      },
+      {
+        q: "What changes once I'm signed in?",
+        a: <>The header shows your name instead of &ldquo;Sign in&rdquo;, a Saved Addresses panel becomes available, your past orders load into the Orders panel, your saved addresses populate as ready-to-use Saved Recipients, and the home screen&apos;s suggestions become personalized to your account.</>,
+      },
+      {
+        q: "What are Saved Recipients?",
+        a: <>People you&apos;ve sent orders to before. After an order is confirmed, you can save that recipient for next time — then tap &ldquo;Use for this order&rdquo; on any saved recipient to start a new order to them without retyping their details.</>,
+      },
+      {
+        q: "What happens to my cart and orders if I sign out?",
+        a: <>Your current conversation is saved to your account&apos;s history first, then you&apos;re returned to a fresh guest session. Guest data and each signed-in account&apos;s data (cart, orders, recipients, history) are kept separate and never mixed.</>,
+      },
+    ],
+  },
 ];
 
 export default function QAPage() {
@@ -153,7 +187,7 @@ export default function QAPage() {
         </p>
       </div>
 
-      <div className="flex flex-col gap-10 mb-10">
+      <div className="flex flex-col gap-10 mb-14">
         {SECTIONS.map(({ heading, items }) => (
           <div key={heading}>
             <p
@@ -203,6 +237,8 @@ export default function QAPage() {
           </a>
         </div>
       </div>
+
+      <Footer />
 
     </div>
     </div>
