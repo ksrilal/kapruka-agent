@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect } from "react";
-import { X, MapPin, RefreshCw, Loader2, Phone } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { X, MapPin, RefreshCw, Loader2, Phone, Send } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAddressesStore } from "@/features/addresses/store";
 import { useCustomerStore } from "@/features/customer/store";
+import { useShopStore } from "@/features/shop/store";
 import { usePanelEscape } from "@/lib/hooks/usePanelEscape";
+import type { CustomerAddress } from "@/types/domain";
 
-function AddressRow({ address }: { address: { recipient_name: string; address: string; city: string; phone?: string; label?: string } }) {
+function AddressRow({ address, onUse }: { address: CustomerAddress; onUse: () => void }) {
   return (
     <div
       className="rounded-2xl p-4 flex flex-col gap-2"
@@ -37,6 +40,13 @@ function AddressRow({ address }: { address: { recipient_name: string; address: s
           <Phone className="h-3 w-3" /> {address.phone}
         </p>
       )}
+      <button
+        onClick={onUse}
+        className="flex items-center gap-1.5 text-[11px] font-medium underline-offset-2 hover:underline transition-colors text-left self-start"
+        style={{ color: "var(--purple-light)" }}
+      >
+        <Send className="h-3.5 w-3.5" /> Use for this order
+      </button>
     </div>
   );
 }
@@ -50,6 +60,8 @@ function AddressesPanelContent({ onClose }: { onClose: () => void }) {
   const error = useAddressesStore((s) => s.error);
   const fetchAddresses = useAddressesStore((s) => s.fetchAddresses);
   const account = useCustomerStore((s) => s.account);
+  const sendMessage = useShopStore((s) => s.sendMessage);
+  const router = useRouter();
 
   const email = account?.email;
 
@@ -59,6 +71,15 @@ function AddressesPanelContent({ onClose }: { onClose: () => void }) {
   usePanelEscape(true, onClose);
 
   const loading = status === "loading";
+
+  function handleUse(address: CustomerAddress) {
+    if (!sendMessage) return;
+    onClose();
+    sendMessage(
+      `Use this address for delivery [recipient:${address.recipient_name}|${address.phone ?? ""}|${address.address}|${address.city}].`
+    );
+    router.push("/");
+  }
 
   return (
     <>
@@ -147,10 +168,20 @@ function AddressesPanelContent({ onClose }: { onClose: () => void }) {
           {!error && addresses.length > 0 && (
             <div className="flex flex-col gap-3">
               {addresses.map((a, i) => (
-                <AddressRow key={`${a.recipient_name}-${a.address}-${i}`} address={a} />
+                <AddressRow key={`${a.recipient_name}-${a.address}-${i}`} address={a} onUse={() => handleUse(a)} />
               ))}
             </div>
           )}
+        </div>
+
+        <div
+          className="px-6 py-4 flex items-center gap-2"
+          style={{ borderTop: "1px solid var(--border-2)" }}
+        >
+          <MapPin className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--purple-light)" }} />
+          <p className="text-[11px]" style={{ color: "var(--ink-3)" }}>
+            Tap &ldquo;Use for this order&rdquo; on a saved address to reuse it in chat
+          </p>
         </div>
       </aside>
     </>
