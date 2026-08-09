@@ -287,18 +287,19 @@ function TrackingRow({ saved, onRemove, onCloseAll }: { saved: SavedTracking; on
   // Chat-driven variant of reorder — lets the AI re-confirm price, stock, and
   // delivery availability rather than blindly re-adding, since this is a
   // "send this to them again" request rather than a quick self-checkout
-  // re-add. Product IDs are passed explicitly (same tag format checkout
-  // trusts) so the AI never has to ask which order — there's only one.
+  // re-add. Product IDs are passed using the exact same "{qty}x {name}
+  // [product_id:xxx]" tag format CartPanel's checkout uses (see
+  // useChat.ts's product_id regex) so the AI never has to ask which order —
+  // there's only one — and the tags stay recognizable to the cleanup regex.
   function handleReorderForRecipient() {
     if (!sendMessage) return;
     const { recipient } = status;
-    const itemNames = status.items.map((i) => i.name).join(", ");
-    const productTags = status.items
-      .map((i) => `[product_id:${i.product_id} x${i.quantity}]`)
-      .join(" ");
+    const itemList = status.items
+      .map((i) => `${i.quantity}x ${i.name} [product_id:${i.product_id}]`)
+      .join(", ");
     onCloseAll();
     sendMessage(
-      `I want to reorder ${itemNames || "the same order"} ${productTags} and send it to ${recipient.name} again [recipient:${recipient.name}|${recipient.phone}|${recipient.address}|${recipient.city}]. Please use these exact items and details.`
+      `I want to reorder ${itemList || "the same order"} and send it to ${recipient.name} again [recipient:${recipient.name}|${recipient.phone}|${recipient.address}|${recipient.city}]. Please use these exact items and details.`
     );
     router.push("/");
   }
