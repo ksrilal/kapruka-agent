@@ -93,7 +93,7 @@ function CartItemRow({
           <TooltipTrigger asChild>
             <button
               onClick={() => onRemove(pid)}
-              className="opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100"
+              className="opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 sm:focus-visible:opacity-100"
               style={{ color: "var(--ink-3)" }}
               aria-label="Remove"
             >

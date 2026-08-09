@@ -50,7 +50,7 @@ function RecipientRow({ saved, onRemove, onRename, onUse }: {
           <p className="text-[13px] font-semibold" style={{ color: "var(--ink)" }}>{saved.label}</p>
         )}
 
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity shrink-0">
+        <div className="flex items-center gap-1 opacity-100 transition-opacity shrink-0 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
           {!editing && (
             <Tooltip>
               <TooltipTrigger asChild>
