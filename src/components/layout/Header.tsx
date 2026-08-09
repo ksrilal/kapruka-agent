@@ -174,7 +174,7 @@ function AccountControl() {
   // Reopen the popover automatically when a lookup fails, even if the user
   // navigated away from it while waiting — otherwise the error is invisible.
   useEffect(() => {
-    if (status === "error") setOpen(true);
+    if (status === "error") setOpen(true); 
   }, [status]);
 
   function submitEmail() {
