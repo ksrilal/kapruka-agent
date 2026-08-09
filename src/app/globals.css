@@ -509,6 +509,59 @@ html.light .brand-logo {
   -webkit-backdrop-filter: blur(24px) saturate(160%);
   border: 1px solid rgba(139,92,246,0.14);
   box-shadow: var(--s5), 0 0 0 1px rgba(139,92,246,0.04) inset, var(--s-glow);
+  position: relative;
+  z-index: 1;
+}
+
+/* Traveling light that continuously runs the command bar's border, SVG-traced */
+.command-bar-wrap {
+  --glow-line-thickness: 2px;
+  --glow-line-length: 50;
+  --glow-blur-size: 4px;
+  --glow-speed: 5.5s; 
+  --glow-offset: 24px;
+  position: relative;
+  border-radius: var(--r7, 1rem);
+}
+.command-bar-wrap > .command-bar {
+  position: relative;
+  z-index: 1;
+}
+.command-bar-glow-svg {
+  pointer-events: none;
+  position: absolute;
+  inset: calc(var(--glow-offset) / -2);
+  width: calc(100% + var(--glow-offset));
+  height: calc(100% + var(--glow-offset));
+  overflow: visible;
+  z-index: 2;
+}
+.command-bar-glow-svg rect {
+  x: calc(var(--glow-offset) / 2);
+  y: calc(var(--glow-offset) / 2);
+  width: calc(100% - var(--glow-offset));
+  height: calc(100% - var(--glow-offset));
+  fill: transparent;
+  stroke-dasharray: var(--glow-line-length) calc(50 - var(--glow-line-length)) var(--glow-line-length) calc(150 - var(--glow-line-length));
+  animation: command-bar-travel var(--glow-speed) linear infinite;
+}
+.command-bar-glow-svg .glow-line {
+  stroke: url(#kiyo-glow-gradient);
+  stroke-width: var(--glow-line-thickness);
+  opacity: 0.3;
+}
+.command-bar-glow-svg .glow-blur {
+  stroke: url(#kiyo-glow-gradient);
+  stroke-width: var(--glow-blur-size);
+  filter: blur(var(--glow-blur-size));
+  opacity: 0.3;
+}
+@keyframes command-bar-travel {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -100; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .command-bar-glow-svg rect { animation: none; }
 }
 
 /* ─── Purple CTA button ──────────────────────────────────────────────────────── */

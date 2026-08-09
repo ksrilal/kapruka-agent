@@ -1258,6 +1258,18 @@ export function EmptyState() {
 
       {/* Inline input zone — mockup-style, sits directly under the hero */}
       <div className="mt-2 pt-10 sm:pt-4 w-full max-w-xl">
+        <div className="command-bar-wrap rounded-2xl">
+        <svg className="command-bar-glow-svg" aria-hidden="true">
+          <defs>
+            <linearGradient id="kiyo-glow-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="var(--purple-light)" />
+              <stop offset="60%" stopColor="var(--accent)" />
+              <stop offset="100%" stopColor="#f9a8d4" />
+            </linearGradient>
+          </defs>
+          <rect pathLength="100" rx="16" className="glow-blur" />
+          <rect pathLength="100" rx="16" className="glow-line" />
+        </svg>
         <div className="command-bar flex items-center gap-3 rounded-2xl px-4 sm:px-5 py-3.5">
           <KiyoAvatar size={32} className="shrink-0" />
           <input
@@ -1300,6 +1312,7 @@ export function EmptyState() {
             </TooltipTrigger>
             <TooltipContent>Send</TooltipContent>
           </Tooltip>
+        </div>
         </div>
         <div className="mt-3.5 pt-1.5 flex justify-center">
           <div
