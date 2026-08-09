@@ -464,6 +464,13 @@ export function useChat() {
           }
           return s;
         });
+        // Persist to history after every exchange, not just on unload/new-chat/
+        // logout — otherwise a still-open conversation shows nothing in the
+        // history panel if the tab is killed rather than cleanly closed.
+        const { messages: finalMessages, sessionId: finalSessionId } = useChatStore.getState();
+        if (finalMessages.length > 1 && finalSessionId) {
+          useHistoryStore.getState().saveSession(finalMessages, finalSessionId);
+        }
       }
     },
     [isStreaming, addMessage, appendAssistantText, setMessageError, setStreaming, setLocale, setFeaturedProducts, setLastAiText, savePendingOrder, saveTracking, openOrdersPanel]

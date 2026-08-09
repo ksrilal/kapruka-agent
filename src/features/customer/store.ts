@@ -42,7 +42,11 @@ export const useCustomerStore = create<CustomerStore>()((set) => ({
   logout: async () => {
     // Save the account's active conversation to its own (still-current)
     // history scope before switching back to guest — otherwise it's lost
-    // and won't be there next time this account logs in.
+    // and won't be there next time this account logs in. This conversation
+    // belongs to the account, not the guest — it must NOT also be saved
+    // into guest-scoped history after the switch below, or every logout
+    // would pollute (and could even overwrite, on a sessionId clash) the
+    // guest's own saved sessions with the account's conversation.
     const chatState = useChatStore.getState();
     const hasActiveChat = chatState.messages.length > 1 && chatState.sessionId;
     if (hasActiveChat) {
@@ -53,13 +57,6 @@ export const useCustomerStore = create<CustomerStore>()((set) => ({
 
     set({ account: null, status: "idle", error: null });
     await setStorageIdentity(null);
-
-    // The user lands back in the guest scope right after logout — save the
-    // same conversation there too (not just the account's scope above) so
-    // it's visible in history immediately, not only after logging back in.
-    if (hasActiveChat) {
-      useHistoryStore.getState().saveSession(chatState.messages, chatState.sessionId!);
-    }
 
     // Addresses are never cached across identities — clear on logout so a
     // still-open panel doesn't keep showing the previous account's data.

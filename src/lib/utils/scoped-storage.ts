@@ -11,10 +11,12 @@
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type PersistApi<T = any> = {
+  getState: () => T;
   getInitialState: () => T;
   setState: (state: T, replace: true) => void;
   persist: {
     setOptions: (options: { name: string }) => void;
+    getOptions: () => { storage?: { getItem: (name: string) => unknown } };
     rehydrate: () => Promise<void> | void;
   };
 };
@@ -46,16 +48,26 @@ export async function setStorageIdentity(email: string | null): Promise<void> {
   if (scope === currentScope) return;
   currentScope = scope;
   await Promise.all(
-    registered.map(({ baseName, api }) => {
-      // rehydrate() only overwrites state if the target scope's storage key
-      // already has a persisted value — for a scope that's never been
-      // written (a brand-new account, or a guest scope with nothing saved
-      // yet), it's a no-op and the previous identity's in-memory state would
-      // otherwise keep showing through. Reset to the store's own initial
-      // state first so an empty scope actually renders empty.
-      api.setState(api.getInitialState(), true);
-      api.persist.setOptions({ name: scopedName(baseName, scope) });
-      return api.persist.rehydrate();
+    registered.map(async ({ baseName, api }) => {
+      const targetName = scopedName(baseName, scope);
+      // Check the NEW scope's key for real persisted data before touching
+      // anything. This must happen before setOptions()/rehydrate() below,
+      // neither of which can be trusted alone: rehydrate()'s merge is a
+      // no-op when the target key is empty (so a stale in-memory value from
+      // the outgoing scope would keep showing through), while resetting to
+      // initial state unconditionally writes to the target key immediately
+      // — which, for a scope that already has real saved data, overwrote it
+      // with empty state a moment before rehydrate() read it back, silently
+      // destroying it on every switch into that scope.
+      const storage = api.persist.getOptions().storage;
+      const existing = storage ? await storage.getItem(targetName) : null;
+
+      api.persist.setOptions({ name: targetName });
+      if (existing) {
+        await api.persist.rehydrate();
+      } else {
+        api.setState(api.getInitialState(), true);
+      }
     })
   );
 }
