@@ -284,16 +284,21 @@ function TrackingRow({ saved, onRemove, onCloseAll }: { saved: SavedTracking; on
   const [refreshing, setRefreshing] = useState(false);
   const [reordering, setReordering] = useState(false);
 
-  // Chat-driven variant of reorder — lets the AI re-search/confirm price and
-  // stock rather than blindly re-adding, since this is a "send this to them
-  // again" request rather than a quick self-checkout re-add.
+  // Chat-driven variant of reorder — lets the AI re-confirm price, stock, and
+  // delivery availability rather than blindly re-adding, since this is a
+  // "send this to them again" request rather than a quick self-checkout
+  // re-add. Product IDs are passed explicitly (same tag format checkout
+  // trusts) so the AI never has to ask which order — there's only one.
   function handleReorderForRecipient() {
     if (!sendMessage) return;
     const { recipient } = status;
     const itemNames = status.items.map((i) => i.name).join(", ");
+    const productTags = status.items
+      .map((i) => `[product_id:${i.product_id} x${i.quantity}]`)
+      .join(" ");
     onCloseAll();
     sendMessage(
-      `I want to send ${itemNames || "the same order"} to ${recipient.name} again [recipient:${recipient.name}|${recipient.phone}|${recipient.address}|${recipient.city}]. Please use these details for delivery.`
+      `I want to reorder ${itemNames || "the same order"} ${productTags} and send it to ${recipient.name} again [recipient:${recipient.name}|${recipient.phone}|${recipient.address}|${recipient.city}]. Please use these exact items and details.`
     );
     router.push("/");
   }
