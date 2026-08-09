@@ -257,6 +257,14 @@ async function* chatGenerator(
         } else {
           emittedTypes.delete(parsed.__type);
         }
+      } else if (parsed.__type === "languagePreference" && parsed.data && typeof parsed.data === "object") {
+        const data = parsed.data as { locale?: unknown };
+        const SUPPORTED_LOCALES = new Set(["en", "si", "ta-Latn"]);
+        if (typeof data.locale === "string" && SUPPORTED_LOCALES.has(data.locale)) {
+          yield { type: "languagePreference" as const, locale: data.locale as Locale };
+        } else {
+          emittedTypes.delete(parsed.__type);
+        }
       }
     } catch { /* malformed — skip */ }
   }

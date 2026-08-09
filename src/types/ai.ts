@@ -74,6 +74,11 @@ export interface ChatCurrencyPreferenceEvent {
   currency: string;
 }
 
+export interface ChatLanguagePreferenceEvent {
+  type: "languagePreference";
+  locale: Locale;
+}
+
 export type ChatSSEEvent =
   | ChatTextEvent
   | ChatErrorEvent
@@ -84,4 +89,5 @@ export type ChatSSEEvent =
   | ChatCartActionEvent
   | ChatGiftProfileEvent
   | ChatCustomerLookupEvent
-  | ChatCurrencyPreferenceEvent;
+  | ChatCurrencyPreferenceEvent
+  | ChatLanguagePreferenceEvent;

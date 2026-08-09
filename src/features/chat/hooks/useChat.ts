@@ -418,6 +418,11 @@ export function useChat() {
               }
             } else if (event.type === "currencyPreference") {
               useShopStore.getState().setPreferredCurrency(event.currency);
+            } else if (event.type === "languagePreference") {
+              // Syncs the header language button too — same mechanism as
+              // currencyPreference above, so a chat-driven "reply in Sinhala"
+              // request doesn't leave the button showing a stale language.
+              useShopStore.getState().setPreferredLocale(event.locale);
             } else if (event.type === "error") {
               setMessageError(assistantId, event.retryable ?? false, event.message);
             }
