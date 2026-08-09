@@ -21,6 +21,9 @@ const ChatRequestSchema = z.object({
     )
     .min(1),
   locale: z.enum(["en", "si", "ta-Latn"]).optional(),
+  // true when `locale` came from the user's explicit header language pick,
+  // not just auto-detection of this one message's text (see useChat.ts)
+  isExplicitLocale: z.boolean().optional(),
   customerContext: z.string().max(4000).optional(),
   customerEmail: z.string().email().optional(),
   preferredCurrency: z.enum(["LKR", "USD", "GBP", "AUD", "CAD", "EUR"]).optional(),
@@ -92,7 +95,7 @@ async function* chatGenerator(
   const orchestratorRun = runOrchestrator(body.messages, locale, (tool, status) => {
     toolQueue.push({ tool, status });
     notify();
-  }, body.customerContext, body.customerEmail, body.preferredCurrency).then((r) => {
+  }, body.customerContext, body.customerEmail, body.preferredCurrency, body.isExplicitLocale).then((r) => {
     result = r;
     orchestratorDone = true;
     notify();

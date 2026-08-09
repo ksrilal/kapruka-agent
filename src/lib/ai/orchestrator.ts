@@ -153,13 +153,19 @@ export async function runOrchestrator(
   onToolCall?: (tool: string, status: "running" | "done") => void,
   customerContext?: string,
   customerEmail?: string,
-  preferredCurrency?: string
+  preferredCurrency?: string,
+  isExplicitLocale?: boolean
 ): Promise<OrchestratorResult> {
   const model = buildModel();
   // preferredCurrency is only passed standalone for guests — onboarded accounts
   // already carry it inside customerContext (see useChat's buildCustomerContext),
   // so don't double-inject it there.
-  const systemPrompt = buildSystemPrompt(locale, customerContext, customerContext ? undefined : preferredCurrency);
+  const systemPrompt = buildSystemPrompt(
+    locale,
+    customerContext,
+    customerContext ? undefined : preferredCurrency,
+    isExplicitLocale
+  );
   const embedded: unknown[] = [];
   // Account-scoped tools are only offered to the model once a customer is
   // actually signed in — otherwise it has no way to call them anyway (no

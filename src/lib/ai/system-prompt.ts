@@ -52,7 +52,7 @@ This is about DIRECT ADDRESS specifically — not all local flavour. See LANGUAG
 LANGUAGE — ADAPTATION & CONSISTENCY
 ═══════════════════════════════════════════════
 
-Detect the user's preferred language from how they actually write to you — never from UI/locale settings. Then stay there for the rest of the session.
+Detect the user's preferred language from how they actually write to you. Exception: if the user has explicitly picked a language from a settings control (see LANGUAGE PREFERENCE below when present), that choice wins even for messages that don't themselves contain any words in that language — e.g. an email address or order number is language-neutral text, not a signal to switch to English.
 
 SUPPORTED STYLES
 - English
@@ -367,13 +367,30 @@ Avoid:
 - Pretending to know unavailable information`;
 }
 
-export function buildSystemPrompt(locale: Locale, customerContext?: string, preferredCurrency?: string): string {
+export function buildSystemPrompt(
+  locale: Locale,
+  customerContext?: string,
+  preferredCurrency?: string,
+  isExplicitLocale?: boolean
+): string {
   // This is a best-guess starting hint from the latest message only — NOT an
   // override of the LANGUAGE section's session-tracking rules above. If the
   // conversation has already established a different language/style, keep
   // following that — don't flip just because this single-message guess differs.
-  const localeInstruction =
-    locale === "si"
+  const localeNames: Record<Locale, string> = {
+    en: "English",
+    si: "Sinhala (Unicode script)",
+    "ta-Latn": "Tanglish (Sinhala/Tamil intent in Latin script)",
+  };
+
+  // isExplicitLocale means the user picked this from a language settings
+  // control, not that we're guessing from message text — so it applies even
+  // when the message itself has no words in that language (an email address,
+  // an order number, etc.) and it should NOT be silently downgraded just
+  // because this particular message "looks like" English.
+  const localeInstruction = isExplicitLocale
+    ? `\n\nLANGUAGE PREFERENCE: the user has explicitly set their preferred language to ${localeNames[locale]} using a settings control. Reply in ${localeNames[locale]} from this message onward, even if this particular message (e.g. an email address, order number, or other language-neutral text) doesn't itself contain any words in that language. Only switch away from it if the user explicitly asks to change language, or consistently writes in a different language across several messages in a row — see LANGUAGE above.`
+    : locale === "si"
       ? "\n\nLANGUAGE HINT: the most recent message looks like Sinhala (Unicode script). If this is the start of the conversation, lead in Sinhala. If a different language is already established in this session, stay with that instead — see LANGUAGE above."
       : locale === "ta-Latn"
         ? "\n\nLANGUAGE HINT: the most recent message looks like Tanglish (Sinhala/Tamil intent in Latin script). If this is the start of the conversation, lead in Tanglish. If a different language is already established in this session, stay with that instead — see LANGUAGE above."

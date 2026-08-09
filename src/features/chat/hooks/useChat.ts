@@ -140,7 +140,8 @@ export function useChat() {
       // a stray Tanglish word in an otherwise English sentence.
       const preferredLocale = useShopStore.getState().preferredLocale;
       const autoDetected = detectLocale(text);
-      const detectedLocale = preferredLocale && autoDetected === "en" ? preferredLocale : autoDetected;
+      const usingPreference = Boolean(preferredLocale && autoDetected === "en");
+      const detectedLocale = usingPreference ? preferredLocale! : autoDetected;
       setLocale(detectedLocale);
 
       const userMsg: ConversationMessage = {
@@ -191,7 +192,7 @@ export function useChat() {
         const res = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: history, locale: detectedLocale, customerContext, customerEmail, preferredCurrency }),
+          body: JSON.stringify({ messages: history, locale: detectedLocale, isExplicitLocale: usingPreference, customerContext, customerEmail, preferredCurrency }),
           signal: abortRef.current.signal,
         });
 
