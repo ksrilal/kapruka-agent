@@ -47,6 +47,12 @@ export async function setStorageIdentity(email: string | null): Promise<void> {
   currentScope = scope;
   await Promise.all(
     registered.map(({ baseName, api }) => {
+      // setState() writes to storage immediately, using whatever `name` is
+      // current at that moment — so setOptions() MUST run first to point
+      // writes at the new scope's key. Doing this in the other order would
+      // make the reset below overwrite the OUTGOING scope's own persisted
+      // data with empty state, destroying it before we ever switch away.
+      api.persist.setOptions({ name: scopedName(baseName, scope) });
       // rehydrate() only overwrites state if the target scope's storage key
       // already has a persisted value — for a scope that's never been
       // written (a brand-new account, or a guest scope with nothing saved
@@ -54,7 +60,6 @@ export async function setStorageIdentity(email: string | null): Promise<void> {
       // otherwise keep showing through. Reset to the store's own initial
       // state first so an empty scope actually renders empty.
       api.setState(api.getInitialState(), true);
-      api.persist.setOptions({ name: scopedName(baseName, scope) });
       return api.persist.rehydrate();
     })
   );
