@@ -26,19 +26,6 @@ const LANGUAGE_OPTIONS: Array<{ value: Locale; label: string; native: string }> 
 
 const CURRENCY_OPTIONS = ["LKR", "USD", "GBP", "AUD", "CAD", "EUR"] as const;
 
-// Mobile MoreMenu rows are single-tap toggles rather than full dropdowns —
-// cycle to the next option each tap instead of opening a nested picker.
-function nextLocale(current: Locale | null): Locale {
-  const values = LANGUAGE_OPTIONS.map((o) => o.value);
-  const idx = current ? values.indexOf(current) : -1;
-  return values[(idx + 1) % values.length];
-}
-
-function nextCurrency(current: string | null): string {
-  const idx = current ? CURRENCY_OPTIONS.indexOf(current as (typeof CURRENCY_OPTIONS)[number]) : -1;
-  return CURRENCY_OPTIONS[(idx + 1) % CURRENCY_OPTIONS.length];
-}
-
 // Generic small dropdown popover — mirrors AccountControl's open/close +
 // click-outside behavior, reused for language and currency pickers.
 function HeaderDropdown<T extends string>({
@@ -168,9 +155,18 @@ interface MoreMenuItem {
   key: string;
   icon: ReactNode;
   label: string;
-  onClick: () => void;
+  onClick?: () => void;
   count?: number;
   badgeColor?: string;
+  // When set, tapping the row expands an inline list of options instead of
+  // firing a single action — lets language/currency be picked directly
+  // rather than blindly cycled-and-closed on a single tap.
+  submenu?: {
+    value: string | null;
+    options: readonly string[];
+    renderOption: (option: string) => ReactNode;
+    onSelect: (option: string) => void;
+  };
 }
 
 // Mobile-only overflow menu — the full button row (theme, language, currency,
@@ -179,6 +175,7 @@ interface MoreMenuItem {
 // those are the actions people reach for most.
 function MoreMenu({ items }: { items: MoreMenuItem[] }) {
   const [open, setOpen] = useState(false);
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -219,27 +216,64 @@ function MoreMenu({ items }: { items: MoreMenuItem[] }) {
           className="anim-fade-up absolute right-0 top-11 z-50 w-56 rounded-2xl p-1.5"
           style={{ background: "var(--surface)", border: "1px solid var(--border-2)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}
         >
-          {items.map((item) => (
-            <button
-              key={item.key}
-              onClick={() => { item.onClick(); setOpen(false); }}
-              className="flex w-full items-center justify-between rounded-xl px-2.5 py-2 text-[12px] text-left transition-colors"
-              style={{ color: "var(--ink-2)" }}
-            >
-              <span className="flex items-center gap-2">
-                {item.icon}
-                {item.label}
-              </span>
-              {!!item.count && (
-                <span
-                  className="rounded-full px-1.5 text-[10px] font-semibold text-white"
-                  style={{ background: item.badgeColor ?? "var(--purple)" }}
+          {items.map((item) => {
+            const isExpanded = expandedKey === item.key;
+            const submenu = item.submenu;
+            return (
+              <div key={item.key}>
+                <button
+                  onClick={() => {
+                    if (submenu) { setExpandedKey(isExpanded ? null : item.key); return; }
+                    item.onClick?.();
+                    setOpen(false);
+                  }}
+                  aria-expanded={submenu ? isExpanded : undefined}
+                  className="flex w-full items-center justify-between rounded-xl px-2.5 py-2 text-[12px] text-left transition-colors"
+                  style={{ color: "var(--ink-2)", background: isExpanded ? "var(--surface-2)" : "transparent" }}
                 >
-                  {item.count > 99 ? "99+" : item.count}
-                </span>
-              )}
-            </button>
-          ))}
+                  <span className="flex items-center gap-2">
+                    {item.icon}
+                    {item.label}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    {!!item.count && (
+                      <span
+                        className="rounded-full px-1.5 text-[10px] font-semibold text-white"
+                        style={{ background: item.badgeColor ?? "var(--purple)" }}
+                      >
+                        {item.count > 99 ? "99+" : item.count}
+                      </span>
+                    )}
+                    {submenu && (
+                      <ChevronDown
+                        className="h-3 w-3 transition-transform"
+                        style={{ transform: isExpanded ? "rotate(180deg)" : "none" }}
+                      />
+                    )}
+                  </span>
+                </button>
+
+                {submenu && isExpanded && (
+                  <div className="flex flex-col gap-0.5 pl-2.5 pb-1">
+                    {submenu.options.map((option) => (
+                      <button
+                        key={option}
+                        onClick={() => { submenu.onSelect(option); setExpandedKey(null); setOpen(false); }}
+                        className="flex w-full items-center justify-between rounded-xl px-2.5 py-1.5 text-[12px] text-left transition-colors"
+                        style={{
+                          color: option === submenu.value ? "var(--ink)" : "var(--ink-3)",
+                          background: option === submenu.value ? "var(--surface-2)" : "transparent",
+                          fontWeight: option === submenu.value ? 600 : 500,
+                        }}
+                      >
+                        {submenu.renderOption(option)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -548,13 +582,33 @@ export function Header() {
                   key: "language",
                   icon: <Languages className="h-3.5 w-3.5" />,
                   label: `Kiyo's language: ${LANGUAGE_OPTIONS.find((o) => o.value === preferredLocale)?.native ?? "English"}`,
-                  onClick: () => setPreferredLocale(nextLocale(preferredLocale)),
+                  submenu: {
+                    value: preferredLocale,
+                    options: LANGUAGE_OPTIONS.map((o) => o.value),
+                    renderOption: (value) => {
+                      const option = LANGUAGE_OPTIONS.find((o) => o.value === value)!;
+                      return (
+                        <>
+                          <span>{option.native}</span>
+                          {option.native !== option.label && (
+                            <span style={{ color: "var(--ink-3)" }}>{option.label}</span>
+                          )}
+                        </>
+                      );
+                    },
+                    onSelect: (value) => setPreferredLocale(value as Locale),
+                  },
                 },
                 {
                   key: "currency",
                   icon: <Coins className="h-3.5 w-3.5" />,
                   label: `Currency: ${preferredCurrency ?? "LKR"}`,
-                  onClick: () => setPreferredCurrency(nextCurrency(preferredCurrency)),
+                  submenu: {
+                    value: preferredCurrency,
+                    options: CURRENCY_OPTIONS,
+                    renderOption: (value) => <span>{value}</span>,
+                    onSelect: setPreferredCurrency,
+                  },
                 },
                 ...(hasMessages
                   ? [{ key: "newChat", icon: <SquarePen className="h-3.5 w-3.5" />, label: "New chat", onClick: newChat }]

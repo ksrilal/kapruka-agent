@@ -132,19 +132,20 @@ export function ProductCard({ product, priority }: Props) {
 
         {/* Action overlay — slides up on click */}
         <div
-          className="absolute inset-x-0 bottom-0 flex flex-col gap-2 p-3 transition-all duration-250"
+          className="absolute inset-x-0 bottom-0 flex flex-col gap-1.5 p-2 sm:gap-2 sm:p-3 transition-all duration-250"
           style={{
             transform: expanded ? "translateY(0)" : "translateY(100%)",
             opacity: expanded ? 1 : 0,
           }}
         >
-          <div className="flex gap-2">
+          <div className="flex gap-1.5 sm:gap-2">
             <a
               href={product.url}
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2 text-[12px] font-semibold text-white transition-opacity hover:opacity-90"
+              aria-label="View on Kapruka"
+              className="flex items-center justify-center gap-1.5 rounded-xl py-1.5 sm:py-2 px-2.5 sm:flex-1 sm:px-0 text-[11px] sm:text-[12px] font-semibold text-white transition-opacity hover:opacity-90"
               style={{
                 background: "rgba(255,255,255,0.15)",
                 backdropFilter: "blur(8px)",
@@ -152,13 +153,14 @@ export function ProductCard({ product, priority }: Props) {
               }}
             >
               <ExternalLink className="h-3.5 w-3.5" />
-              Kapruka
+              <span className="hidden sm:inline">Kapruka</span>
             </a>
 
             <button
               onClick={handleAddToCart}
               disabled={!product.in_stock}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2 text-[12px] font-semibold text-white transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+              aria-label={justAdded ? "Added to cart" : "Add to cart"}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl py-1.5 sm:py-2 text-[11px] sm:text-[12px] font-semibold text-white transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
               style={{
                 background: justAdded
                   ? "var(--green)"
@@ -168,8 +170,8 @@ export function ProductCard({ product, priority }: Props) {
               }}
             >
               {justAdded
-                ? <><Check className="h-3.5 w-3.5" /> Added</>
-                : <><ShoppingCart className="h-3.5 w-3.5" /> Add to Cart</>
+                ? <><Check className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Added</span></>
+                : <><ShoppingCart className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Add to Cart</span></>
               }
             </button>
           </div>
@@ -177,7 +179,7 @@ export function ProductCard({ product, priority }: Props) {
           <button
             onClick={handleBuyNow}
             disabled={!product.in_stock}
-            className="flex items-center justify-center gap-1.5 rounded-xl py-2 text-[12px] font-semibold text-white transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center justify-center gap-1.5 rounded-xl py-1.5 sm:py-2 text-[11px] sm:text-[12px] font-semibold text-white transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
               background: "linear-gradient(135deg, var(--gold, #f59e0b) 0%, #d97706 100%)",
               boxShadow: "0 2px 10px rgba(245,158,11,0.35)",
