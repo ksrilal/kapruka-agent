@@ -587,7 +587,7 @@ function BubbleShape({
           height={36}
           className="shrink-0 rounded-full mt-0.5"
         />
-        <span className="text-[14px] leading-snug" style={{ color: "var(--ink-2)" }}>
+        <span className="text-[14px] leading-snug line-clamp-2" style={{ color: "var(--ink-2)" }}>
           {displayText}
         </span>
       </button>
@@ -755,6 +755,15 @@ const ACCOUNT_MESSAGE_TEXT: Record<Locale, {
   },
 };
 
+// Order item names come straight from Kapruka's order API and occasionally
+// carry an embedded gift-message attachment filename (e.g. a trailing
+// "MessageID 1785755767113.jpg") that's meaningless to show a customer —
+// strip it and cap the length so bubble/prompt text stays readable.
+function cleanItemName(name: string): string {
+  const stripped = name.replace(/\s*MessageID\s*\d+\.\w+\s*$/i, "").trim();
+  return stripped.length > 60 ? `${stripped.slice(0, 57)}...` : stripped;
+}
+
 function buildAccountPersonalizedMessages(account: CustomerAccount, locale: Locale): KiyoMessage[] {
   const messages: KiyoMessage[] = [];
   const firstName = account.profile.name.split(" ")[0];
@@ -762,7 +771,7 @@ function buildAccountPersonalizedMessages(account: CustomerAccount, locale: Loca
 
   const lastOrder = account.orders[0];
   if (lastOrder) {
-    const itemName = lastOrder.items?.[0]?.name;
+    const itemName = lastOrder.items?.[0]?.name ? cleanItemName(lastOrder.items[0].name) : undefined;
     messages.push({
       displayText: itemName
         ? t.welcomeBackReorder(firstName, itemName)
@@ -794,7 +803,7 @@ function buildAccountPersonalizedMessages(account: CustomerAccount, locale: Loca
   // gives account holders with real history more than one thing to reorder.
   const secondOrder = account.orders.find((o) => o.order_ref !== lastOrder?.order_ref);
   if (secondOrder) {
-    const itemName = secondOrder.items?.[0]?.name;
+    const itemName = secondOrder.items?.[0]?.name ? cleanItemName(secondOrder.items[0].name) : undefined;
     messages.push({
       displayText: itemName ? t.lovedItReorder(itemName) : t.reorderRef(secondOrder.order_ref),
       promptText: itemName ? `Order ${itemName} again, same as before.` : `Reorder my order ${secondOrder.order_ref}.`,
@@ -993,7 +1002,10 @@ function KiyoBubbleColumn({ onSend }: { onSend: (message: KiyoMessage) => void }
   const desktopRows = Math.floor(availableHeight / BUBBLE_ROW_GAP) + 1;
 
   const isDesktop = viewportSize ? viewportSize.width >= 640 : true;
-  const visibleCount = isDesktop ? desktopRows : 3;
+  // Capped to the pool size so the even-spacing formula below never has to
+  // repeat an index — a pool smaller than the row count used to make two
+  // slots land on the same message and show identical bubbles at once.
+  const visibleCount = Math.max(1, Math.min(isDesktop ? desktopRows : 3, messages.length));
   const startIndexes = useMemo(
     () => Array.from({ length: visibleCount }, (_, i) => Math.floor((i * messages.length) / visibleCount)),
     [visibleCount, messages.length]
