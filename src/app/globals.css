@@ -70,6 +70,9 @@
   --primary-foreground:  #ffffff;
   --destructive:         #ef4444;
   --destructive-foreground: #ffffff;
+  --popover:             var(--surface-2);
+  --popover-foreground:  var(--ink);
+  --ring:                var(--purple);
 }
 
 @theme inline {
@@ -84,7 +87,11 @@
   --color-primary-foreground: #ffffff;
   --color-destructive:        #ef4444;
   --color-destructive-foreground: #ffffff;
+  --color-popover:            var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-ring:               var(--ring);
   --font-sans: var(--font-geist-sans, system-ui, sans-serif);
+  --font-kiyo: "Gilroy", var(--font-geist-sans, system-ui, sans-serif);
 }
 
 /* ─── Light theme ────────────────────────────────────────────────────────────── */
@@ -154,6 +161,9 @@ html.light {
   --primary-foreground:  #ffffff;
   --destructive:         #dc2626;
   --destructive-foreground: #ffffff;
+  --popover:             var(--surface-2);
+  --popover-foreground:  var(--ink);
+  --ring:                var(--purple);
 }
 
 /* Hardcoded (non-token) surfaces tuned for the dark backdrop — re-tuned for light */
@@ -224,6 +234,26 @@ summary {
 .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
+/* ─── Marquee — slow, continuous auto-scroll rail (never pauses) ────────────── */
+@keyframes marquee      { from { transform: translateX(0); }        to { transform: translateX(-50%); } }
+@keyframes marqueeRight { from { transform: translateX(-66.667%); } to { transform: translateX(0); } }
+.marquee-track       { display: flex; width: max-content; animation: marquee 120s linear infinite; }
+.marquee-track-right { display: flex; width: max-content; animation: marqueeRight 150s linear infinite; }
+
+/* ─── Category wheel — fixed-slot left-edge rail, full category browser ─────── */
+.wheel-rail {
+  mask-image: linear-gradient(to bottom, transparent, black 4%, black 96%, transparent);
+}
+@keyframes wheelPillIn { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: translateX(0); } }
+.wheel-pill-fade-left { animation: wheelPillIn 0.28s ease both; }
+.wheel-pill-pop:hover { transform: translateX(4px); }
+.wheel-pill { background: var(--surface); }
+.wheel-search {
+  background: var(--surface-2);
+  border: 1px solid var(--purple-light);
+  box-shadow: 0 0 0 4px var(--purple-soft);
+}
+
 /* ─── Glass ──────────────────────────────────────────────────────────────────── */
 .glass {
   background: var(--glass);
@@ -257,6 +287,12 @@ html.light .gradient-text {
   background: linear-gradient(135deg, #6d28d9 0%, #a21caf 60%, #be185d 100%);
   -webkit-background-clip: text;
   background-clip: text;
+}
+
+/* ─── Brand wordmark font ────────────────────────────────────────────────────── */
+.font-kiyo {
+  font-family: var(--font-kiyo);
+  font-weight: 700;
 }
 
 /* ─── Brand logo badge ───────────────────────────────────────────────────────── */
@@ -406,12 +442,21 @@ html.light .brand-logo {
 @keyframes blink    { 0%,100%{opacity:1} 50%{opacity:0} }
 @keyframes spin     { to{transform:rotate(360deg)} }
 @keyframes glowPulse{ 0%,100%{box-shadow: 0 0 20px var(--purple-glow)} 50%{box-shadow: 0 0 40px var(--purple-glow), 0 0 80px rgba(139,92,246,0.2)} }
+@keyframes glowPulseGold{ 0%,100%{box-shadow: 0 0 10px rgba(245,158,11,0.35)} 50%{box-shadow: 0 0 22px rgba(245,158,11,0.6), 0 0 40px rgba(245,158,11,0.25)} }
+@keyframes twinkle  { 0%,100%{transform:scale(1) rotate(0deg)} 50%{transform:scale(1.18) rotate(8deg)} }
+@keyframes bubbleDrop{
+  0%   { opacity:0; transform:translateY(-36px) scale(0.85) rotate(-3deg); }
+  55%  { opacity:1; transform:translateY(6px) scale(1.04) rotate(1deg); }
+  75%  { transform:translateY(-2px) scale(0.99) rotate(-0.5deg); }
+  100% { opacity:1; transform:translateY(0) scale(1) rotate(0deg); }
+}
 
 .anim-fade-up   { animation: fadeUp  0.55s cubic-bezier(0.16,1,0.3,1) both; }
 .anim-fade-in   { animation: fadeIn  0.35s ease both; }
 .anim-scale-up  { animation: scaleUp 0.45s cubic-bezier(0.16,1,0.3,1) both; }
 .anim-slide-left{ animation: slideLeft 0.4s cubic-bezier(0.16,1,0.3,1) both; }
 .anim-slide-up  { animation: slideUp  0.45s cubic-bezier(0.16,1,0.3,1) both; }
+.anim-bubble-drop{ animation: bubbleDrop 0.65s cubic-bezier(0.34,1.56,0.64,1) both; }
 
 /* Stagger delays */
 .delay-0  { animation-delay:   0ms; }
@@ -422,7 +467,7 @@ html.light .brand-logo {
 .delay-5  { animation-delay: 400ms; }
 
 @media (prefers-reduced-motion: reduce) {
-  .anim-fade-up,.anim-fade-in,.anim-scale-up,.anim-slide-left,.anim-slide-up,
+  .anim-fade-up,.anim-fade-in,.anim-scale-up,.anim-slide-left,.anim-slide-up,.anim-bubble-drop,
   .orb-primary,.orb-secondary,.orb-accent { animation: none; }
 }
 
@@ -464,6 +509,59 @@ html.light .brand-logo {
   -webkit-backdrop-filter: blur(24px) saturate(160%);
   border: 1px solid rgba(139,92,246,0.14);
   box-shadow: var(--s5), 0 0 0 1px rgba(139,92,246,0.04) inset, var(--s-glow);
+  position: relative;
+  z-index: 1;
+}
+
+/* Traveling light that continuously runs the command bar's border, SVG-traced */
+.command-bar-wrap {
+  --glow-line-thickness: 2px;
+  --glow-line-length: 100;
+  --glow-blur-size: 4px;
+  --glow-speed: 10.5s;
+  --glow-offset: 24px;
+  position: relative;
+  border-radius: var(--r7, 1rem);
+}
+.command-bar-wrap > .command-bar {
+  position: relative;
+  z-index: 1;
+}
+.command-bar-glow-svg {
+  pointer-events: none;
+  position: absolute;
+  inset: calc(var(--glow-offset) / -2);
+  width: calc(100% + var(--glow-offset));
+  height: calc(100% + var(--glow-offset));
+  overflow: visible;
+  z-index: 2;
+}
+.command-bar-glow-svg rect {
+  x: calc(var(--glow-offset) / 2);
+  y: calc(var(--glow-offset) / 2);
+  width: calc(100% - var(--glow-offset));
+  height: calc(100% - var(--glow-offset));
+  fill: transparent;
+  stroke-dasharray: var(--glow-line-length) calc(200 - var(--glow-line-length));
+  animation: command-bar-travel var(--glow-speed) ease-in-out infinite;
+}
+.command-bar-glow-svg .glow-line {
+  stroke: url(#kiyo-glow-gradient);
+  stroke-width: var(--glow-line-thickness);
+  opacity: 0.3;
+}
+.command-bar-glow-svg .glow-blur {
+  stroke: url(#kiyo-glow-gradient);
+  stroke-width: var(--glow-blur-size);
+  filter: blur(var(--glow-blur-size));
+  opacity: 0.3;
+}
+@keyframes command-bar-travel {
+  0% { stroke-dashoffset: var(--glow-line-length); }
+  100% { stroke-dashoffset: -100; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .command-bar-glow-svg rect { animation: none; }
 }
 
 /* ─── Purple CTA button ──────────────────────────────────────────────────────── */

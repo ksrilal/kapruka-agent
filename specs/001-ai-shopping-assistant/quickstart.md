@@ -1,18 +1,24 @@
 # Quickstart: Kiyo Shopping Assistant
 
 **Date**: 2026-06-05 | **Branch**: `001-ai-shopping-assistant`
+**Last verified against code**: 2026-07-27
+
+> This project already exists and is checked into this repo — the bootstrap steps below (1–2)
+> are historical record of how it was originally created, not something you need to re-run. To
+> work on the existing codebase, skip to step 3.
 
 ## Prerequisites
 
 - Node.js 20 LTS
-- pnpm 9+ (or npm/yarn)
-- A Gemini API key (`GEMINI_API_KEY`)
+- npm (repo uses `package-lock.json`, not pnpm/yarn)
+- An API key for at least one AI provider — Google Gemini (`GOOGLE_API_KEY`, default), Anthropic
+  (`ANTHROPIC_API_KEY`), or OpenAI (`OPENAI_API_KEY`)
 - Git
 
-## 1. Bootstrap the Next.js project
+## 1. Bootstrap the Next.js project (historical — already done)
 
 ```bash
-pnpm create next-app@latest kapruka-agent \
+npx create-next-app@latest kapruka-agent \
   --typescript \
   --tailwind \
   --eslint \
@@ -23,43 +29,50 @@ pnpm create next-app@latest kapruka-agent \
 cd kapruka-agent
 ```
 
-## 2. Install dependencies
+## 2. Install dependencies (historical — already in package.json)
 
 ```bash
 # Core
-pnpm add @google/generative-ai ai next-intl zod zustand
+npm install ai @ai-sdk/google @ai-sdk/anthropic @ai-sdk/openai zod zustand
 
 # UI
-pnpm add @radix-ui/react-slot class-variance-authority clsx tailwind-merge lucide-react
+npm install @radix-ui/react-dialog @radix-ui/react-scroll-area @radix-ui/react-separator \
+  @radix-ui/react-slot class-variance-authority clsx tailwind-merge lucide-react sonner
 
-# shadcn/ui CLI (initialise and add primitives)
-pnpm dlx shadcn@latest init
-pnpm dlx shadcn@latest add button card badge input sheet skeleton toast
+# shadcn/ui CLI (initialised; only button + sonner primitives actually generated so far)
+npx shadcn@latest init
+npx shadcn@latest add button sonner
 
 # Dev
-pnpm add -D @next/bundle-analyzer @types/node vitest @playwright/test
+npm install -D @next/bundle-analyzer @types/node vitest @playwright/test
 ```
+
+Note: `next-intl` was originally planned but was never installed — do not add it without also
+wiring up the `src/lib/i18n/` message files, which currently sit unused.
 
 ## 3. Environment variables
 
 Create `.env.local` (gitignored):
 
 ```bash
-GEMINI_API_KEY=your_gemini_api_key_here
+GOOGLE_API_KEY=your_google_api_key_here
 KAPRUKA_MCP_URL=https://mcp.kapruka.com/mcp
 ```
+
+To use a different provider instead, set `AI_PROVIDER=anthropic` (with `ANTHROPIC_API_KEY`) or
+`AI_PROVIDER=openai` (with `OPENAI_API_KEY`). See DEPLOYMENT.md for the full env var reference.
 
 ## 4. Verify MCP connectivity
 
 ```bash
-# Quick connectivity check — should return 200 and an mcp-session-id header
-curl -I -H "Accept: text/event-stream" https://mcp.kapruka.com/mcp
+# Quick connectivity check
+curl -I -H "Accept: application/json, text/event-stream" -X POST https://mcp.kapruka.com/mcp
 ```
 
 ## 5. Run development server
 
 ```bash
-pnpm dev
+npm run dev
 # Open http://localhost:3000
 ```
 
@@ -84,26 +97,33 @@ pnpm dev
 ## 8. Run type check and lint
 
 ```bash
-pnpm tsc --noEmit   # must exit 0
-pnpm lint           # must exit 0 with no warnings
+npx tsc --noEmit   # must exit 0
+npm run lint       # must exit 0 with no warnings
 ```
+
+Note: there are no test files in the repo (Vitest/Playwright are installed but unused), so there
+is no `test` step to run yet.
 
 ## 9. Deploy to Vercel
 
 ```bash
-pnpm dlx vercel --prod
-# Set GEMINI_API_KEY and KAPRUKA_MCP_URL in Vercel dashboard
+npx vercel --prod
+# Set GOOGLE_API_KEY (or your chosen provider's key) and KAPRUKA_MCP_URL in Vercel dashboard
 ```
 
 ## Key file locations
 
-| File                                 | Purpose                             |
-| ------------------------------------ | ----------------------------------- |
-| `src/app/api/chat/route.ts`          | Streaming chat Route Handler        |
-| `src/lib/mcp/client.ts`              | MCP SSE session manager             |
-| `src/lib/ai/orchestrator.ts`         | Gemini orchestration                |
-| `src/lib/ai/system-prompt.ts`        | Locale-aware system prompt          |
-| `src/features/chat/hooks/useChat.ts` | Client-side chat state              |
-| `src/features/cart/store.ts`         | Zustand cart store                  |
-| `src/lib/i18n/messages/`             | Translation files (en, si, ta-Latn) |
-| `src/types/mcp.ts`                   | Kapruka MCP typed interfaces        |
+| File                                          | Purpose                                                    |
+| ---------------------------------------------- | ------------------------------------------------------------ |
+| `src/app/page.tsx`                            | The chat page — home route `/` (there is no `/chat` route) |
+| `src/app/api/chat/route.ts`                   | Streaming chat Route Handler (custom SSE, not AI SDK's `useChat`) |
+| `src/lib/mcp/client.ts`                       | MCP JSON-RPC session manager                                |
+| `src/lib/ai/orchestrator.ts`                  | Multi-provider (Gemini/Claude/GPT) tool-call orchestration  |
+| `src/lib/ai/system-prompt.ts`                 | Locale-aware Kiyo persona + JSON-card output contract        |
+| `src/features/chat/hooks/useChat.ts`          | Client-side chat state + hand-rolled SSE parsing            |
+| `src/features/cart/store.ts`                  | Zustand cart store (`sessionStorage`)                        |
+| `src/features/orders/store.ts`                | Zustand orders store (`localStorage`) — not in original plan |
+| `src/features/history/store.ts`               | Zustand chat-history store (`localStorage`) — not in original plan |
+| `src/lib/i18n/messages/`                      | Translation files (en, si, ta-Latn) — **unused dead code**, `next-intl` not installed |
+| `src/types/mcp.ts`                            | Kapruka MCP typed interfaces                                 |
+| `src/types/domain.ts`                         | UI-facing domain types                                        |

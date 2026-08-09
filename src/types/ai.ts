@@ -1,6 +1,6 @@
 import type { Locale } from "./domain";
 import type { ProductSummary } from "./domain";
-import type { Order, OrderStatus } from "./domain";
+import type { Order, OrderStatus, GiftProfile } from "./domain";
 
 export type { Locale };
 
@@ -41,6 +41,11 @@ export interface ChatOrderStatusEvent {
   orderStatus: OrderStatus;
 }
 
+export interface ChatGiftProfileEvent {
+  type: "giftProfile";
+  giftProfile: GiftProfile;
+}
+
 export interface ChatTextEvent {
   type: "text";
   text: string;
@@ -59,6 +64,21 @@ export interface ChatCartActionEvent {
   quantity: number;
 }
 
+export interface ChatCustomerLookupEvent {
+  type: "customerLookup";
+  email: string;
+}
+
+export interface ChatCurrencyPreferenceEvent {
+  type: "currencyPreference";
+  currency: string;
+}
+
+export interface ChatLanguagePreferenceEvent {
+  type: "languagePreference";
+  locale: Locale;
+}
+
 export type ChatSSEEvent =
   | ChatTextEvent
   | ChatErrorEvent
@@ -66,4 +86,8 @@ export type ChatSSEEvent =
   | ChatOrderEvent
   | ChatOrderStatusEvent
   | ChatToolCallEvent
-  | ChatCartActionEvent;
+  | ChatCartActionEvent
+  | ChatGiftProfileEvent
+  | ChatCustomerLookupEvent
+  | ChatCurrencyPreferenceEvent
+  | ChatLanguagePreferenceEvent;

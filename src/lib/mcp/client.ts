@@ -10,6 +10,14 @@ async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// Upstream error text may echo back request params verbatim (e.g. a "missing
+// access_token" style message) — since access_token is sent as a param on
+// customer-details/customer-addresses/order-history calls, redact anything
+// that looks like the finalist token before it ever reaches server logs.
+function redactSecrets(text: string): string {
+  return text.replace(/\bKAP_[A-Za-z0-9_-]{10,}\b/g, "[REDACTED]");
+}
+
 function fetchWithTimeout(url: string, opts: RequestInit): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
@@ -144,7 +152,7 @@ export async function callMcpTool(
       }));
 
       if (result?.isError) {
-        throw new Error(result.content?.[0]?.text ?? "MCP tool error");
+        throw new Error(redactSecrets(result.content?.[0]?.text ?? "MCP tool error"));
       }
 
       const textContent = result?.content?.find((c) => c.type === "text")?.text;
@@ -160,7 +168,7 @@ export async function callMcpTool(
         duration_ms: Date.now() - start,
         outcome: "error",
         attempt,
-        error: String(err),
+        error: redactSecrets(String(err)),
       }));
       if (!isRetryable || attempt === MAX_RETRIES) break;
     }

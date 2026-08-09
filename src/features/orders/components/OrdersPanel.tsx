@@ -2,13 +2,57 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import {
-  X, Package, ExternalLink, Clock, Trash2, RefreshCw, CheckCircle2, XCircle, Loader2,
+  X, Package, ExternalLink, Clock, Trash2, RefreshCw, CheckCircle2, XCircle, Loader2, UserPlus, UserCheck, RotateCcw, Send,
 } from "lucide-react";
+import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useOrdersStore, isTerminal } from "@/features/orders/store";
 import { useOrderPolling } from "@/features/orders/hooks/useOrderPolling";
+import { usePanelEscape } from "@/lib/hooks/usePanelEscape";
+import { useRecipientsStore } from "@/features/recipients/store";
+import { useCartStore } from "@/features/cart/store";
+import { useShopStore } from "@/features/shop/store";
 import type { SavedOrder, SavedTracking } from "@/features/orders/store";
-import type { OrderStatus } from "@/types/domain";
+import type { OrderStatus, ProductSummary } from "@/types/domain";
+
+// Resolves product_ids from a tracked order's items back into cart-ready
+// ProductSummary data via the lookup route, then adds each to the cart.
+async function reorderItems(items: { product_id: string; quantity: number }[], addItem: (p: ProductSummary, qty?: number) => void) {
+  const uniqueIds = Array.from(new Set(items.map((i) => i.product_id)));
+  const res = await fetch("/api/products/lookup", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ product_ids: uniqueIds }),
+  });
+  if (!res.ok) throw new Error("Failed to look up products");
+  const data = await res.json() as { products: ProductSummary[]; missing: string[] };
+  const byId = new Map(data.products.map((p) => [p.id, p]));
+  for (const item of items) {
+    const product = byId.get(item.product_id);
+    if (product) addItem(product, item.quantity);
+  }
+  return data.missing;
+}
+
+// Pre-checks whether the recipient's city can still be delivered to today —
+// non-blocking: reorder still adds items to cart either way, this only
+// informs the toast so the user isn't surprised at checkout.
+async function checkCityDeliverableToday(city: string): Promise<{ available: boolean; reason?: string | null } | null> {
+  try {
+    const res = await fetch("/api/delivery/check", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ city }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json() as { delivery: { available: boolean; reason: string | null } };
+    return data.delivery;
+  } catch {
+    return null;
+  }
+}
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -122,14 +166,19 @@ function PendingOrderRow({ saved, onRemove }: { saved: SavedOrder; onRemove: () 
             )}
           </div>
         </div>
-        <button
-          onClick={onRemove}
-          className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-          style={{ color: "var(--ink-3)" }}
-          aria-label="Remove order"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={onRemove}
+              className="shrink-0 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 sm:focus-visible:opacity-100"
+              style={{ color: "var(--ink-3)" }}
+              aria-label="Remove order"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>Remove order</TooltipContent>
+        </Tooltip>
       </div>
 
       {/* Amount + Pay Now / expiry */}
@@ -189,14 +238,20 @@ function PendingOrderRow({ saved, onRemove }: { saved: SavedOrder; onRemove: () 
               autoFocus
               disabled={loading}
             />
-            <button
-              onClick={() => void handleConfirmPayment()}
-              disabled={loading || !orderNum.trim()}
-              className="flex items-center gap-1 rounded-xl px-3 py-2 text-[12px] font-semibold text-white disabled:opacity-40"
-              style={{ background: "var(--purple)" }}
-            >
-              {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Track"}
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => void handleConfirmPayment()}
+                  disabled={loading || !orderNum.trim()}
+                  aria-label="Track order"
+                  className="flex items-center gap-1 rounded-xl px-3 py-2 text-[12px] font-semibold text-white disabled:opacity-40"
+                  style={{ background: "var(--purple)" }}
+                >
+                  {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Track"}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>{loading ? "Tracking…" : "Track order"}</TooltipContent>
+            </Tooltip>
           </div>
           {error && <p className="text-[11px]" style={{ color: "var(--destructive)" }}>{error}</p>}
           <button
@@ -214,13 +269,71 @@ function PendingOrderRow({ saved, onRemove }: { saved: SavedOrder; onRemove: () 
 
 // ─── TrackingRow ──────────────────────────────────────────────────────────────
 
-function TrackingRow({ saved, onRemove }: { saved: SavedTracking; onRemove: () => void }) {
+function TrackingRow({ saved, onRemove, onCloseAll }: { saved: SavedTracking; onRemove: () => void; onCloseAll: () => void }) {
   const { status } = saved;
   const color = statusColor(status.status);
   const terminal = isTerminal(status.status);
   const updateTracking = useOrdersStore((s) => s.updateTracking);
+  const saveRecipient = useRecipientsStore((s) => s.saveRecipient);
+  const recipientSaved = useRecipientsStore((s) => s.isSaved(status.recipient));
+  const addCartItem = useCartStore((s) => s.addItem);
+  const openCart = useCartStore((s) => s.open);
+  const sendMessage = useShopStore((s) => s.sendMessage);
+  const router = useRouter();
 
   const [refreshing, setRefreshing] = useState(false);
+  const [reordering, setReordering] = useState(false);
+
+  // Chat-driven variant of reorder — lets the AI re-confirm price, stock, and
+  // delivery availability rather than blindly re-adding, since this is a
+  // "send this to them again" request rather than a quick self-checkout
+  // re-add. Product IDs are passed using the exact same "{qty}x {name}
+  // [product_id:xxx]" tag format CartPanel's checkout uses (see
+  // useChat.ts's product_id regex) so the AI never has to ask which order —
+  // there's only one — and the tags stay recognizable to the cleanup regex.
+  function handleReorderForRecipient() {
+    if (!sendMessage) return;
+    const { recipient } = status;
+    const itemList = status.items
+      .map((i) => `${i.quantity}x ${i.name} [product_id:${i.product_id}]`)
+      .join(", ");
+    onCloseAll();
+    sendMessage(
+      `Repeat my past order #${status.order_number} exactly: ${itemList || "the same items"}, sent to ${recipient.name} again [recipient:${recipient.name}|${recipient.phone}|${recipient.address}|${recipient.city}]. This is the one specific order I'm repeating — I'm not choosing between multiple orders, just use these exact items and details.`
+    );
+    router.push("/");
+  }
+
+  async function handleReorder() {
+    if (reordering || status.items.length === 0) return;
+    setReordering(true);
+    try {
+      const [missing, delivery] = await Promise.all([
+        reorderItems(status.items, addCartItem),
+        checkCityDeliverableToday(status.recipient.city),
+      ]);
+      if (missing.length === status.items.length) {
+        toast.error("Couldn't find any of these items anymore.");
+        return;
+      }
+      openCart();
+      if (delivery && !delivery.available) {
+        toast.warning(
+          `Added to cart — but delivery to ${status.recipient.city} isn't available today${delivery.reason ? ` (${delivery.reason})` : ""}. You'll need to pick a different date at checkout.`
+        );
+      } else {
+        toast.success(
+          missing.length > 0
+            ? "Added what's still available to your cart."
+            : "Added to your cart."
+        );
+      }
+    } catch {
+      toast.error("Couldn't reorder — please try again.");
+    } finally {
+      setReordering(false);
+    }
+  }
 
   async function handleManualRefresh() {
     if (refreshing || terminal) return;
@@ -265,20 +378,53 @@ function TrackingRow({ saved, onRemove }: { saved: SavedTracking; onRemove: () =
           </div>
         </div>
 
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
           {!terminal && (
-            <button
-              onClick={() => void handleManualRefresh()}
-              disabled={refreshing}
-              style={{ color: "var(--ink-3)" }}
-              aria-label="Refresh tracking"
-            >
-              <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => void handleManualRefresh()}
+                  disabled={refreshing}
+                  style={{ color: "var(--ink-3)" }}
+                  aria-label="Refresh tracking"
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Refresh tracking</TooltipContent>
+            </Tooltip>
           )}
-          <button onClick={onRemove} style={{ color: "var(--ink-3)" }} aria-label="Remove">
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => void handleReorder()}
+                disabled={reordering || status.items.length === 0}
+                style={{ color: "var(--ink-3)" }}
+                aria-label="Reorder"
+              >
+                {reordering ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5" />}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>Reorder</TooltipContent>
+          </Tooltip>
+          {sendMessage && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button onClick={handleReorderForRecipient} style={{ color: "var(--ink-3)" }} aria-label="Send to recipient again">
+                  <Send className="h-3.5 w-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Send to {status.recipient.name} again</TooltipContent>
+            </Tooltip>
+          )}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button onClick={onRemove} style={{ color: "var(--ink-3)" }} aria-label="Remove order">
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>Remove order</TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
@@ -293,6 +439,21 @@ function TrackingRow({ saved, onRemove }: { saved: SavedTracking; onRemove: () =
         <span style={{ color: "var(--ink-3)" }}>Amount</span>
         <span style={{ color: "var(--gold)" }}>{status.amount.currency} {status.amount.value}</span>
       </div>
+
+      {/* Save recipient for next time */}
+      {recipientSaved ? (
+        <p className="flex items-center gap-1.5 text-[11px]" style={{ color: "var(--ink-3)" }}>
+          <UserCheck className="h-3.5 w-3.5" /> Recipient saved
+        </p>
+      ) : (
+        <button
+          onClick={() => saveRecipient(status.recipient)}
+          className="flex items-center gap-1.5 text-[11px] font-medium underline-offset-2 hover:underline transition-colors text-left self-start"
+          style={{ color: "var(--purple-light)" }}
+        >
+          <UserPlus className="h-3.5 w-3.5" /> Save {status.recipient.name} for next time
+        </button>
+      )}
 
       {/* Progress timeline */}
       {status.progress.length > 0 && (
@@ -315,7 +476,7 @@ function TrackingRow({ saved, onRemove }: { saved: SavedTracking; onRemove: () =
       {/* Live poll indicator — only for non-terminal */}
       {!terminal && (
         <p className="text-[10px]" style={{ color: "var(--ink-3)" }}>
-          Auto-updates every minute · Last updated{" "}
+          Auto-updates every 15 minutes · Last updated{" "}
           {saved.lastPolledAt
             ? new Date(saved.lastPolledAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
             : "never"}
@@ -337,6 +498,7 @@ function OrdersPanelContent({ onClose }: { onClose: () => void }) {
 
   // Polling only runs while this component is mounted (panel open)
   useOrderPolling();
+  usePanelEscape(true, onClose);
 
   const totalCount = pending.length + tracked.length;
 
@@ -344,25 +506,31 @@ function OrdersPanelContent({ onClose }: { onClose: () => void }) {
     <>
       <div className="backdrop" onClick={onClose} style={{ zIndex: 70 }} />
 
-      <aside className="cart-panel glass-dark anim-slide-left flex flex-col" style={{ zIndex: 80 }}>
+      <aside role="dialog" aria-modal="true" aria-label="Your Orders" className="cart-panel glass-dark anim-slide-left flex flex-col" style={{ zIndex: 80 }}>
         {/* Header */}
         <div
           className="flex items-center justify-between px-6 py-5"
           style={{ borderBottom: "1px solid var(--border-2)" }}
         >
           <div>
-            <h2 className="t-title" style={{ color: "var(--ink)" }}>My Orders</h2>
+            <h2 className="t-title" style={{ color: "var(--ink)" }}>Your Orders</h2>
             <p className="t-small mt-0.5" style={{ color: "var(--ink-2)" }}>
               {totalCount === 0 ? "No saved orders" : `${totalCount} order${totalCount !== 1 ? "s" : ""}`}
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors active:scale-95"
-            style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={onClose}
+                aria-label="Close orders"
+                className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors active:scale-95"
+                style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>Close</TooltipContent>
+          </Tooltip>
         </div>
 
         {/* Content */}
@@ -405,6 +573,7 @@ function OrdersPanelContent({ onClose }: { onClose: () => void }) {
                   key={saved.status.order_number}
                   saved={saved}
                   onRemove={() => removeTracking(saved.status.order_number)}
+                  onCloseAll={onClose}
                 />
               ))}
             </div>

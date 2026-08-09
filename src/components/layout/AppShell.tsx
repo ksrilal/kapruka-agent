@@ -7,6 +7,8 @@ import { CommandBar } from "@/features/chat/components/CommandBar";
 import { CartPanel } from "@/features/cart/components/CartPanel";
 import { OrdersPanel } from "@/features/orders/components/OrdersPanel";
 import { HistoryPanel } from "@/features/history/components/HistoryPanel";
+import { RecipientsPanel } from "@/features/recipients/components/RecipientsPanel";
+import { AddressesPanel } from "@/features/addresses/components/AddressesPanel";
 import { Bubbles } from "@/components/ui/Bubbles";
 
 const STATIC_PAGES = ["/about", "/qa", "/privacy", "/terms"];
@@ -26,6 +28,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <CartPanel />
       <OrdersPanel />
       <HistoryPanel />
+      <RecipientsPanel />
+      <AddressesPanel />
       <Toaster
         position="top-center"
         toastOptions={{

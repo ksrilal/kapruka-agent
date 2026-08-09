@@ -21,6 +21,12 @@ const ChatRequestSchema = z.object({
     )
     .min(1),
   locale: z.enum(["en", "si", "ta-Latn"]).optional(),
+  // true when `locale` came from the user's explicit header language pick,
+  // not just auto-detection of this one message's text (see useChat.ts)
+  isExplicitLocale: z.boolean().optional(),
+  customerContext: z.string().max(4000).optional(),
+  customerEmail: z.string().email().optional(),
+  preferredCurrency: z.enum(["LKR", "USD", "GBP", "AUD", "CAD", "EUR"]).optional(),
 });
 
 const RATE_LIMIT_MAP = new Map<string, { count: number; resetAt: number }>();
@@ -89,7 +95,7 @@ async function* chatGenerator(
   const orchestratorRun = runOrchestrator(body.messages, locale, (tool, status) => {
     toolQueue.push({ tool, status });
     notify();
-  }).then((r) => {
+  }, body.customerContext, body.customerEmail, body.preferredCurrency, body.isExplicitLocale).then((r) => {
     result = r;
     orchestratorDone = true;
     notify();
@@ -227,6 +233,36 @@ async function* chatGenerator(
           yield { type: "orderStatus" as const, orderStatus: statusResult.data as import("@/types/domain").OrderStatus };
         } else {
           console.error({ event: "order_status_schema_fail", issues: statusResult.error.issues });
+          emittedTypes.delete(parsed.__type);
+        }
+      } else if (parsed.__type === "giftProfile" && parsed.data && typeof parsed.data === "object") {
+        const data = parsed.data as { occasion?: unknown };
+        if (typeof data.occasion === "string" && data.occasion) {
+          yield { type: "giftProfile" as const, giftProfile: parsed.data as import("@/types/domain").GiftProfile };
+        } else {
+          emittedTypes.delete(parsed.__type);
+        }
+      } else if (parsed.__type === "customerLookup" && parsed.data && typeof parsed.data === "object") {
+        const data = parsed.data as { email?: unknown };
+        if (typeof data.email === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+          yield { type: "customerLookup" as const, email: data.email };
+        } else {
+          emittedTypes.delete(parsed.__type);
+        }
+      } else if (parsed.__type === "currencyPreference" && parsed.data && typeof parsed.data === "object") {
+        const data = parsed.data as { currency?: unknown };
+        const SUPPORTED_CURRENCIES = new Set(["LKR", "USD", "GBP", "AUD", "CAD", "EUR"]);
+        if (typeof data.currency === "string" && SUPPORTED_CURRENCIES.has(data.currency)) {
+          yield { type: "currencyPreference" as const, currency: data.currency };
+        } else {
+          emittedTypes.delete(parsed.__type);
+        }
+      } else if (parsed.__type === "languagePreference" && parsed.data && typeof parsed.data === "object") {
+        const data = parsed.data as { locale?: unknown };
+        const SUPPORTED_LOCALES = new Set(["en", "si", "ta-Latn"]);
+        if (typeof data.locale === "string" && SUPPORTED_LOCALES.has(data.locale)) {
+          yield { type: "languagePreference" as const, locale: data.locale as Locale };
+        } else {
           emittedTypes.delete(parsed.__type);
         }
       }

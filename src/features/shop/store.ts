@@ -1,6 +1,7 @@
 "use client";
 
 import { create } from "zustand";
+import type { Locale } from "@/types/domain";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { ProductSummary } from "@/types/domain";
 
@@ -36,6 +37,19 @@ interface ShopStore {
   // Last AI response text — persisted in sessionStorage
   lastAiText: string;
   setLastAiText: (text: string) => void;
+
+  // Currency the user has asked for prices in — persisted in sessionStorage,
+  // fed into customerContext so the model doesn't have to re-infer it every
+  // fresh session/page load (see system-prompt.ts "## currency").
+  preferredCurrency: string | null;
+  setPreferredCurrency: (currency: string) => void;
+
+  // Language the user has explicitly picked from the header dropdown —
+  // persisted in localStorage so it survives across sessions, distinct from
+  // the auto-detected-per-message locale in useChatStore (sessionStorage).
+  // Applies for guests too, same as preferredCurrency.
+  preferredLocale: Locale | null;
+  setPreferredLocale: (locale: Locale) => void;
 }
 
 export const useShopStore = create<ShopStore>()(
@@ -47,6 +61,8 @@ export const useShopStore = create<ShopStore>()(
       sendMessage: null,
       featuredProducts: [],
       lastAiText: "",
+      preferredCurrency: null,
+      preferredLocale: null,
 
       openCart: () => set({ cartOpen: true }),
       closeCart: () => set({ cartOpen: false }),
@@ -69,16 +85,23 @@ export const useShopStore = create<ShopStore>()(
         set({ featuredProducts: [...seen.values()] });
       },
       setLastAiText: (text) => set({ lastAiText: text }),
+      setPreferredCurrency: (currency) => set({ preferredCurrency: currency }),
+      setPreferredLocale: (locale) => set({ preferredLocale: locale }),
     }),
     {
       name: "kapruka-shop",
+      // localStorage, not sessionStorage — featuredProducts/lastAiText are
+      // fine to lose on tab close, but a manually-picked language/currency
+      // should stick around for the next visit too.
       storage: createJSONStorage(() =>
-        typeof window !== "undefined" ? sessionStorage : noopStorage
+        typeof window !== "undefined" ? localStorage : noopStorage
       ),
       // Only persist data, not UI state or refs
       partialize: (s) => ({
         featuredProducts: s.featuredProducts,
         lastAiText: s.lastAiText,
+        preferredCurrency: s.preferredCurrency,
+        preferredLocale: s.preferredLocale,
       }),
     }
   )

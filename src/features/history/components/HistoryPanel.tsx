@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { X, History, Trash2, MessageSquare, Clock, ChevronRight, Sparkles } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useHistoryStore } from "@/features/history/store";
 import { useChatStore } from "@/features/chat/store";
 import { useShopStore } from "@/features/shop/store";
+import { usePanelEscape } from "@/lib/hooks/usePanelEscape";
 import type { SavedSession } from "@/features/history/store";
 
 function timeAgo(ts: number): string {
@@ -86,16 +88,21 @@ function SessionCard({ session, index, onRestore, onDelete }: {
               <MessageSquare className="h-3 w-3" />
               {session.messageCount} messages
             </span>
-            <button
-              onClick={(e) => { e.stopPropagation(); onDelete(session.id); }}
-              className="ml-auto flex h-5 w-5 items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-all"
-              style={{ color: hovered ? "var(--ink-3)" : "var(--ink-3)" }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#f87171")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--ink-3)")}
-              aria-label="Delete session"
-            >
-              <Trash2 className="h-3 w-3" />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDelete(session.id); }}
+                  className="ml-auto flex h-5 w-5 items-center justify-center rounded-md opacity-100 transition-all sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 sm:focus-visible:opacity-100"
+                  style={{ color: hovered ? "var(--ink-3)" : "var(--ink-3)" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "#f87171")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "var(--ink-3)")}
+                  aria-label="Delete session"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Delete session</TooltipContent>
+            </Tooltip>
           </div>
         </div>
 
@@ -119,6 +126,7 @@ export function HistoryPanel() {
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setMounted(true); }, []);
+  usePanelEscape(isOpen, close);
 
   if (!isOpen) return null;
 
@@ -139,7 +147,7 @@ export function HistoryPanel() {
     <>
       <div className="backdrop" onClick={close} style={{ zIndex: 70 }} />
 
-      <aside className="cart-panel glass-dark anim-slide-left flex flex-col" style={{ zIndex: 80 }}>
+      <aside role="dialog" aria-modal="true" aria-label="Chat History" className="cart-panel glass-dark anim-slide-left flex flex-col" style={{ zIndex: 80 }}>
         {/* Header */}
         <div
           className="flex items-center justify-between px-6 py-5"
@@ -163,13 +171,19 @@ export function HistoryPanel() {
                 Clear all
               </button>
             )}
-            <button
-              onClick={close}
-              className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors active:scale-95"
-              style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
-            >
-              <X className="h-4 w-4" />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={close}
+                  aria-label="Close chat history"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors active:scale-95"
+                  style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Close</TooltipContent>
+            </Tooltip>
           </div>
         </div>
 
@@ -216,7 +230,7 @@ export function HistoryPanel() {
         >
           <Sparkles className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--purple-light)" }} />
           <p className="text-[11px]" style={{ color: "var(--ink-3)" }}>
-            Kiyo saves up to 5 recent sessions automatically
+            <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> saves up to 20 recent sessions automatically
           </p>
         </div>
       </aside>

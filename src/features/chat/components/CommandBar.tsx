@@ -6,6 +6,7 @@ import {
 } from "react";
 import { ArrowUp, Square, Mic, MicOff } from "lucide-react";
 import { KiyoAvatar } from "@/components/ui/KiyoAvatar";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useShopStore } from "@/features/shop/store";
 import { useChat } from "@/features/chat/hooks/useChat";
 import { useChatStore } from "@/features/chat/store";
@@ -55,6 +56,7 @@ export function CommandBar() {
   const commandOpen = useShopStore((s) => s.commandOpen);
   const openCommand = useShopStore((s) => s.openCommand);
   const setSearchRef = useShopStore((s) => s.setSearchRef);
+  const preferredLocale = useShopStore((s) => s.preferredLocale);
   const { isStreaming, sendMessage, stop, locale } = useChat();
   const hasMessages = useChatStore((s) => s.messages.length > 0);
 
@@ -154,7 +156,15 @@ export function CommandBar() {
   const placeholderText = hasMessages
     ? ACTIVE_PLACEHOLDERS[activePlaceholderIdx % ACTIVE_PLACEHOLDERS.length]
     : currentPrompt?.text ?? "Ask anything";
-  const langMeta = hasMessages ? LANG_META[locale] ?? LANG_META.en : null;
+  // A language explicitly picked from the header dropdown always wins over
+  // the last auto-detected locale, so the pill reflects it immediately
+  // instead of waiting for the next message to be sent.
+  const displayLocale = preferredLocale ?? locale;
+  const langMeta = hasMessages ? LANG_META[displayLocale] ?? LANG_META.en : null;
+
+  // On the empty/landing state, EmptyState renders its own inline input (mockup-style)
+  // directly in the hero flow — skip the fixed bottom bar to avoid a duplicate input.
+  if (!hasMessages) return null;
 
   return (
     <div className="fixed bottom-0 inset-x-0 z-50 flex flex-col items-center px-3 sm:px-4 pb-3 sm:pb-4 pointer-events-none">
@@ -176,7 +186,7 @@ export function CommandBar() {
                   <span className="h-1.5 w-1.5 rounded-full bg-primary animate-[pulse_1s_ease_infinite]" style={{ animationDelay: "0ms" }} />
                   <span className="h-1.5 w-1.5 rounded-full bg-primary animate-[pulse_1s_ease_infinite]" style={{ animationDelay: "150ms" }} />
                   <span className="h-1.5 w-1.5 rounded-full bg-primary animate-[pulse_1s_ease_infinite]" style={{ animationDelay: "300ms" }} />
-                  <span className="t-small text-muted-foreground ml-1">Kiyo is thinking&hellip;</span>
+                  <span className="t-small text-muted-foreground ml-1"><span className="font-kiyo">KI<span className="gradient-text">YO</span></span> is thinking&hellip;</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
@@ -213,36 +223,51 @@ export function CommandBar() {
             {/* Actions */}
             <div className="flex items-center gap-1.5 mb-0.5">
               {speechSupported && (
-                <button
-                  onClick={isListening ? () => recognitionRef.current?.stop() : startListening}
-                  title={isListening ? "Stop recording" : "Voice input"}
-                  className={`flex h-8 w-8 items-center justify-center rounded-xl transition-all ${
-                    isListening
-                      ? "bg-primary text-white shadow-[0_0_0_4px_var(--purple-soft)]"
-                      : "text-muted-foreground hover:text-foreground hover:bg-(--surface-2)"
-                  }`}
-                >
-                  {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={isListening ? () => recognitionRef.current?.stop() : startListening}
+                      aria-label={isListening ? "Stop recording" : "Voice input"}
+                      className={`flex h-8 w-8 items-center justify-center rounded-xl transition-all ${
+                        isListening
+                          ? "bg-primary text-white shadow-[0_0_0_4px_var(--purple-soft)]"
+                          : "text-muted-foreground hover:text-foreground hover:bg-(--surface-2)"
+                      }`}
+                    >
+                      {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>{isListening ? "Stop recording" : "Voice input"}</TooltipContent>
+                </Tooltip>
               )}
 
               {isStreaming ? (
-                <button
-                  onClick={stop}
-                  title="Stop"
-                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-(--surface-2) text-foreground transition-all hover:bg-(--border-2) active:scale-95"
-                >
-                  <Square className="h-3.5 w-3.5 fill-current" />
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={stop}
+                      aria-label="Stop"
+                      className="flex h-9 w-9 items-center justify-center rounded-xl bg-(--surface-2) text-foreground transition-all hover:bg-(--border-2) active:scale-95"
+                    >
+                      <Square className="h-3.5 w-3.5 fill-current" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Stop</TooltipContent>
+                </Tooltip>
               ) : (
-                <button
-                  onClick={submit}
-                  disabled={!value.trim()}
-                  title="Send"
-                  className="btn-purple flex h-9 w-9 items-center justify-center rounded-xl disabled:cursor-default disabled:opacity-30 disabled:shadow-none active:scale-95"
-                >
-                  <ArrowUp className="h-4 w-4" />
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={submit}
+                      disabled={!value.trim()}
+                      aria-label="Send"
+                      className="btn-purple flex h-9 w-9 items-center justify-center rounded-xl disabled:cursor-default disabled:opacity-30 disabled:shadow-none active:scale-95"
+                    >
+                      <ArrowUp className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Send</TooltipContent>
+                </Tooltip>
               )}
             </div>
           </div>
@@ -265,7 +290,7 @@ export function CommandBar() {
                   {i < arr.length - 1 && <span className="text-[11px]" style={{ color: "var(--ink-3)" }}>, </span>}
                 </span>
               ))}
-              <span className="hidden sm:inline text-[11px]" style={{ color: "var(--ink-3)" }}>— Kiyo understands all three</span>
+              <span className="hidden sm:inline text-[11px]" style={{ color: "var(--ink-3)" }}>— <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> understands all three</span>
             </div>
             </div>
           )}

@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { ArrowLeft, Sparkles, MapPin, Heart, Zap, Shield } from "lucide-react";
+import { ArrowLeft, Sparkles, MapPin, Heart, Zap, Shield, Globe } from "lucide-react";
 import { BrandLogo } from "@/components/ui/BrandLogo";
+import { Footer } from "@/components/layout/Footer";
 
 export const metadata = {
   title: "About Kiyo — Sri Lanka's Smartest Shopping Assistant",
@@ -13,35 +14,49 @@ const PILLARS = [
     color: "var(--purple-light)",
     bg: "var(--purple-soft)",
     title: "Conversational Commerce",
-    body: "Forget rigid search filters and endless category browsing. Just tell Kiyo what you need — in English, Sinhala, or Tanglish — and get curated results in seconds.",
+    body: <>Forget rigid search filters and endless category browsing. Just tell <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> what you need — in English, Sinhala, Singlish, or Tanglish — and get curated results in seconds.</>,
   },
   {
     icon: MapPin,
     color: "#34d399",
     bg: "rgba(52,211,153,0.12)",
     title: "Delivery Across Sri Lanka",
-    body: "Powered by Kapruka's island-wide logistics network, Kiyo can dispatch gifts, flowers, cakes, and more across Sri Lanka — just name the destination city and Kiyo checks live delivery availability and timing for you.",
+    body: <>Powered by Kapruka&apos;s island-wide logistics network, <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> can dispatch gifts, flowers, cakes, and more across Sri Lanka — just name the destination city and <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> checks live delivery availability and timing for you.</>,
   },
   {
     icon: Heart,
     color: "#f43f5e",
     bg: "rgba(244,63,94,0.12)",
     title: "Built for Real Gifting",
-    body: "Whether it's a birthday cake for a cousin in Kandy or a flower arrangement for a parent in Colombo, Kiyo understands the emotional context behind every order.",
+    body: <>Whether it&apos;s a birthday cake for a cousin in Kandy or a flower arrangement for a parent in Colombo, <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> understands the emotional context behind every order.</>,
   },
   {
     icon: Zap,
     color: "var(--gold)",
     bg: "var(--gold-soft)",
     title: "Instant, Expressive Checkout",
-    body: "From product discovery to payment in under two minutes. Kiyo handles order creation and hands you a secure payment link — no account required.",
+    body: <>From product discovery to payment in under two minutes. Add items to your cart as you chat, or tap Buy Now on any product to jump straight into ordering. <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> handles order creation and hands you a secure payment link — no account required.</>,
+  },
+  {
+    icon: Globe,
+    color: "#38bdf8",
+    bg: "rgba(56,189,248,0.12)",
+    title: "Shop in Your Currency",
+    body: <>Ask for prices in LKR, USD, GBP, AUD, CAD, or EUR and <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> keeps quoting in that currency for the rest of your session — handy for the Sri Lankan diaspora sending gifts home.</>,
   },
   {
     icon: Shield,
     color: "var(--accent)",
     bg: "var(--accent-soft)",
     title: "Trusted & Transparent",
-    body: "Real-time inventory, honest pricing in LKR, and live order tracking — Kiyo never shows you a product that isn't available or a price that can change at checkout.",
+    body: <>Real-time inventory, honest pricing in LKR, and live order tracking — <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> never shows you a product that isn&apos;t available or a price that can change at checkout.</>,
+  },
+  {
+    icon: Sparkles,
+    color: "#38bdf8",
+    bg: "rgba(56,189,248,0.12)",
+    title: "Personalized, If You Want It",
+    body: <>Shop entirely as a guest, or sign in with just your email — no password — to get a personalized experience: your past orders, saved addresses, and saved recipients pulled in automatically so reordering and sending to the same person again takes seconds.</>,
   },
 ];
 
@@ -56,7 +71,7 @@ export default function AboutPage() {
         style={{ color: "var(--ink-3)" }}
       >
         <ArrowLeft className="h-3.5 w-3.5" />
-        Back to Kiyo
+        Back to <span className="font-kiyo">KI<span className="gradient-text">YO</span></span>
       </Link>
 
       {/* Hero */}
@@ -72,7 +87,7 @@ export default function AboutPage() {
           <span className="gradient-text">talking to a friend.</span>
         </h1>
         <p className="text-[15px] leading-relaxed" style={{ color: "var(--ink-2)" }}>
-          Kiyo is an AI shopping assistant built on top of{" "}
+          <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> is an AI shopping assistant built on top of{" "}
           <a
             href="https://www.kapruka.com"
             target="_blank"
@@ -120,7 +135,7 @@ export default function AboutPage() {
         <p className="text-[18px] font-bold text-foreground mb-2">Kapruka.com</p>
         <p className="text-[13px] leading-relaxed" style={{ color: "var(--ink-2)" }}>
           Since 2004, Kapruka has been connecting Sri Lankans at home and abroad with reliable,
-          same-day gifting and delivery services. Kiyo is built on Kapruka's catalogue, payment
+          same-day gifting and delivery services. <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> is built on Kapruka&apos;s catalogue, payment
           infrastructure, and logistics — meaning every order you place is backed by two decades
           of local expertise.
         </p>
@@ -129,11 +144,12 @@ export default function AboutPage() {
       {/* Language */}
       <div className="mb-10">
         <p className="text-[14px] font-semibold text-foreground mb-3">Speak your language</p>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           {[
             { lang: "English", example: "Send birthday cake to Colombo", color: "var(--ink-2)", bg: "var(--surface-2)" },
             { lang: "සිංහල", example: "අම්මාගේ උපන්දිනයට ලස්සන කේක් එකක් හොයලා දෙන්න", color: "var(--purple-light)", bg: "var(--purple-soft)" },
-            { lang: "Tanglish", example: "Colombo deliver karanawada?", color: "var(--accent)", bg: "var(--accent-soft)" },
+            { lang: "Singlish", example: "mage ammata birthday gift ekak ona", color: "var(--accent)", bg: "var(--accent-soft)" },
+            { lang: "Tanglish", example: "en amma-ku birthday gift venum", color: "#34d399", bg: "rgba(52,211,153,0.12)" },
           ].map(({ lang, example, color, bg }) => (
             <div
               key={lang}
@@ -160,6 +176,8 @@ export default function AboutPage() {
           colombo.office@kapruka.com
         </a>
       </div>
+
+      <Footer />
 
     </div>
     </div>

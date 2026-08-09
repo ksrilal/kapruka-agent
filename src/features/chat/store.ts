@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { registerScopedStore } from "@/lib/utils/scoped-storage";
 import type { ConversationMessage, Locale } from "@/types/domain";
 
 const noopStorage = {
@@ -26,6 +27,8 @@ interface ChatStore {
   setLocale: (locale: Locale) => void;
   reset: () => void;
 }
+
+const CHAT_STORE_NAME = "kiyo-chat-session";
 
 export const useChatStore = create<ChatStore>()(
   persist(
@@ -71,7 +74,7 @@ export const useChatStore = create<ChatStore>()(
       },
     }),
     {
-      name: "kiyo-chat-session",
+      name: CHAT_STORE_NAME,
       storage: createJSONStorage(() =>
         typeof window !== "undefined" ? sessionStorage : noopStorage
       ),
@@ -85,3 +88,5 @@ export const useChatStore = create<ChatStore>()(
     }
   )
 );
+
+registerScopedStore(CHAT_STORE_NAME, useChatStore);

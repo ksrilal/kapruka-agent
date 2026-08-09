@@ -8,7 +8,7 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAI } from "@ai-sdk/openai";
 import { buildSystemPrompt } from "./system-prompt";
-import { aiTools } from "./tool-definitions";
+import { aiTools, guestTools } from "./tool-definitions";
 import {
   searchProducts,
   getProduct,
@@ -18,6 +18,9 @@ import {
   createOrder,
   trackOrder,
 } from "@/lib/mcp";
+import { getOrderHistory } from "@/lib/mcp/tools/order-history";
+import { getCustomerAddresses } from "@/lib/mcp/tools/customer-addresses";
+import { getCustomerDetails } from "@/lib/mcp/tools/customer-details";
 import type { Locale } from "@/types/domain";
 
 // ─── Provider factory ─────────────────────────────────────────────────────────
@@ -31,7 +34,7 @@ function resolveProvider(): AIProvider {
   return "google";
 }
 
-function buildModel(): LanguageModel {
+export function buildModel(): LanguageModel {
   const provider = resolveProvider();
 
   // Each provider has its own dedicated key + model env vars.
@@ -74,7 +77,11 @@ export interface OrchestratorResult {
 
 // ─── Tool executor ────────────────────────────────────────────────────────────
 
-async function executeTool(name: string, args: Record<string, unknown>): Promise<unknown> {
+// customerEmail is NEVER read from `args` — it only ever comes from the
+// server-trusted session (the email the customer themselves typed in to
+// onboard, threaded down from the chat route). The model has no `email`
+// param on these tools and cannot supply or guess one.
+async function executeTool(name: string, args: Record<string, unknown>, customerEmail?: string): Promise<unknown> {
   switch (name) {
     case "search_products":      return searchProducts(args as never);
     case "get_product":          return getProduct(args as never);
@@ -83,6 +90,15 @@ async function executeTool(name: string, args: Record<string, unknown>): Promise
     case "check_delivery":       return checkDelivery(args as never);
     case "create_order":         return createOrder(args as never);
     case "track_order":          return trackOrder(args as never);
+    case "get_order_history":
+      if (!customerEmail) return "TOOL_ERROR: No signed-in customer for this session.";
+      return getOrderHistory({ email: customerEmail, limit: (args as { limit?: number }).limit });
+    case "get_customer_addresses":
+      if (!customerEmail) return "TOOL_ERROR: No signed-in customer for this session.";
+      return getCustomerAddresses({ email: customerEmail });
+    case "get_customer_details":
+      if (!customerEmail) return "TOOL_ERROR: No signed-in customer for this session.";
+      return getCustomerDetails({ email: customerEmail });
     default: throw new Error(`Unknown tool: ${name}`);
   }
 }
@@ -100,14 +116,15 @@ function withTimeout(ms: number): AbortSignal {
 async function runToolCalls(
   toolCalls: ReadonlyArray<{ toolName: string; toolCallId: string; input: unknown }>,
   embedded: unknown[],
-  onToolCall?: (tool: string, status: "running" | "done") => void
+  onToolCall?: (tool: string, status: "running" | "done") => void,
+  customerEmail?: string
 ): Promise<ToolResultPart[]> {
   return Promise.all(
     toolCalls.map(async (tc) => {
       onToolCall?.(tc.toolName, "running");
       let value: string;
       try {
-        const toolResult = await executeTool(tc.toolName, tc.input as Record<string, unknown>);
+        const toolResult = await executeTool(tc.toolName, tc.input as Record<string, unknown>, customerEmail);
         embedded.push(toolResult);
         value = String(toolResult);
       } catch (err) {
@@ -133,11 +150,27 @@ async function runToolCalls(
 export async function runOrchestrator(
   messages: OrchestratorMessage[],
   locale: Locale,
-  onToolCall?: (tool: string, status: "running" | "done") => void
+  onToolCall?: (tool: string, status: "running" | "done") => void,
+  customerContext?: string,
+  customerEmail?: string,
+  preferredCurrency?: string,
+  isExplicitLocale?: boolean
 ): Promise<OrchestratorResult> {
   const model = buildModel();
-  const systemPrompt = buildSystemPrompt(locale);
+  // preferredCurrency is only passed standalone for guests — onboarded accounts
+  // already carry it inside customerContext (see useChat's buildCustomerContext),
+  // so don't double-inject it there.
+  const systemPrompt = buildSystemPrompt(
+    locale,
+    customerContext,
+    customerContext ? undefined : preferredCurrency,
+    isExplicitLocale
+  );
   const embedded: unknown[] = [];
+  // Account-scoped tools are only offered to the model once a customer is
+  // actually signed in — otherwise it has no way to call them anyway (no
+  // email param exists on them), so keep them out of its options entirely.
+  const tools = customerEmail ? aiTools : guestTools;
 
   // Normalize "model" → "assistant" for SDK compatibility
   const history: ModelMessage[] = messages.map((m) => ({
@@ -153,7 +186,7 @@ export async function runOrchestrator(
       model,
       system: systemPrompt,
       messages: currentMessages,
-      tools: aiTools,
+      tools,
       maxRetries: 0,
       abortSignal: withTimeout(GENERATE_TIMEOUT_MS),
     });
@@ -188,7 +221,7 @@ export async function runOrchestrator(
     }
 
     // Execute all tool calls in this round (may be parallel).
-    const toolResultParts = await runToolCalls(toolCalls, embedded, onToolCall);
+    const toolResultParts = await runToolCalls(toolCalls, embedded, onToolCall, customerEmail);
 
     // Use result.response.messages for the assistant turn — these carry providerOptions
     // (including Gemini's thoughtSignature) which must be preserved when continuing

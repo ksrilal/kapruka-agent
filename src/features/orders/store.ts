@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { registerScopedStore } from "@/lib/utils/scoped-storage";
 import type { Order, OrderStatus } from "@/types/domain";
 
 const noopStorage = {
@@ -45,7 +46,10 @@ interface OrdersStore {
   promotePendingToTracked: (orderRef: string, status: OrderStatus) => void;
   removePending: (orderRef: string) => void;
   removeTracking: (orderNumber: string) => void;
+  replaceTracked: (statuses: OrderStatus[]) => void;
 }
+
+const ORDERS_STORE_NAME = "kapruka-orders-v1";
 
 export const useOrdersStore = create<OrdersStore>()(
   persist(
@@ -109,9 +113,18 @@ export const useOrdersStore = create<OrdersStore>()(
       removeTracking: (orderNumber) => {
         set((s) => ({ tracked: s.tracked.filter((t) => t.status.order_number !== orderNumber) }));
       },
+
+      // Used when onboarding a real account: swaps the entire tracked list
+      // for the account's real order history (rather than merging with
+      // whatever was tracked as a guest).
+      replaceTracked: (statuses) => {
+        set({
+          tracked: statuses.map((status) => ({ status, savedAt: Date.now(), lastPolledAt: Date.now() })),
+        });
+      },
     }),
     {
-      name: "kapruka-orders-v1",
+      name: ORDERS_STORE_NAME,
       storage: createJSONStorage(() =>
         typeof window !== "undefined" ? localStorage : noopStorage
       ),
@@ -119,3 +132,5 @@ export const useOrdersStore = create<OrdersStore>()(
     }
   )
 );
+
+registerScopedStore(ORDERS_STORE_NAME, useOrdersStore);

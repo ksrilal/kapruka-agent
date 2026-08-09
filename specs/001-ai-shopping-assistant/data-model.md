@@ -1,9 +1,13 @@
 # Data Model: Kiyo Shopping Assistant
 
 **Date**: 2026-06-05 | **Branch**: `001-ai-shopping-assistant`
+**Last reconciled with codebase**: 2026-07-27
 
 All types below map directly to `src/types/domain.ts` and `src/types/mcp.ts`. Zod schemas
-are generated for every type that crosses an API boundary.
+are generated for every type that crosses an API boundary. This document was checked line-by-line
+against the current source — it was already the most accurate of the spec-kit docs; the one
+factual error found (`OrderStatus.amount`) is corrected below, and a note on `GiftProfile` is
+added since that type is defined but never actually constructed anywhere in the code.
 
 ---
 
@@ -200,7 +204,7 @@ interface OrderStatus {
   order_date: string;
   delivery_date: string;
   shipped_date: string | null;
-  amount: string; // formatted LKR string from Kapruka
+  amount: { value: string; currency: string }; // object, not a bare string — corrected 2026-07-27
   payment_method: string;
   comments: string | null;
   recipient: {
@@ -221,10 +225,13 @@ interface OrderStatus {
 
 ---
 
-### GiftProfile
+### GiftProfile **[type exists, unused in practice]**
 
-User-provided recipient description for the gift recommendation flow. Never sent to Kapruka
-directly — used to build search parameters.
+Defined in `src/types/domain.ts` as a description of what the gift recommendation flow
+conceptually operates on, but **no code anywhere actually constructs a `GiftProfile` object** —
+the gift-advisor behavior is driven entirely by the LLM reasoning over free-form conversation via
+`system-prompt.ts`, then calling the normal `search_products` tool. Treat this type as documenting
+intent/shape, not a runtime data flow.
 
 ```typescript
 interface GiftProfile {
@@ -239,9 +246,13 @@ interface GiftProfile {
 
 ---
 
-### Conversation
+### Conversation **[CHANGED — actual shape is richer]**
 
-Session-scoped conversation state managed by Vercel AI SDK.
+Session-scoped conversation state managed by a Zustand store (`src/features/chat/store.ts`), not
+the Vercel AI SDK's built-in chat state as originally documented. The actual
+`ConversationMessage` (`src/types/domain.ts`) carries additional fields for rendering the
+JSON-card protocol and error UI directly on the message, which this document's original version
+omitted:
 
 ```typescript
 type MessageRole = "user" | "assistant" | "tool";
@@ -251,21 +262,33 @@ interface ConversationMessage {
   id: string;
   role: MessageRole;
   content: string;
-  locale?: Locale; // detected locale for this message
-  tool_calls?: ToolCall[]; // if role === "assistant" with function calls
-  tool_results?: ToolResult[]; // if role === "tool"
+  locale?: Locale;
+  products?: ProductSummary[];     // populated when this turn emitted a "products" card
+  order?: Order;                   // populated when this turn emitted an "order" card
+  orderStatus?: OrderStatus;       // populated when this turn emitted an "orderStatus" card
+  isError?: boolean;               // true if this bubble renders as an inline error
+  retryable?: boolean;             // whether a retry action should be shown
+  errorMessage?: string;
+  tool_calls?: ToolCall[];
+  tool_results?: ToolResult[];
+  toolSteps?: ToolStep[];          // running/done status per tool call, for the ThinkingIndicator
   timestamp: number;
 }
 
 interface ToolCall {
   id: string;
-  name: string; // kapruka_* tool name
+  name: string;
   args: Record<string, unknown>;
 }
 
 interface ToolResult {
   tool_call_id: string;
-  content: unknown; // typed per-tool in mcp.ts
+  content: unknown;
+}
+
+interface ToolStep {
+  tool: string;
+  status: "running" | "done";
 }
 
 interface ConversationState {

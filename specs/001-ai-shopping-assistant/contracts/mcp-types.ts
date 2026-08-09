@@ -2,8 +2,14 @@
  * Kapruka MCP v1.27.0 — typed tool input/output contracts
  * Source: live schema discovery from https://mcp.kapruka.com/mcp
  * Generated: 2026-06-05
+ * Last reconciled with src/types/mcp.ts: 2026-07-27
  *
- * All types enforced at runtime via Zod schemas in lib/mcp/tools/*.ts
+ * All types enforced at runtime via Zod schemas in src/types/mcp.ts (not lib/mcp/tools/*.ts —
+ * the schemas live in the shared types file; lib/mcp/tools/*.ts are thin wrapper functions that
+ * call the MCP client and validate against these schemas).
+ *
+ * One field corrected in this pass: TrackOrderOutput.amount is an object
+ * { value: string; currency: string }, not a bare formatted string as previously documented here.
  */
 
 // ─── Shared primitives ────────────────────────────────────────────────────────
@@ -252,7 +258,7 @@ export interface TrackOrderOutput {
   order_date: string;
   delivery_date: string;
   shipped_date: string | null;
-  amount: string;               // formatted LKR string
+  amount: { value: string; currency: string }; // corrected — was documented as a bare string
   payment_method: string;
   comments: string | null;
   recipient: {
@@ -275,7 +281,7 @@ export interface TrackOrderOutput {
   }>;
 }
 
-// ─── MCP Tool union (for Gemini function declaration mapping) ────────────────
+// ─── MCP Tool union (for provider-agnostic AI-SDK tool mapping — Google, Anthropic, or OpenAI) ──
 
 export type KaprukaTool =
   | "kapruka_list_categories"

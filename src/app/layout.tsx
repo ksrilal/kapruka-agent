@@ -4,6 +4,8 @@ import "./globals.css";
 import { AppShell } from "@/components/layout/AppShell";
 import { ErrorBoundary } from "@/components/layout/ErrorBoundary";
 import { CursorGlow } from "@/components/layout/CursorGlow";
+import { FontLoader } from "@/components/layout/FontLoader";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { Analytics } from "@vercel/analytics/next";
 
 const geist = Geist({
@@ -31,15 +33,17 @@ const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem("kiyo-them
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={geist.variable} suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
-      </head>
+      <head />
       <body suppressHydrationWarning>
-        <CursorGlow />
-        <ErrorBoundary>
-          <AppShell>{children}</AppShell>
-        </ErrorBoundary>
-        <Analytics />
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <FontLoader />
+        <TooltipProvider delayDuration={200}>
+          <CursorGlow />
+          <ErrorBoundary>
+            <AppShell>{children}</AppShell>
+          </ErrorBoundary>
+          <Analytics />
+        </TooltipProvider>
       </body>
     </html>
   );
