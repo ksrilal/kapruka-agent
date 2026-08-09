@@ -299,7 +299,7 @@ function TrackingRow({ saved, onRemove, onCloseAll }: { saved: SavedTracking; on
       .join(", ");
     onCloseAll();
     sendMessage(
-      `I want to reorder ${itemList || "the same order"} and send it to ${recipient.name} again [recipient:${recipient.name}|${recipient.phone}|${recipient.address}|${recipient.city}]. Please use these exact items and details.`
+      `Repeat my past order #${status.order_number} exactly: ${itemList || "the same items"}, sent to ${recipient.name} again [recipient:${recipient.name}|${recipient.phone}|${recipient.address}|${recipient.city}]. This is the one specific order I'm repeating — I'm not choosing between multiple orders, just use these exact items and details.`
     );
     router.push("/");
   }
