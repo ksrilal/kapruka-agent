@@ -516,9 +516,9 @@ html.light .brand-logo {
 /* Traveling light that continuously runs the command bar's border, SVG-traced */
 .command-bar-wrap {
   --glow-line-thickness: 2px;
-  --glow-line-length: 50;
+  --glow-line-length: 100;
   --glow-blur-size: 4px;
-  --glow-speed: 5.5s; 
+  --glow-speed: 10.5s;
   --glow-offset: 24px;
   position: relative;
   border-radius: var(--r7, 1rem);
@@ -542,8 +542,8 @@ html.light .brand-logo {
   width: calc(100% - var(--glow-offset));
   height: calc(100% - var(--glow-offset));
   fill: transparent;
-  stroke-dasharray: var(--glow-line-length) calc(50 - var(--glow-line-length)) var(--glow-line-length) calc(150 - var(--glow-line-length));
-  animation: command-bar-travel var(--glow-speed) linear infinite;
+  stroke-dasharray: var(--glow-line-length) calc(200 - var(--glow-line-length));
+  animation: command-bar-travel var(--glow-speed) ease-in-out infinite;
 }
 .command-bar-glow-svg .glow-line {
   stroke: url(#kiyo-glow-gradient);
@@ -557,8 +557,8 @@ html.light .brand-logo {
   opacity: 0.3;
 }
 @keyframes command-bar-travel {
-  from { stroke-dashoffset: 0; }
-  to { stroke-dashoffset: -100; }
+  0% { stroke-dashoffset: var(--glow-line-length); }
+  100% { stroke-dashoffset: -100; }
 }
 @media (prefers-reduced-motion: reduce) {
   .command-bar-glow-svg rect { animation: none; }
