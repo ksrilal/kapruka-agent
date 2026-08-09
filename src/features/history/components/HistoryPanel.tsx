@@ -133,8 +133,10 @@ export function HistoryPanel() {
   const displaySessions = mounted ? sessions : [];
 
   function handleRestore(session: SavedSession) {
-    // Load the session messages back into chat store
-    useChatStore.setState({ messages: session.messages, isStreaming: false });
+    // Load the session messages back into chat store — restore sessionId too
+    // (it's the same value as session.id) so continuing the conversation
+    // updates this same history entry instead of forking a new one.
+    useChatStore.setState({ messages: session.messages, isStreaming: false, sessionId: session.id });
     // Scroll to latest after mount
     useShopStore.getState().focusSearch();
     close();
