@@ -44,14 +44,22 @@ export const useCustomerStore = create<CustomerStore>()((set) => ({
     // history scope before switching back to guest — otherwise it's lost
     // and won't be there next time this account logs in.
     const chatState = useChatStore.getState();
-    if (chatState.messages.length > 1 && chatState.sessionId) {
-      useHistoryStore.getState().saveSession(chatState.messages, chatState.sessionId);
+    const hasActiveChat = chatState.messages.length > 1 && chatState.sessionId;
+    if (hasActiveChat) {
+      useHistoryStore.getState().saveSession(chatState.messages, chatState.sessionId!);
     }
     useChatStore.getState().reset();
     useChatStore.setState({ sessionId: nanoid() });
 
     set({ account: null, status: "idle", error: null });
     await setStorageIdentity(null);
+
+    // The user lands back in the guest scope right after logout — save the
+    // same conversation there too (not just the account's scope above) so
+    // it's visible in history immediately, not only after logging back in.
+    if (hasActiveChat) {
+      useHistoryStore.getState().saveSession(chatState.messages, chatState.sessionId!);
+    }
 
     // Addresses are never cached across identities — clear on logout so a
     // still-open panel doesn't keep showing the previous account's data.
