@@ -7,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useRecipientsStore } from "@/features/recipients/store";
 import type { SavedRecipient } from "@/features/recipients/store";
 import { useShopStore } from "@/features/shop/store";
+import { usePanelEscape } from "@/lib/hooks/usePanelEscape";
 
 function RecipientRow({ saved, onRemove, onRename, onUse }: {
   saved: SavedRecipient;
@@ -49,7 +50,7 @@ function RecipientRow({ saved, onRemove, onRename, onUse }: {
           <p className="text-[13px] font-semibold" style={{ color: "var(--ink)" }}>{saved.label}</p>
         )}
 
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity shrink-0">
           {!editing && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -101,6 +102,8 @@ function RecipientsPanelContent({ onClose }: { onClose: () => void }) {
   const sendMessage = useShopStore((s) => s.sendMessage);
   const router = useRouter();
 
+  usePanelEscape(true, onClose);
+
   function handleUse(saved: SavedRecipient) {
     if (!sendMessage) return;
     const { recipient } = saved;
@@ -115,7 +118,7 @@ function RecipientsPanelContent({ onClose }: { onClose: () => void }) {
     <>
       <div className="backdrop" onClick={onClose} style={{ zIndex: 70 }} />
 
-      <aside className="cart-panel glass-dark anim-slide-left flex flex-col" style={{ zIndex: 80 }}>
+      <aside role="dialog" aria-modal="true" aria-label="Recipients" className="cart-panel glass-dark anim-slide-left flex flex-col" style={{ zIndex: 80 }}>
         <div
           className="flex items-center justify-between px-6 py-5"
           style={{ borderBottom: "1px solid var(--border-2)" }}

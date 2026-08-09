@@ -15,6 +15,7 @@ import { useChat } from "@/features/chat/hooks/useChat";
 import { useThemeStore, syncThemeFromDom } from "@/features/theme/store";
 import { useCustomerStore } from "@/features/customer/store";
 import { useShopStore } from "@/features/shop/store";
+import { useDismissable } from "@/lib/hooks/useDismissable";
 import type { Locale } from "@/types/domain";
 
 const LANGUAGE_OPTIONS: Array<{ value: Locale; label: string; native: string }> = [
@@ -61,22 +62,20 @@ function HeaderDropdown<T extends string>({
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
-    function onClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", onClickOutside);
-    return () => document.removeEventListener("mousedown", onClickOutside);
-  }, []);
+  useDismissable(ref, open, () => setOpen(false), triggerRef);
 
   return (
     <div className="relative" ref={ref}>
       <Tooltip>
         <TooltipTrigger asChild>
           <button
+            ref={triggerRef}
             onClick={() => setOpen((v) => !v)}
             aria-label={label}
+            aria-haspopup="menu"
+            aria-expanded={open}
             className="flex items-center gap-1.5 rounded-xl px-2.5 h-9 text-[12px] font-medium transition-all hover:-translate-y-px active:scale-95"
             style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
           >
@@ -90,6 +89,7 @@ function HeaderDropdown<T extends string>({
 
       {open && (
         <div
+          role="menu"
           className="anim-fade-up absolute right-0 top-11 z-50 w-44 rounded-2xl p-1.5"
           style={{ background: "var(--surface)", border: "1px solid var(--border-2)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}
         >
@@ -190,12 +190,18 @@ function MoreMenu({ items }: { items: MoreMenuItem[] }) {
   }, []);
 
   const totalCount = items.reduce((sum, i) => sum + (i.count ?? 0), 0);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  useDismissable(ref, open, () => setOpen(false), triggerRef);
 
   return (
     <div className="relative sm:hidden" ref={ref}>
       <button
+        ref={triggerRef}
         onClick={() => setOpen((v) => !v)}
         aria-label="More options"
+        aria-haspopup="menu"
+        aria-expanded={open}
         className="relative flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:text-foreground active:scale-95"
         style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
       >
@@ -209,6 +215,7 @@ function MoreMenu({ items }: { items: MoreMenuItem[] }) {
 
       {open && (
         <div
+          role="menu"
           className="anim-fade-up absolute right-0 top-11 z-50 w-56 rounded-2xl p-1.5"
           style={{ background: "var(--surface)", border: "1px solid var(--border-2)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}
         >
@@ -250,19 +257,14 @@ function AccountControl() {
   const [open, setOpen] = useState(false);
   const [emailDraft, setEmailDraft] = useState("");
   const ref = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
-    function onClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", onClickOutside);
-    return () => document.removeEventListener("mousedown", onClickOutside);
-  }, []);
+  useDismissable(ref, open, () => setOpen(false), triggerRef);
 
   // Reopen the popover automatically when a lookup fails, even if the user
   // navigated away from it while waiting — otherwise the error is invisible.
   useEffect(() => {
-    if (status === "error") setOpen(true); 
+    if (status === "error") setOpen(true);
   }, [status]);
 
   function submitEmail() {
@@ -280,8 +282,11 @@ function AccountControl() {
       <Tooltip>
         <TooltipTrigger asChild>
           <button
+            ref={triggerRef}
             onClick={() => setOpen((v) => !v)}
             aria-label={account ? `Signed in as ${account.profile.name}` : "Sign in"}
+            aria-haspopup="menu"
+            aria-expanded={open}
             className="flex items-center gap-1.5 rounded-xl px-2.5 sm:px-3 h-9 text-[12px] font-medium transition-all hover:-translate-y-px active:scale-95"
             style={{ border: "1px solid var(--border-2)", color: account ? "var(--ink)" : "var(--ink-2)" }}
           >
@@ -301,6 +306,7 @@ function AccountControl() {
 
       {open && (
         <div
+          role="menu"
           className="anim-fade-up absolute right-0 top-11 z-50 w-64 rounded-2xl p-4"
           style={{ background: "var(--surface)", border: "1px solid var(--border-2)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}
         >
@@ -562,9 +568,6 @@ export function Header() {
             />
           )}
 
-          {/* Account — sign in / onboarded user indicator */}
-          {mounted && <AccountControl />}
-
           {/* Orders button */}
           <div className="relative">
             <Tooltip>
@@ -606,6 +609,9 @@ export function Header() {
               <span className="badge-count">{cartCount > 99 ? "99+" : cartCount}</span>
             )}
           </div>
+
+          {/* Account — sign in / onboarded user indicator */}
+          {mounted && <AccountControl />}
         </div>
       </div>
     </header>

@@ -9,6 +9,7 @@ import { useShopStore } from "@/features/shop/store";
 import { productId, productPrice } from "@/types/domain";
 import { formatPrice } from "@/lib/utils/currency";
 import { useProductImage } from "@/lib/hooks/useProductImage";
+import { usePanelEscape } from "@/lib/hooks/usePanelEscape";
 import type { CartLineItem } from "@/features/cart/store";
 
 // ─── CartItemRow ──────────────────────────────────────────────────────────────
@@ -92,7 +93,7 @@ function CartItemRow({
           <TooltipTrigger asChild>
             <button
               onClick={() => onRemove(pid)}
-              className="opacity-0 transition-opacity group-hover:opacity-100"
+              className="opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100"
               style={{ color: "var(--ink-3)" }}
               aria-label="Remove"
             >
@@ -165,6 +166,8 @@ export function CartPanel() {
   const sendMessage = useShopStore((s) => s.sendMessage);
   const router = useRouter();
 
+  usePanelEscape(isOpen, close);
+
   if (!isOpen) return null;
 
   const count = itemCount();
@@ -216,6 +219,9 @@ export function CartPanel() {
 
       {/* Panel */}
       <aside
+        role="dialog"
+        aria-modal="true"
+        aria-label="Your Cart"
         className="cart-panel glass-dark anim-slide-left flex flex-col"
         style={{ zIndex: 80 }}
       >

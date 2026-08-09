@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useOrdersStore, isTerminal } from "@/features/orders/store";
 import { useOrderPolling } from "@/features/orders/hooks/useOrderPolling";
+import { usePanelEscape } from "@/lib/hooks/usePanelEscape";
 import { useRecipientsStore } from "@/features/recipients/store";
 import { useCartStore } from "@/features/cart/store";
 import { useShopStore } from "@/features/shop/store";
@@ -169,7 +170,7 @@ function PendingOrderRow({ saved, onRemove }: { saved: SavedOrder; onRemove: () 
           <TooltipTrigger asChild>
             <button
               onClick={onRemove}
-              className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="shrink-0 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 transition-opacity"
               style={{ color: "var(--ink-3)" }}
               aria-label="Remove order"
             >
@@ -371,7 +372,7 @@ function TrackingRow({ saved, onRemove, onCloseAll }: { saved: SavedTracking; on
           </div>
         </div>
 
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
           {!terminal && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -491,6 +492,7 @@ function OrdersPanelContent({ onClose }: { onClose: () => void }) {
 
   // Polling only runs while this component is mounted (panel open)
   useOrderPolling();
+  usePanelEscape(true, onClose);
 
   const totalCount = pending.length + tracked.length;
 
@@ -498,7 +500,7 @@ function OrdersPanelContent({ onClose }: { onClose: () => void }) {
     <>
       <div className="backdrop" onClick={onClose} style={{ zIndex: 70 }} />
 
-      <aside className="cart-panel glass-dark anim-slide-left flex flex-col" style={{ zIndex: 80 }}>
+      <aside role="dialog" aria-modal="true" aria-label="Your Orders" className="cart-panel glass-dark anim-slide-left flex flex-col" style={{ zIndex: 80 }}>
         {/* Header */}
         <div
           className="flex items-center justify-between px-6 py-5"

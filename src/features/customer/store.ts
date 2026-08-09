@@ -19,9 +19,9 @@ interface CustomerStore {
   error: string | null;
 
   startLookup: () => void;
-  onboard: (account: CustomerAccount) => void;
+  onboard: (account: CustomerAccount) => Promise<void>;
   fail: (error: string) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 // Deliberately NOT persisted — an onboarded session lives only for the current
@@ -34,12 +34,12 @@ export const useCustomerStore = create<CustomerStore>()((set) => ({
   error: null,
 
   startLookup: () => set({ status: "loading", error: null }),
-  onboard: (account) => {
+  onboard: async (account) => {
     set({ account, status: "idle", error: null });
-    void setStorageIdentity(account.email);
+    await setStorageIdentity(account.email);
   },
   fail: (error) => set({ status: "error", error, account: null }),
-  logout: () => {
+  logout: async () => {
     // Save the account's active conversation to its own (still-current)
     // history scope before switching back to guest — otherwise it's lost
     // and won't be there next time this account logs in.
@@ -51,7 +51,7 @@ export const useCustomerStore = create<CustomerStore>()((set) => ({
     useChatStore.setState({ sessionId: nanoid() });
 
     set({ account: null, status: "idle", error: null });
-    void setStorageIdentity(null);
+    await setStorageIdentity(null);
 
     // Addresses are never cached across identities — clear on logout so a
     // still-open panel doesn't keep showing the previous account's data.

@@ -158,14 +158,16 @@ export function useChat() {
       if (isStreaming || !text.trim()) return;
 
       // A locale explicitly picked from the header dropdown is a stronger
-      // signal than word-sniffing this one message — only let auto-detection
-      // override it when the message clearly isn't English (e.g. the user
-      // switches to typing Sinhala mid-conversation despite having picked
-      // English), so a manual "English" pick doesn't get silently flipped by
-      // a stray Tanglish word in an otherwise English sentence.
+      // signal than word-sniffing this one message — it applies from this
+      // message onward regardless of what this particular message looks
+      // like (an email address, order number, or a stray word in another
+      // language shouldn't silently flip it back). The system prompt is
+      // still the one that decides to actually switch away from it if the
+      // user keeps writing in a different language across several messages
+      // — see LANGUAGE PREFERENCE handling in system-prompt.ts.
       const preferredLocale = useShopStore.getState().preferredLocale;
       const autoDetected = detectLocale(text);
-      const usingPreference = Boolean(preferredLocale && autoDetected === "en");
+      const usingPreference = Boolean(preferredLocale);
       const detectedLocale = usingPreference ? preferredLocale! : autoDetected;
       setLocale(detectedLocale);
 
@@ -380,8 +382,11 @@ export function useChat() {
 
                     // onboard() flips local storage to this account's own scope
                     // (see scoped-storage.ts) before we populate it below, so
-                    // guest-session cart/orders/recipients never bleed in.
-                    useCustomerStore.getState().onboard(account);
+                    // guest-session cart/orders/recipients never bleed in. Must
+                    // be awaited — the scope switch is async (persist rehydrate),
+                    // and replaceTracked/replaceRecipients below would otherwise
+                    // race ahead and write under the wrong (stale) scope.
+                    await useCustomerStore.getState().onboard(account);
                     const firstName = account.profile.name.split(" ")[0];
                     addMessage({
                       id: nanoid(),

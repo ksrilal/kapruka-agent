@@ -5,6 +5,7 @@ import { X, MapPin, RefreshCw, Loader2, Phone } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAddressesStore } from "@/features/addresses/store";
 import { useCustomerStore } from "@/features/customer/store";
+import { usePanelEscape } from "@/lib/hooks/usePanelEscape";
 
 function AddressRow({ address }: { address: { recipient_name: string; address: string; city: string; phone?: string; label?: string } }) {
   return (
@@ -55,6 +56,7 @@ function AddressesPanelContent({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     if (email) void fetchAddresses(email);
   }, [email, fetchAddresses]);
+  usePanelEscape(true, onClose);
 
   const loading = status === "loading";
 
@@ -62,7 +64,7 @@ function AddressesPanelContent({ onClose }: { onClose: () => void }) {
     <>
       <div className="backdrop" onClick={onClose} style={{ zIndex: 70 }} />
 
-      <aside className="cart-panel glass-dark anim-slide-left flex flex-col" style={{ zIndex: 80 }}>
+      <aside role="dialog" aria-modal="true" aria-label="Saved Addresses" className="cart-panel glass-dark anim-slide-left flex flex-col" style={{ zIndex: 80 }}>
         {/* Header */}
         <div
           className="flex items-center justify-between px-6 py-5"

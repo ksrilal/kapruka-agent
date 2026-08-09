@@ -7,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useHistoryStore } from "@/features/history/store";
 import { useChatStore } from "@/features/chat/store";
 import { useShopStore } from "@/features/shop/store";
+import { usePanelEscape } from "@/lib/hooks/usePanelEscape";
 import type { SavedSession } from "@/features/history/store";
 
 function timeAgo(ts: number): string {
@@ -91,7 +92,7 @@ function SessionCard({ session, index, onRestore, onDelete }: {
               <TooltipTrigger asChild>
                 <button
                   onClick={(e) => { e.stopPropagation(); onDelete(session.id); }}
-                  className="ml-auto flex h-5 w-5 items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-all"
+                  className="ml-auto flex h-5 w-5 items-center justify-center rounded-md opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 transition-all"
                   style={{ color: hovered ? "var(--ink-3)" : "var(--ink-3)" }}
                   onMouseEnter={(e) => (e.currentTarget.style.color = "#f87171")}
                   onMouseLeave={(e) => (e.currentTarget.style.color = "var(--ink-3)")}
@@ -125,6 +126,7 @@ export function HistoryPanel() {
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setMounted(true); }, []);
+  usePanelEscape(isOpen, close);
 
   if (!isOpen) return null;
 
@@ -145,7 +147,7 @@ export function HistoryPanel() {
     <>
       <div className="backdrop" onClick={close} style={{ zIndex: 70 }} />
 
-      <aside className="cart-panel glass-dark anim-slide-left flex flex-col" style={{ zIndex: 80 }}>
+      <aside role="dialog" aria-modal="true" aria-label="Chat History" className="cart-panel glass-dark anim-slide-left flex flex-col" style={{ zIndex: 80 }}>
         {/* Header */}
         <div
           className="flex items-center justify-between px-6 py-5"

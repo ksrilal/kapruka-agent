@@ -22,6 +22,7 @@ import { useHistoryStore } from "@/features/history/store";
 import { useChatStore } from "@/features/chat/store";
 import { useShopStore } from "@/features/shop/store";
 import { useCustomerStore } from "@/features/customer/store";
+import { usePanelEscape } from "@/lib/hooks/usePanelEscape";
 import type { CartLineItem } from "@/features/cart/store";
 import type { SavedOrder } from "@/features/orders/store";
 import type { SavedSession } from "@/features/history/store";
@@ -336,10 +337,12 @@ function MobileCategoryPanel({ onSelect, onClose }: { onSelect: (query: string) 
     ? ALL_CATEGORIES.filter((c) => c.label.toLowerCase().includes(search.trim().toLowerCase()))
     : ALL_CATEGORIES;
 
+  usePanelEscape(true, onClose);
+
   return (
     <>
       <div className="backdrop" onClick={onClose} style={{ zIndex: 70 }} />
-      <aside className="cart-panel glass-dark anim-slide-left flex flex-col" style={{ zIndex: 80 }}>
+      <aside role="dialog" aria-modal="true" aria-label="Browse Categories" className="cart-panel glass-dark anim-slide-left flex flex-col" style={{ zIndex: 80 }}>
         <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: "1px solid var(--border-2)" }}>
           <h2 className="t-title" style={{ color: "var(--ink)" }}>Browse Categories</h2>
           <button
@@ -1044,10 +1047,12 @@ function KiyoBubbleColumn({ onSend }: { onSend: (message: KiyoMessage) => void }
 function MobileSuggestionsPanel({ onSend, onClose }: { onSend: (message: KiyoMessage) => void; onClose: () => void }) {
   const messages = usePersonalizedKiyoMessages();
 
+  usePanelEscape(true, onClose);
+
   return (
     <>
       <div className="backdrop" onClick={onClose} style={{ zIndex: 70 }} />
-      <aside className="cart-panel glass-dark anim-slide-left flex flex-col" style={{ zIndex: 80 }}>
+      <aside role="dialog" aria-modal="true" aria-label="Kiyo Suggestions" className="cart-panel glass-dark anim-slide-left flex flex-col" style={{ zIndex: 80 }}>
         <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: "1px solid var(--border-2)" }}>
           <h2 className="t-title" style={{ color: "var(--ink)" }}>
             <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> Suggestions
