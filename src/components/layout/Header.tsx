@@ -1,6 +1,6 @@
 "use client";
 
-import { ShoppingCart, Package, History, SquarePen, Sun, Moon, Users, UserRound, LogOut, ChevronDown, Loader2, MapPin, Languages, Coins } from "lucide-react";
+import { ShoppingCart, Package, History, SquarePen, Sun, Moon, Users, UserRound, LogOut, ChevronDown, Loader2, MapPin, Languages, Coins, MoreHorizontal } from "lucide-react";
 import { KiyoAvatar } from "@/components/ui/KiyoAvatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useRouter } from "next/navigation";
@@ -24,6 +24,19 @@ const LANGUAGE_OPTIONS: Array<{ value: Locale; label: string; native: string }> 
 ];
 
 const CURRENCY_OPTIONS = ["LKR", "USD", "GBP", "AUD", "CAD", "EUR"] as const;
+
+// Mobile MoreMenu rows are single-tap toggles rather than full dropdowns —
+// cycle to the next option each tap instead of opening a nested picker.
+function nextLocale(current: Locale | null): Locale {
+  const values = LANGUAGE_OPTIONS.map((o) => o.value);
+  const idx = current ? values.indexOf(current) : -1;
+  return values[(idx + 1) % values.length];
+}
+
+function nextCurrency(current: string | null): string {
+  const idx = current ? CURRENCY_OPTIONS.indexOf(current as (typeof CURRENCY_OPTIONS)[number]) : -1;
+  return CURRENCY_OPTIONS[(idx + 1) % CURRENCY_OPTIONS.length];
+}
 
 // Generic small dropdown popover — mirrors AccountControl's open/close +
 // click-outside behavior, reused for language and currency pickers.
@@ -148,6 +161,81 @@ function CurrencyControl() {
       renderOption={(value) => <span>{value}</span>}
       onSelect={setPreferredCurrency}
     />
+  );
+}
+
+interface MoreMenuItem {
+  key: string;
+  icon: ReactNode;
+  label: string;
+  onClick: () => void;
+  count?: number;
+  badgeColor?: string;
+}
+
+// Mobile-only overflow menu — the full button row (theme, language, currency,
+// new chat, history, recipients, addresses) doesn't fit on narrow screens, so
+// these collapse in here; Account/Orders/Cart stay directly visible since
+// those are the actions people reach for most.
+function MoreMenu({ items }: { items: MoreMenuItem[] }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
+
+  const totalCount = items.reduce((sum, i) => sum + (i.count ?? 0), 0);
+
+  return (
+    <div className="relative sm:hidden" ref={ref}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-label="More options"
+        className="relative flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:text-foreground active:scale-95"
+        style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
+      >
+        <MoreHorizontal className="h-4 w-4" />
+        {totalCount > 0 && (
+          <span className="badge-count" style={{ background: "var(--purple)" }}>
+            {totalCount > 99 ? "99+" : totalCount}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div
+          className="anim-fade-up absolute right-0 top-11 z-50 w-56 rounded-2xl p-1.5"
+          style={{ background: "var(--surface)", border: "1px solid var(--border-2)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}
+        >
+          {items.map((item) => (
+            <button
+              key={item.key}
+              onClick={() => { item.onClick(); setOpen(false); }}
+              className="flex w-full items-center justify-between rounded-xl px-2.5 py-2 text-[12px] text-left transition-colors"
+              style={{ color: "var(--ink-2)" }}
+            >
+              <span className="flex items-center gap-2">
+                {item.icon}
+                {item.label}
+              </span>
+              {!!item.count && (
+                <span
+                  className="rounded-full px-1.5 text-[10px] font-semibold text-white"
+                  style={{ background: item.badgeColor ?? "var(--purple)" }}
+                >
+                  {item.count > 99 ? "99+" : item.count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -292,6 +380,10 @@ export function Header() {
 
   const theme = useThemeStore((s) => s.theme);
   const toggleTheme = useThemeStore((s) => s.toggleTheme);
+  const preferredLocale = useShopStore((s) => s.preferredLocale);
+  const setPreferredLocale = useShopStore((s) => s.setPreferredLocale);
+  const preferredCurrency = useShopStore((s) => s.preferredCurrency);
+  const setPreferredCurrency = useShopStore((s) => s.setPreferredCurrency);
 
   function goHome() {
     newChat();
@@ -333,107 +425,145 @@ export function Header() {
         </button>
 
         <div className="flex items-center gap-2">
-          {/* Theme toggle */}
-          {mounted && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={toggleTheme}
-                  aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:text-foreground active:scale-95"
-                  style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
-                >
-                  {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                {theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
-              </TooltipContent>
-            </Tooltip>
-          )}
+          {/* Theme, language, currency, new chat, history, recipients, addresses —
+              inline on sm+, collapsed into MoreMenu below on mobile */}
+          <div className="hidden sm:contents">
+            {/* Theme toggle */}
+            {mounted && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={toggleTheme}
+                    aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+                    className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:text-foreground active:scale-95"
+                    style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
+                  >
+                    {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+                </TooltipContent>
+              </Tooltip>
+            )}
 
-          {/* Language + currency preference — session-scoped, available to guests too */}
-          {mounted && <LanguageControl />}
-          {mounted && <CurrencyControl />}
+            {/* Language + currency preference — session-scoped, available to guests too */}
+            {mounted && <LanguageControl />}
+            {mounted && <CurrencyControl />}
+
+            {/* New chat — only visible when a conversation is active */}
+            {mounted && hasMessages && (
+              <button
+                onClick={newChat}
+                disabled={isStreaming}
+                title="New chat"
+                aria-label="New chat"
+                className="flex items-center gap-1.5 rounded-xl px-2.5 sm:px-3 h-9 text-[12px] font-medium transition-all hover:-translate-y-px active:scale-95 disabled:opacity-40"
+                style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
+              >
+                <SquarePen className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">New chat</span>
+              </button>
+            )}
+
+            {/* History button */}
+            <div className="relative">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={toggleHistory}
+                    aria-label="Chat history"
+                    className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:text-foreground active:scale-95"
+                    style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
+                  >
+                    <History className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Chat history</TooltipContent>
+              </Tooltip>
+              {historyCount > 0 && (
+                <span className="badge-count" style={{ background: "var(--purple)" }}>
+                  {historyCount}
+                </span>
+              )}
+            </div>
+
+            {/* Recipients button */}
+            <div className="relative">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={toggleRecipients}
+                    aria-label="Saved recipients"
+                    className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:text-foreground active:scale-95"
+                    style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
+                  >
+                    <Users className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Saved recipients</TooltipContent>
+              </Tooltip>
+              {recipientsCount > 0 && (
+                <span className="badge-count" style={{ background: "var(--purple)" }}>
+                  {recipientsCount}
+                </span>
+              )}
+            </div>
+
+            {/* Addresses button — only shown once a user has onboarded */}
+            {mounted && account && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={toggleAddresses}
+                    aria-label="Saved addresses"
+                    className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:text-foreground active:scale-95"
+                    style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
+                  >
+                    <MapPin className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Saved addresses</TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+
+          {/* Mobile-only overflow menu for everything collapsed above */}
+          {mounted && (
+            <MoreMenu
+              items={[
+                {
+                  key: "theme",
+                  icon: theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />,
+                  label: theme === "dark" ? "Switch to light theme" : "Switch to dark theme",
+                  onClick: toggleTheme,
+                },
+                {
+                  key: "language",
+                  icon: <Languages className="h-3.5 w-3.5" />,
+                  label: `Kiyo's language: ${LANGUAGE_OPTIONS.find((o) => o.value === preferredLocale)?.native ?? "English"}`,
+                  onClick: () => setPreferredLocale(nextLocale(preferredLocale)),
+                },
+                {
+                  key: "currency",
+                  icon: <Coins className="h-3.5 w-3.5" />,
+                  label: `Currency: ${preferredCurrency ?? "LKR"}`,
+                  onClick: () => setPreferredCurrency(nextCurrency(preferredCurrency)),
+                },
+                ...(hasMessages
+                  ? [{ key: "newChat", icon: <SquarePen className="h-3.5 w-3.5" />, label: "New chat", onClick: newChat }]
+                  : []),
+                { key: "history", icon: <History className="h-3.5 w-3.5" />, label: "Chat history", onClick: toggleHistory, count: historyCount, badgeColor: "var(--purple)" },
+                { key: "recipients", icon: <Users className="h-3.5 w-3.5" />, label: "Saved recipients", onClick: toggleRecipients, count: recipientsCount, badgeColor: "var(--purple)" },
+                ...(account
+                  ? [{ key: "addresses", icon: <MapPin className="h-3.5 w-3.5" />, label: "Saved addresses", onClick: toggleAddresses }]
+                  : []),
+              ]}
+            />
+          )}
 
           {/* Account — sign in / onboarded user indicator */}
           {mounted && <AccountControl />}
-
-          {/* New chat — only visible when a conversation is active */}
-          {mounted && hasMessages && (
-            <button
-              onClick={newChat}
-              disabled={isStreaming}
-              title="New chat"
-              aria-label="New chat"
-              className="flex items-center gap-1.5 rounded-xl px-2.5 sm:px-3 h-9 text-[12px] font-medium transition-all hover:-translate-y-px active:scale-95 disabled:opacity-40"
-              style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
-            >
-              <SquarePen className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">New chat</span>
-            </button>
-          )}
-
-          {/* History button */}
-          <div className="relative">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={toggleHistory}
-                  aria-label="Chat history"
-                  className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:text-foreground active:scale-95"
-                  style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
-                >
-                  <History className="h-4 w-4" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>Chat history</TooltipContent>
-            </Tooltip>
-            {historyCount > 0 && (
-              <span className="badge-count" style={{ background: "var(--purple)" }}>
-                {historyCount}
-              </span>
-            )}
-          </div>
-
-          {/* Recipients button */}
-          <div className="relative">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={toggleRecipients}
-                  aria-label="Saved recipients"
-                  className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:text-foreground active:scale-95"
-                  style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
-                >
-                  <Users className="h-4 w-4" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>Saved recipients</TooltipContent>
-            </Tooltip>
-            {recipientsCount > 0 && (
-              <span className="badge-count" style={{ background: "var(--purple)" }}>
-                {recipientsCount}
-              </span>
-            )}
-          </div>
-
-          {/* Addresses button — only shown once a user has onboarded */}
-          {mounted && account && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={toggleAddresses}
-                  aria-label="Saved addresses"
-                  className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:text-foreground active:scale-95"
-                  style={{ border: "1px solid var(--border-2)", color: "var(--ink-2)" }}
-                >
-                  <MapPin className="h-4 w-4" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>Saved addresses</TooltipContent>
-            </Tooltip>
-          )}
 
           {/* Orders button */}
           <div className="relative">
