@@ -11,8 +11,33 @@ import type { SavedRecipient } from "@/features/recipients/store";
 import { useCustomerStore } from "@/features/customer/store";
 import { detectLocale } from "@/lib/utils/unicode";
 import { productId } from "@/types/domain";
-import type { ConversationMessage, CustomerAccount, OrderStatus } from "@/types/domain";
+import type { ConversationMessage, CustomerAccount, OrderStatus, Locale } from "@/types/domain";
 import type { ChatSSEEvent } from "@/types/ai";
+
+// These render as Kiyo chat bubbles (role: "assistant") but are fired from
+// client-side lookup outcomes rather than the model itself, so they need
+// their own locale-aware text rather than inheriting it from a model reply.
+const ACCOUNT_LOOKUP_TEXT: Record<Locale, {
+  welcomeBack: (name: string) => string;
+  notFound: string;
+  lookupError: string;
+}> = {
+  en: {
+    welcomeBack: (name) => `Welcome back, ${name}! I've pulled up your account — feel free to ask about past orders, saved addresses, or start shopping.`,
+    notFound: "I couldn't find an account for that email — mind double-checking it, or we can continue as a guest?",
+    lookupError: "I ran into a problem pulling up your account — let's try again in a moment, or I'm happy to help as a guest for now.",
+  },
+  si: {
+    welcomeBack: (name) => `ආයුබෝවන් ${name}! මම ඔයාගේ ගිණුම ගෙනාවා — පරණ ඕඩර්ස්, සේව් කරපු ලිපින ගැන අහන්න, නැත්නම් සොපිං පටන් ගන්න.`,
+    notFound: "මට ඒ ඊමේල් එකට ගිණුමක් හොයාගන්න බැරි උනා — එක නැවත චෙක් කරන්න, නැත්නම් අපි ගෙස්ට් විදිහට කරගෙන යමුද?",
+    lookupError: "ඔයාගේ ගිණුම ගේනකොට ප්‍රශ්නයක් ආවා — ටිකකින් ආයෙත් ට්‍රයි කරමු, නැත්නම් මම ගෙස්ට් විදිහට උදව් කරන්නම්.",
+  },
+  "ta-Latn": {
+    welcomeBack: (name) => `Vanakkam ${name}! Unga account eduthutten — past orders, saved addresses pathi kekkalam, illa shopping start pannalam.`,
+    notFound: "Andha email-ku account onnum theriyala — thirumba check pannunga, illa guest ah continue pannalama?",
+    lookupError: "Unga account eduka problem vandhuchu — konjam neram kalichi try pannuvom, illa naan guest ah help pannaren.",
+  },
+};
 
 // Resolves an account's order history (thin CustomerOrderSummary entries) into
 // full OrderStatus objects the Orders panel actually renders (status_display,
@@ -361,7 +386,7 @@ export function useChat() {
                     addMessage({
                       id: nanoid(),
                       role: "assistant",
-                      content: `Welcome back, ${firstName}! I've pulled up your account — feel free to ask about past orders, saved addresses, or start shopping.`,
+                      content: ACCOUNT_LOOKUP_TEXT[detectedLocale].welcomeBack(firstName),
                       timestamp: Date.now(),
                     });
                     if (account.orders.length > 0) {
@@ -385,8 +410,8 @@ export function useChat() {
                       role: "assistant",
                       content:
                         message === "No account found for this email"
-                          ? "I couldn't find an account for that email — mind double-checking it, or we can continue as a guest?"
-                          : "I ran into a problem pulling up your account — let's try again in a moment, or I'm happy to help as a guest for now.",
+                          ? ACCOUNT_LOOKUP_TEXT[detectedLocale].notFound
+                          : ACCOUNT_LOOKUP_TEXT[detectedLocale].lookupError,
                       timestamp: Date.now(),
                     });
                   });

@@ -30,6 +30,7 @@ const CURRENCY_OPTIONS = ["LKR", "USD", "GBP", "AUD", "CAD", "EUR"] as const;
 function HeaderDropdown<T extends string>({
   icon,
   label,
+  caption,
   value,
   triggerLabel,
   options,
@@ -38,6 +39,7 @@ function HeaderDropdown<T extends string>({
 }: {
   icon: ReactNode;
   label: string;
+  caption?: string;
   value: T | null;
   triggerLabel: string;
   options: readonly T[];
@@ -78,6 +80,11 @@ function HeaderDropdown<T extends string>({
           className="anim-fade-up absolute right-0 top-11 z-50 w-44 rounded-2xl p-1.5"
           style={{ background: "var(--surface)", border: "1px solid var(--border-2)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}
         >
+          {caption && (
+            <div className="px-2.5 pt-1 pb-1.5 text-[10px] leading-snug" style={{ color: "var(--ink-3)" }}>
+              {caption}
+            </div>
+          )}
           {options.map((option) => (
             <button
               key={option}
@@ -106,7 +113,8 @@ function LanguageControl() {
   return (
     <HeaderDropdown
       icon={<Languages className="h-3.5 w-3.5" />}
-      label="Language"
+      label="Kiyo's reply language"
+      caption="Changes the language Kiyo replies in — the rest of the app stays in English."
       value={preferredLocale}
       triggerLabel={current?.native ?? "Language"}
       options={LANGUAGE_OPTIONS.map((o) => o.value)}
