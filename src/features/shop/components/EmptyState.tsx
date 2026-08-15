@@ -1234,7 +1234,7 @@ export function EmptyState() {
         </h1>
 
         <p className="text-[16px] leading-relaxed font-medium mb-2" style={{ color: "var(--ink-2)" }}>
-          <b className="text-foreground font-bold">Stop searching, start talking.</b>{" "} <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> {" "}
+          <b className="text-foreground font-bold">Stop browsing, start talking.</b>{" "} <span className="font-kiyo">KI<span className="gradient-text">YO</span></span> {" "}
           <b className="text-foreground font-bold">listens, understands,</b>{" "} and {" "}
           <b className="text-foreground font-bold">gets things done</b>
           <span className="hidden sm:inline"> — finding, comparing, and helping you buy almost anything you need.</span>
