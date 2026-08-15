@@ -1,4 +1,4 @@
-import { generateText } from "ai";
+import { generateText, streamText } from "ai";
 import type { LanguageModel } from "ai";
 import type {
   ModelMessage,
@@ -154,7 +154,14 @@ export async function runOrchestrator(
   customerContext?: string,
   customerEmail?: string,
   preferredCurrency?: string,
-  isExplicitLocale?: boolean
+  isExplicitLocale?: boolean,
+  // Fired with each raw text delta AS SOON as we know this generation round
+  // won't also call a tool — so the user sees the reply typing out live
+  // instead of staring at a spinner until the whole thing is ready. Only
+  // ever fired for the terminal, tool-free round (never a round that turns
+  // out to also request a tool call, since that text is discarded today —
+  // see the `toolCalls.length === 0` branch below).
+  onTextDelta?: (delta: string) => void
 ): Promise<OrchestratorResult> {
   const model = buildModel();
   // preferredCurrency is only passed standalone for guests — onboarded accounts
@@ -182,7 +189,7 @@ export async function runOrchestrator(
   let currentMessages = history;
 
   for (let round = 0; round < 4; round++) {
-    const result = await generateText({
+    const result = streamText({
       model,
       system: systemPrompt,
       messages: currentMessages,
@@ -191,11 +198,31 @@ export async function runOrchestrator(
       abortSignal: withTimeout(GENERATE_TIMEOUT_MS),
     });
 
-    // staticToolCalls are the typed ones (our known tools)
-    const toolCalls = result.staticToolCalls ?? [];
+    // staticToolCalls are the typed ones (our known tools). This resolves as
+    // soon as the model's tool-call decision is known, well before the full
+    // text (if any) has finished streaming — buffer deltas until then so we
+    // never show text live that turns out to belong to a tool-calling round
+    // (that text is discarded below, same as generateText's behavior).
+    let buffered = "";
+    let toolDecisionKnown = false;
+    const consumeDeltas = (async () => {
+      for await (const delta of result.textStream) {
+        if (toolDecisionKnown) {
+          onTextDelta?.(delta);
+        } else {
+          buffered += delta;
+        }
+      }
+    })();
+    const toolCalls = await result.staticToolCalls;
+    toolDecisionKnown = true;
+    if (toolCalls.length === 0 && buffered) onTextDelta?.(buffered);
+    await consumeDeltas;
+
     if (toolCalls.length === 0) {
-      if (result.text.trim()) {
-        return { text: result.text, embedded };
+      const text = await result.text;
+      if (text.trim()) {
+        return { text, embedded };
       }
       // Provider occasionally returns a genuinely empty final turn (no text, no
       // tool calls) — a transient hiccup, not "I'm done, nothing to say". Rather
@@ -223,12 +250,13 @@ export async function runOrchestrator(
     // Execute all tool calls in this round (may be parallel).
     const toolResultParts = await runToolCalls(toolCalls, embedded, onToolCall, customerEmail);
 
-    // Use result.response.messages for the assistant turn — these carry providerOptions
+    // Use response.messages for the assistant turn — these carry providerOptions
     // (including Gemini's thoughtSignature) which must be preserved when continuing
     // the conversation, otherwise Gemini warns about missing thought_signature.
+    const response = await result.response;
     currentMessages = [
       ...currentMessages,
-      ...result.response.messages,
+      ...response.messages,
       { role: "tool" as const, content: toolResultParts },
     ];
   }
@@ -236,18 +264,23 @@ export async function runOrchestrator(
   // Signal UI that synthesis is starting (tools done, now generating final reply)
   onToolCall?.("__response__", "running");
 
-  // Fallback: get final text after max rounds
+  // Fallback: get final text after max rounds — always terminal (no tools
+  // offered here), so stream it live from the start.
   try {
-    const final = await generateText({
+    const final = streamText({
       model,
       system: systemPrompt,
       messages: currentMessages,
       maxRetries: 0,
       abortSignal: withTimeout(GENERATE_TIMEOUT_MS),
     });
+    for await (const delta of final.textStream) {
+      onTextDelta?.(delta);
+    }
+    const finalText = await final.text;
 
     onToolCall?.("__response__", "done");
-    return { text: final.text, embedded };
+    return { text: finalText, embedded };
   } catch (err) {
     onToolCall?.("__response__", "done");
     throw err;

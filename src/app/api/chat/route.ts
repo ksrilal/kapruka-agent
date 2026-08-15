@@ -72,12 +72,15 @@ async function* chatGenerator(
   const locale: Locale =
     body.locale ?? detectLocale(userText);
 
-  // Channel to forward tool_call events from the orchestrator into the generator.
-  // Uses a "notify" latch: the drain loop creates a fresh promise+resolve pair
-  // BEFORE suspending, so any concurrent orchestrator callback always has a live
-  // resolve to call — eliminating the race where done fires before we await.
-  type ToolEvent = { tool: string; status: "running" | "done" };
-  const toolQueue: ToolEvent[] = [];
+  // Channel to forward tool_call / live-text events from the orchestrator into
+  // the generator. Uses a "notify" latch: the drain loop creates a fresh
+  // promise+resolve pair BEFORE suspending, so any concurrent orchestrator
+  // callback always has a live resolve to call — eliminating the race where
+  // done fires before we await.
+  type QueuedEvent =
+    | { kind: "tool"; tool: string; status: "running" | "done" }
+    | { kind: "text"; text: string };
+  const eventQueue: QueuedEvent[] = [];
   let orchestratorDone = false;
 
   let notifyResolve: (() => void) | undefined;
@@ -90,12 +93,52 @@ async function* chatGenerator(
     return new Promise<void>((r) => { notifyResolve = r; });
   }
 
+  // Live text deltas can't be forwarded to the client as-is: the model may be
+  // mid-way through typing a fenced ```json block or a bare {"__type":...}
+  // block, which must never flash on screen before it's stripped out below.
+  // Buffer the raw stream here and only queue the portion we're sure is safe
+  // plain prose — i.e. everything before the earliest point that could be
+  // the start of either marker.
+  let rawSoFar = "";
+  let safeFlushedUpTo = 0;
+  function onTextDelta(delta: string) {
+    rawSoFar += delta;
+    // Search the entire unflushed tail (never skip ahead of safeFlushedUpTo)
+    // for the earliest point that could be the start of a fence or a bare
+    // block — a lone trailing "{" counts too, since it might just be
+    // mid-way through accumulating `"__type":`. But only treat it as a guard
+    // while it's still recent (a stray "{" in ordinary prose that's never
+    // followed by `"__type":` within ~15 chars was never a block — release it
+    // rather than holding back the rest of the reply forever).
+    const fenceIdx = rawSoFar.indexOf("```", safeFlushedUpTo);
+    const bareIdx = rawSoFar.indexOf('{"__type":', safeFlushedUpTo);
+    const loneBraceIdx = rawSoFar.lastIndexOf("{");
+    const loneBraceIsRecent = loneBraceIdx >= safeFlushedUpTo && rawSoFar.length - loneBraceIdx <= 15;
+    const candidates = [fenceIdx, bareIdx, loneBraceIsRecent ? loneBraceIdx : -1].filter((i) => i !== -1);
+    const cutoff = candidates.length > 0 ? Math.min(...candidates) : rawSoFar.length;
+    if (cutoff > safeFlushedUpTo) {
+      const chunk = rawSoFar.slice(safeFlushedUpTo, cutoff);
+      safeFlushedUpTo = cutoff;
+      eventQueue.push({ kind: "text", text: chunk });
+      notify();
+    }
+  }
+
   let result: import("@/lib/ai/orchestrator").OrchestratorResult | undefined;
   let orchestratorError: Error | undefined;
-  const orchestratorRun = runOrchestrator(body.messages, locale, (tool, status) => {
-    toolQueue.push({ tool, status });
-    notify();
-  }, body.customerContext, body.customerEmail, body.preferredCurrency, body.isExplicitLocale).then((r) => {
+  const orchestratorRun = runOrchestrator(
+    body.messages,
+    locale,
+    (tool, status) => {
+      eventQueue.push({ kind: "tool", tool, status });
+      notify();
+    },
+    body.customerContext,
+    body.customerEmail,
+    body.preferredCurrency,
+    body.isExplicitLocale,
+    onTextDelta
+  ).then((r) => {
     result = r;
     orchestratorDone = true;
     notify();
@@ -106,21 +149,26 @@ async function* chatGenerator(
     notify();
   });
 
-  // Drain tool events while orchestrator runs
-  while (!orchestratorDone || toolQueue.length > 0) {
-    if (toolQueue.length === 0 && !orchestratorDone) {
+  // Drain tool_call / live-text events while orchestrator runs
+  let streamedText = "";
+  while (!orchestratorDone || eventQueue.length > 0) {
+    if (eventQueue.length === 0 && !orchestratorDone) {
       // Register the resolve BEFORE suspending so concurrent notify() calls land
       const pending = waitForNotify();
       // Re-check after registering — orchestrator may have finished between the
       // while-condition check and this line
-      if (!orchestratorDone && toolQueue.length === 0) {
+      if (!orchestratorDone && eventQueue.length === 0) {
         await pending;
       }
       continue;
     }
-    const ev = toolQueue.shift();
-    if (ev) {
+    const ev = eventQueue.shift();
+    if (!ev) continue;
+    if (ev.kind === "tool") {
       yield { type: "tool_call" as const, tool: ev.tool, status: ev.status };
+    } else {
+      streamedText += ev.text;
+      if (ev.text) yield { type: "text" as const, text: ev.text };
     }
   }
   await orchestratorRun;
@@ -281,8 +329,19 @@ async function* chatGenerator(
     .replace(/```/g, "")              // stray backticks
     .trim();
 
-  if (cleanText) {
-    yield { type: "text", text: cleanText };
+  // The leading portion of cleanText was very likely already streamed live
+  // via onTextDelta (see the drain loop above) — don't show it twice. That
+  // buffer only ever flushed verbatim prefixes of result.text, so cleanText
+  // (result.text with blocks stripped, then trimmed) starts with the same
+  // text whenever nothing was removed from ahead of it.
+  const remainderText = streamedText && cleanText.startsWith(streamedText.trim())
+    ? cleanText.slice(streamedText.trim().length).trim()
+    : cleanText;
+
+  if (remainderText) {
+    yield { type: "text", text: remainderText };
+  } else if (streamedText.trim()) {
+    // Already fully shown live — nothing left to send.
   } else if (emittedTypes.has("products")) {
     yield { type: "text", text: "Here's what I found — tap any card to explore or add to cart." };
   } else if (emittedTypes.has("order")) {
