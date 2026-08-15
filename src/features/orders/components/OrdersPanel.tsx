@@ -394,19 +394,6 @@ function TrackingRow({ saved, onRemove, onCloseAll }: { saved: SavedTracking; on
               <TooltipContent>Refresh tracking</TooltipContent>
             </Tooltip>
           )}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={() => void handleReorder()}
-                disabled={reordering || status.items.length === 0}
-                style={{ color: "var(--ink-3)" }}
-                aria-label="Reorder"
-              >
-                {reordering ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5" />}
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>Reorder</TooltipContent>
-          </Tooltip>
           {sendMessage && (
             <Tooltip>
               <TooltipTrigger asChild>
