@@ -4,55 +4,16 @@ import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
-  X, Package, ExternalLink, Clock, Trash2, RefreshCw, CheckCircle2, XCircle, Loader2, UserPlus, UserCheck, RotateCcw, Send,
+  X, Package, ExternalLink, Clock, Trash2, RefreshCw, CheckCircle2, XCircle, Loader2, UserPlus, UserCheck, Send,
 } from "lucide-react";
-import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useOrdersStore, isTerminal } from "@/features/orders/store";
 import { useOrderPolling } from "@/features/orders/hooks/useOrderPolling";
 import { usePanelEscape } from "@/lib/hooks/usePanelEscape";
 import { useRecipientsStore } from "@/features/recipients/store";
-import { useCartStore } from "@/features/cart/store";
 import { useShopStore } from "@/features/shop/store";
 import type { SavedOrder, SavedTracking } from "@/features/orders/store";
-import type { OrderStatus, ProductSummary } from "@/types/domain";
-
-// Resolves product_ids from a tracked order's items back into cart-ready
-// ProductSummary data via the lookup route, then adds each to the cart.
-async function reorderItems(items: { product_id: string; quantity: number }[], addItem: (p: ProductSummary, qty?: number) => void) {
-  const uniqueIds = Array.from(new Set(items.map((i) => i.product_id)));
-  const res = await fetch("/api/products/lookup", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ product_ids: uniqueIds }),
-  });
-  if (!res.ok) throw new Error("Failed to look up products");
-  const data = await res.json() as { products: ProductSummary[]; missing: string[] };
-  const byId = new Map(data.products.map((p) => [p.id, p]));
-  for (const item of items) {
-    const product = byId.get(item.product_id);
-    if (product) addItem(product, item.quantity);
-  }
-  return data.missing;
-}
-
-// Pre-checks whether the recipient's city can still be delivered to today —
-// non-blocking: reorder still adds items to cart either way, this only
-// informs the toast so the user isn't surprised at checkout.
-async function checkCityDeliverableToday(city: string): Promise<{ available: boolean; reason?: string | null } | null> {
-  try {
-    const res = await fetch("/api/delivery/check", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ city }),
-    });
-    if (!res.ok) return null;
-    const data = await res.json() as { delivery: { available: boolean; reason: string | null } };
-    return data.delivery;
-  } catch {
-    return null;
-  }
-}
+import type { OrderStatus } from "@/types/domain";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -276,13 +237,10 @@ function TrackingRow({ saved, onRemove, onCloseAll }: { saved: SavedTracking; on
   const updateTracking = useOrdersStore((s) => s.updateTracking);
   const saveRecipient = useRecipientsStore((s) => s.saveRecipient);
   const recipientSaved = useRecipientsStore((s) => s.isSaved(status.recipient));
-  const addCartItem = useCartStore((s) => s.addItem);
-  const openCart = useCartStore((s) => s.open);
   const sendMessage = useShopStore((s) => s.sendMessage);
   const router = useRouter();
 
   const [refreshing, setRefreshing] = useState(false);
-  const [reordering, setReordering] = useState(false);
 
   // Chat-driven variant of reorder — lets the AI re-confirm price, stock, and
   // delivery availability rather than blindly re-adding, since this is a
@@ -302,37 +260,6 @@ function TrackingRow({ saved, onRemove, onCloseAll }: { saved: SavedTracking; on
       `Repeat my past order #${status.order_number} exactly: ${itemList || "the same items"}, sent to ${recipient.name} again [recipient:${recipient.name}|${recipient.phone}|${recipient.address}|${recipient.city}]. This is the one specific order I'm repeating — I'm not choosing between multiple orders, just use these exact items and details.`
     );
     router.push("/");
-  }
-
-  async function handleReorder() {
-    if (reordering || status.items.length === 0) return;
-    setReordering(true);
-    try {
-      const [missing, delivery] = await Promise.all([
-        reorderItems(status.items, addCartItem),
-        checkCityDeliverableToday(status.recipient.city),
-      ]);
-      if (missing.length === status.items.length) {
-        toast.error("Couldn't find any of these items anymore.");
-        return;
-      }
-      openCart();
-      if (delivery && !delivery.available) {
-        toast.warning(
-          `Added to cart — but delivery to ${status.recipient.city} isn't available today${delivery.reason ? ` (${delivery.reason})` : ""}. You'll need to pick a different date at checkout.`
-        );
-      } else {
-        toast.success(
-          missing.length > 0
-            ? "Added what's still available to your cart."
-            : "Added to your cart."
-        );
-      }
-    } catch {
-      toast.error("Couldn't reorder — please try again.");
-    } finally {
-      setReordering(false);
-    }
   }
 
   async function handleManualRefresh() {
